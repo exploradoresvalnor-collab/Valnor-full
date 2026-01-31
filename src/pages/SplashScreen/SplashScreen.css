@@ -1,0 +1,185 @@
+/**
+ * Estilos del Splash Screen
+ * Migrado desde Angular splash-screen.scss
+ */
+
+:root {
+  --splash-animation-duration: 800ms;
+}
+
+.splash-container {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  min-height: 100dvh;
+  height: 100dvh;
+  position: relative;
+  overflow: hidden;
+  cursor: pointer;
+  padding: 0 1.5rem;
+  background: linear-gradient(to bottom, #1a1333, #000);
+  opacity: 1;
+  transition: opacity var(--splash-animation-duration) ease-out;
+}
+
+/* Fondo con imagen del caballero dorado */
+.splash-container::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: url('/assets/caballero_dorado.png') center/cover no-repeat;
+  z-index: 0;
+  filter: brightness(1.05) contrast(1.2) saturate(1.1);
+  animation: cinematicZoom 10s ease-in-out forwards;
+  transform: scale(1.15);
+}
+
+/* Overlay oscuro con degradado */
+.cinematic-overlay {
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(
+    to bottom,
+    rgba(0, 0, 0, 0.4),
+    rgba(10, 10, 10, 0.95)
+  );
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* Logo */
+.logo {
+  width: 100px;
+  max-width: 32vw;
+  margin-bottom: 2.5rem;
+  filter: drop-shadow(0 2px 12px #ffd700);
+  z-index: 2;
+  transition: transform var(--splash-animation-duration) cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInUp 1s ease 0.3s both;
+}
+
+/* Título principal */
+.valnor-title {
+  font-size: clamp(1.7rem, 8vw, 3rem);
+  text-align: center;
+  margin: 0;
+  margin-bottom: 1.5rem;
+  font-family: 'Cinzel', serif;
+  color: #fffbe6;
+  letter-spacing: 0.15em;
+  font-weight: 700;
+  text-transform: uppercase;
+  z-index: 2;
+  filter: drop-shadow(0 0 10px #ffd700);
+  text-shadow: 
+    0 0 8px #ffd700,
+    0 0 24px #3a2d6d,
+    0 2px 10px rgba(255, 215, 0, 0.5);
+  transition: transform var(--splash-animation-duration) cubic-bezier(0.4, 0, 0.2, 1);
+  animation: fadeInUp 1.2s ease 0.2s both, glow 2.8s infinite alternate;
+}
+
+/* Subtítulo */
+.valnor-sub {
+  font-size: clamp(1rem, 3vw, 1.15rem);
+  color: #ffd700;
+  font-weight: 500;
+  margin-top: 0;
+  text-align: center;
+  letter-spacing: 1px;
+  opacity: 0.95;
+  z-index: 2;
+  text-shadow: 
+    0 1px 8px #ffd700,
+    0 1px 0 #3a2d6d;
+  transition: opacity var(--splash-animation-duration) ease-out;
+  animation: fadeInUp 1.4s ease 0.5s both, pulse 2s ease-in-out infinite;
+}
+
+/* Efecto de presión */
+.splash-container:active .logo {
+  transform: scale(0.97);
+}
+
+/* === ANIMACIONES DE SALIDA === */
+.splash-container.exiting {
+  opacity: 0;
+  pointer-events: none;
+}
+
+.splash-container.exiting .logo.exit {
+  transform: translateY(-100vh) scale(0.5);
+}
+
+.splash-container.exiting .valnor-title.exit {
+  transform: translateY(100vh);
+}
+
+.splash-container.exiting .valnor-sub.exit {
+  opacity: 0;
+}
+
+/* === KEYFRAMES === */
+@keyframes fadeInUp {
+  from {
+    opacity: 0;
+    transform: translateY(40px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes glow {
+  from {
+    text-shadow:
+      0 2px 8px #3a2d6d,
+      0 0 4px #ffd700,
+      0 1px 0 #fff,
+      0 0 2px #8a7bbd;
+  }
+  to {
+    text-shadow:
+      0 4px 24px #ffd700,
+      0 0 16px #fff,
+      0 2px 8px #3a2d6d,
+      0 0 8px #8a7bbd;
+  }
+}
+
+@keyframes cinematicZoom {
+  0% {
+    transform: scale(1.15);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes pulse {
+  0%, 100% {
+    opacity: 0.95;
+  }
+  50% {
+    opacity: 0.6;
+  }
+}
+
+/* === RESPONSIVE === */
+@media (max-width: 600px) {
+  .splash-container {
+    padding: 0 0.5rem;
+  }
+
+  .valnor-title {
+    font-size: clamp(1.2rem, 7vw, 2.4rem);
+    padding: 0.1em 0.3em;
+  }
+
+  .logo {
+    width: 80px;
+    max-width: 50vw;
+  }
+}
