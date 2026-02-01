@@ -1,0 +1,444 @@
+/* Verify Page - Valnor Game */
+.verify-page {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(to bottom right, #111827, #3b0764, #000000);
+  padding: 48px 16px;
+}
+
+@media (min-width: 640px) {
+  .verify-page {
+    padding: 48px 24px;
+  }
+}
+
+@media (min-width: 1024px) {
+  .verify-page {
+    padding: 48px 32px;
+  }
+}
+
+.verify-container {
+  width: 100%;
+  max-width: 48rem;
+  margin: 0 auto;
+}
+
+.verify-wrapper {
+  width: 100%;
+}
+
+/* Card */
+.verify-card {
+  width: 100%;
+  max-width: 42rem;
+  margin: 0 auto;
+  background: linear-gradient(to bottom right, rgba(31, 41, 55, 0.8), rgba(17, 24, 39, 0.8));
+  padding: 24px;
+  border-radius: 12px;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  border: 1px solid rgba(126, 34, 206, 0.1);
+}
+
+/* Header */
+.card-header {
+  display: flex;
+  align-items: flex-start;
+  gap: 16px;
+}
+
+.header-icon {
+  flex-shrink: 0;
+  width: 56px;
+  height: 56px;
+  border-radius: 8px;
+  background: rgba(147, 51, 234, 0.1);
+  border: 1px solid rgba(147, 51, 234, 0.2);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 30px;
+}
+
+.header-content {
+  flex: 1;
+}
+
+.header-title-row {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.header-logo {
+  width: 48px;
+  height: 48px;
+  border-radius: 6px;
+  background: rgba(0, 0, 0, 0.1);
+  padding: 4px;
+}
+
+.header-title {
+  font-size: 24px;
+  font-family: 'Exo 2', sans-serif;
+  font-weight: 900;
+  color: white;
+  margin: 0;
+}
+
+@media (min-width: 640px) {
+  .header-title {
+    font-size: 30px;
+  }
+}
+
+.header-subtitle {
+  font-size: 14px;
+  color: #d1d5db;
+  margin-top: 4px;
+}
+
+.banner-message {
+  margin-top: 12px;
+  display: inline-block;
+  background: rgba(147, 51, 234, 0.1);
+  border: 1px solid rgba(147, 51, 234, 0.3);
+  color: #e9d5ff;
+  font-size: 14px;
+  padding: 8px 12px;
+  border-radius: 6px;
+}
+
+/* Content */
+.card-content {
+  margin-top: 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+/* Email Display */
+.email-display {
+  text-align: center;
+}
+
+.email-label {
+  font-size: 14px;
+  color: #d1d5db;
+  margin: 0;
+}
+
+.email-badge {
+  display: inline-block;
+  margin-top: 8px;
+  padding: 8px 16px;
+  background: linear-gradient(to right, rgba(88, 28, 135, 0.3), rgba(22, 78, 99, 0.2));
+  border: 1px solid rgba(126, 34, 206, 0.2);
+  border-radius: 9999px;
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.email-badge span {
+  font-weight: 600;
+  color: #c4b5fd;
+}
+
+/* Steps */
+.steps-container {
+  padding: 16px;
+  border-radius: 8px;
+  background: rgba(31, 41, 55, 0.7);
+  border: 1px solid rgba(55, 65, 81, 0.4);
+}
+
+.steps-title {
+  font-size: 14px;
+  color: #d1d5db;
+  font-weight: 600;
+  margin: 0 0 8px 0;
+}
+
+.steps-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.step-item {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.step-item strong {
+  color: white;
+}
+
+.step-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.step-icon.cyan {
+  color: #22d3ee;
+}
+
+.step-icon.green {
+  color: #4ade80;
+}
+
+.step-icon.yellow {
+  color: #facc15;
+}
+
+.steps-warning {
+  font-size: 12px;
+  color: #facc15;
+  margin: 12px 0 0 0;
+}
+
+/* Messages */
+.message {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 12px 16px;
+  border-radius: 8px;
+  font-size: 14px;
+}
+
+.success-message {
+  background: rgba(34, 197, 94, 0.1);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  color: #86efac;
+}
+
+.error-message {
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  color: #fca5a5;
+}
+
+.message-icon {
+  width: 20px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+/* Resend Button */
+.resend-container {
+  display: flex;
+  justify-content: center;
+}
+
+.resend-button {
+  width: 192px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 8px 16px;
+  border-radius: 8px;
+  background: linear-gradient(to right, #9333ea, #06b6d4);
+  color: white;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  transition: transform 0.2s ease;
+}
+
+.resend-button:hover:not(:disabled) {
+  transform: scale(1.01);
+}
+
+.resend-button:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+}
+
+.resend-icon {
+  width: 20px;
+  height: 20px;
+}
+
+/* Footer */
+.card-footer {
+  margin-top: 24px;
+  text-align: center;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.card-footer p {
+  margin: 0;
+}
+
+.footer-link {
+  color: #c4b5fd;
+  text-decoration: underline;
+  transition: color 0.3s ease;
+}
+
+.footer-link:hover {
+  color: #e9d5ff;
+}
+
+/* ========================================
+   RESPONSIVE: LANDSCAPE MODE (Mobile)
+   ======================================== */
+@media (max-height: 500px) and (orientation: landscape) {
+  .verify-page {
+    min-height: auto;
+    height: 100vh;
+    padding: 16px;
+    overflow-y: auto;
+  }
+
+  .verify-container {
+    max-width: 640px;
+  }
+
+  .verify-card {
+    padding: 16px;
+    max-width: 100%;
+  }
+
+  .card-header {
+    gap: 12px;
+  }
+
+  .header-icon {
+    width: 40px;
+    height: 40px;
+    font-size: 20px;
+  }
+
+  .header-title-row {
+    gap: 10px;
+  }
+
+  .header-logo {
+    width: 36px;
+    height: 36px;
+  }
+
+  .header-title {
+    font-size: 18px;
+  }
+
+  .header-subtitle {
+    font-size: 12px;
+  }
+
+  .banner-message {
+    margin-top: 8px;
+    padding: 6px 10px;
+    font-size: 12px;
+  }
+
+  .card-content {
+    margin-top: 12px;
+    gap: 10px;
+  }
+
+  .email-label {
+    font-size: 12px;
+  }
+
+  .email-badge {
+    padding: 6px 12px;
+    font-size: 13px;
+  }
+
+  .steps-container {
+    padding: 10px;
+  }
+
+  .steps-title {
+    font-size: 12px;
+  }
+
+  .steps-list {
+    gap: 4px;
+  }
+
+  .step-item {
+    font-size: 12px;
+  }
+
+  .step-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .steps-warning {
+    font-size: 10px;
+    margin-top: 8px;
+  }
+
+  .message {
+    padding: 8px 12px;
+    font-size: 12px;
+  }
+
+  .message-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .resend-button {
+    width: auto;
+    padding: 8px 16px;
+    font-size: 13px;
+  }
+
+  .resend-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .card-footer {
+    margin-top: 12px;
+    font-size: 12px;
+  }
+}
+
+/* ========================================
+   RESPONSIVE: TABLET LANDSCAPE
+   ======================================== */
+@media (min-width: 700px) and (max-height: 500px) and (orientation: landscape) {
+  .verify-container {
+    max-width: 720px;
+  }
+
+  .card-content {
+    display: grid;
+    grid-template-columns: auto 1fr;
+    gap: 12px 20px;
+    align-items: start;
+  }
+
+  .email-display {
+    grid-column: 1 / -1;
+    text-align: left;
+  }
+
+  .steps-container {
+    grid-column: 1;
+  }
+
+  .message,
+  .resend-container {
+    grid-column: 2;
+  }
+}

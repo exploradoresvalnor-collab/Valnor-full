@@ -1,0 +1,27 @@
+{
+  "appId": "com.valnor.game",
+  "appName": "Valnor",
+  "webDir": "dist",
+  "bundledWebRuntime": false,
+  "server": {
+    "androidScheme": "https"
+  },
+  "plugins": {
+    "SplashScreen": {
+      "launchShowDuration": 2000,
+      "backgroundColor": "#030712",
+      "showSpinner": false,
+      "androidSpinnerStyle": "small",
+      "spinnerColor": "#8B5CF6"
+    },
+    "StatusBar": {
+      "style": "DARK",
+      "backgroundColor": "#030712"
+    }
+  },
+  "android": {
+    "allowMixedContent": true,
+    "captureInput": true,
+    "webContentsDebuggingEnabled": false
+  }
+}

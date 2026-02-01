@@ -2,8 +2,26 @@
 <html lang="es">
   <head>
     <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>Valnor - Juego 3D</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+    
+    <!-- PWA Meta Tags -->
+    <meta name="theme-color" content="#030712" />
+    <meta name="description" content="Valnor - Juego RPG 3D de fantasía épica. Explora mazmorras, combate enemigos y conviértete en leyenda." />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="Valnor" />
+    
+    <!-- Favicon y Apple Touch Icon -->
+    <link rel="icon" type="image/png" href="/favicon.png" />
+    <link rel="apple-touch-icon" href="/apple-touch-icon.png" />
+    
+    <!-- Open Graph / Social Media -->
+    <meta property="og:type" content="website" />
+    <meta property="og:title" content="Valnor - RPG 3D" />
+    <meta property="og:description" content="Juego RPG 3D de fantasía épica. Explora mazmorras, combate enemigos y conviértete en leyenda." />
+    <meta property="og:image" content="/assets/icons/icon-512x512.png" />
+    
+    <title>Valnor - RPG 3D</title>
     <style>
       * {
         margin: 0;
@@ -14,11 +32,12 @@
         width: 100%;
         height: 100%;
         overflow: hidden;
+        background-color: #030712;
       }
     </style>
   </head>
   <body>
     <div id="root"></div>
-    <script type="module" src="/src/main.jsx"></script>
+    <script type="module" src="/src/main.tsx"></script>
   </body>
 </html>

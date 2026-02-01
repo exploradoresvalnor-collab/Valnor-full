@@ -1,0 +1,220 @@
+/* LoadingScreen.css - Estilos de la pantalla de carga */
+
+.loading-screen {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100vw;
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #0a0a0f;
+  z-index: 9999;
+  overflow: hidden;
+}
+
+/* Fondo */
+.loading-background {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  pointer-events: none;
+}
+
+.loading-bg-gradient {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: radial-gradient(ellipse at center, #1a1a2e 0%, #0a0a0f 70%);
+}
+
+.loading-particles {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background-image: 
+    radial-gradient(2px 2px at 20% 30%, rgba(255, 215, 0, 0.3), transparent),
+    radial-gradient(2px 2px at 40% 70%, rgba(255, 215, 0, 0.2), transparent),
+    radial-gradient(2px 2px at 60% 20%, rgba(255, 215, 0, 0.3), transparent),
+    radial-gradient(2px 2px at 80% 50%, rgba(255, 215, 0, 0.2), transparent),
+    radial-gradient(2px 2px at 10% 80%, rgba(255, 215, 0, 0.25), transparent),
+    radial-gradient(2px 2px at 90% 10%, rgba(255, 215, 0, 0.2), transparent);
+  animation: twinkle 4s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+  0%, 100% { opacity: 0.5; }
+  50% { opacity: 1; }
+}
+
+/* Contenido */
+.loading-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2rem;
+  z-index: 1;
+}
+
+/* Logo */
+.loading-logo {
+  padding: 1rem 2rem;
+}
+
+.logo-text {
+  font-family: 'Cinzel', serif;
+  font-size: 3.5rem;
+  font-weight: 700;
+  background: linear-gradient(135deg, #ffd700 0%, #f0c040 50%, #b8860b 100%);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  text-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+  letter-spacing: 0.3em;
+}
+
+/* Spinner */
+.loading-spinner-container {
+  position: relative;
+  width: 120px;
+  height: 120px;
+}
+
+.spinner-ring {
+  position: absolute;
+  border-radius: 50%;
+  border: 2px solid transparent;
+}
+
+.ring-outer {
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  border-top-color: #ffd700;
+  border-right-color: rgba(255, 215, 0, 0.3);
+}
+
+.ring-middle {
+  top: 15px;
+  left: 15px;
+  width: calc(100% - 30px);
+  height: calc(100% - 30px);
+  border-top-color: #b8860b;
+  border-left-color: rgba(184, 134, 11, 0.3);
+}
+
+.ring-inner {
+  top: 30px;
+  left: 30px;
+  width: calc(100% - 60px);
+  height: calc(100% - 60px);
+  border-top-color: #ffd700;
+  border-bottom-color: rgba(255, 215, 0, 0.3);
+}
+
+.spinner-center {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  width: 20px;
+  height: 20px;
+  background: radial-gradient(circle, #ffd700, #b8860b);
+  border-radius: 50%;
+  box-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+/* Mensaje */
+.loading-message {
+  color: #c0c0c0;
+  font-size: 1.1rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* Barra de progreso */
+.loading-progress {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  width: 300px;
+}
+
+.progress-bar {
+  width: 100%;
+  height: 6px;
+  background: rgba(255, 255, 255, 0.1);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #b8860b, #ffd700);
+  border-radius: 3px;
+  box-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.progress-text {
+  color: #ffd700;
+  font-size: 0.9rem;
+  font-weight: 600;
+}
+
+/* Tip de carga */
+.loading-tip {
+  position: absolute;
+  bottom: 3rem;
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.75rem 1.5rem;
+  background: rgba(0, 0, 0, 0.5);
+  border: 1px solid rgba(255, 215, 0, 0.2);
+  border-radius: 8px;
+}
+
+.tip-label {
+  color: #ffd700;
+  font-weight: 600;
+  text-transform: uppercase;
+  font-size: 0.85rem;
+}
+
+.tip-text {
+  color: #a0a0a0;
+  font-size: 0.85rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .logo-text {
+    font-size: 2.5rem;
+    letter-spacing: 0.2em;
+  }
+
+  .loading-spinner-container {
+    width: 100px;
+    height: 100px;
+  }
+
+  .loading-progress {
+    width: 250px;
+  }
+
+  .loading-tip {
+    flex-direction: column;
+    text-align: center;
+    bottom: 2rem;
+    margin: 0 1rem;
+  }
+}

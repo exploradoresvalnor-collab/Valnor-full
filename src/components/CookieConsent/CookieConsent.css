@@ -1,0 +1,183 @@
+/**
+ * Cookie Consent Styles - Valnor Game
+ * Banner minimalista y compacto
+ */
+
+/* Overlay */
+.cookie-overlay {
+  position: fixed;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  z-index: 9999;
+  padding: 8px;
+  pointer-events: none;
+  display: flex;
+  justify-content: center;
+}
+
+.cookie-overlay.hiding {
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+/* Banner - Estilo compacto inline */
+.cookie-banner {
+  position: relative;
+  background: rgba(15, 15, 30, 0.95);
+  backdrop-filter: blur(12px);
+  border-radius: 24px;
+  padding: 10px 16px;
+  border: 1px solid rgba(139, 92, 246, 0.4);
+  box-shadow: 0 4px 24px rgba(0, 0, 0, 0.4), 0 0 20px rgba(139, 92, 246, 0.15);
+  pointer-events: auto;
+}
+
+/* Animations */
+.cookie-banner.slide-in {
+  animation: slideInUp 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.cookie-banner.slide-out {
+  animation: slideOutDown 0.25s ease-in forwards;
+}
+
+@keyframes slideInUp {
+  from {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateY(0);
+    opacity: 1;
+  }
+}
+
+@keyframes slideOutDown {
+  from {
+    transform: translateY(0);
+    opacity: 1;
+  }
+  to {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+/* Content - Todo en una linea */
+.cookie-content {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+/* Icon - Emoji simple */
+.cookie-icon {
+  font-size: 20px;
+  line-height: 1;
+}
+
+/* Text */
+.cookie-text {
+  flex: 1;
+}
+
+.cookie-description {
+  margin: 0;
+  font-size: 13px;
+  color: #e5e7eb;
+  font-family: 'Exo 2', sans-serif;
+  white-space: nowrap;
+}
+
+/* Actions - Botones pequenos */
+.cookie-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.cookie-btn {
+  padding: 6px 14px;
+  border-radius: 14px;
+  font-size: 12px;
+  font-weight: 600;
+  font-family: 'Exo 2', sans-serif;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  border: none;
+}
+
+.cookie-btn-decline {
+  background: transparent;
+  color: #9ca3af;
+}
+
+.cookie-btn-decline:hover {
+  color: #fff;
+}
+
+.cookie-btn-accept {
+  background: linear-gradient(135deg, #8b5cf6, #6d28d9);
+  color: white;
+}
+
+.cookie-btn-accept:hover {
+  background: linear-gradient(135deg, #a78bfa, #8b5cf6);
+}
+
+/* Privacy link */
+.cookie-privacy {
+  display: none;
+}
+
+/* RESPONSIVE: MOBILE PEQUENO */
+@media (max-width: 400px) {
+  .cookie-overlay {
+    padding: 6px;
+  }
+
+  .cookie-banner {
+    padding: 8px 12px;
+  }
+
+  .cookie-content {
+    gap: 8px;
+  }
+
+  .cookie-icon {
+    font-size: 18px;
+  }
+
+  .cookie-description {
+    font-size: 11px;
+  }
+
+  .cookie-btn {
+    padding: 5px 10px;
+    font-size: 11px;
+  }
+}
+
+/* RESPONSIVE: LANDSCAPE MODE */
+@media (max-height: 500px) and (orientation: landscape) {
+  .cookie-overlay {
+    padding: 4px 10px;
+  }
+
+  .cookie-banner {
+    padding: 4px 10px;
+  }
+
+  .cookie-icon {
+    font-size: 14px;
+  }
+
+  .cookie-description {
+    font-size: 10px;
+  }
+
+  .cookie-btn {
+    padding: 3px 8px;
+    font-size: 9px;
+  }
+}

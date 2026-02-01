@@ -1,0 +1,523 @@
+/* Dashboard Page - Valnor Game */
+.dashboard-page {
+  min-height: 100vh;
+  background: #111827;
+  color: white;
+  padding: 16px;
+}
+
+.dashboard-container {
+  max-width: 56rem;
+  margin: 0 auto;
+}
+
+/* Loading State */
+.dashboard-loading {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  background: #111827;
+  color: white;
+}
+
+.loading-spinner {
+  width: 48px;
+  height: 48px;
+  border: 4px solid rgba(34, 211, 238, 0.2);
+  border-top-color: #22d3ee;
+  border-radius: 50%;
+  animation: spin 1s linear infinite;
+  margin-bottom: 16px;
+}
+
+/* Header */
+.dashboard-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 16px;
+  margin-bottom: 32px;
+}
+
+@media (min-width: 640px) {
+  .dashboard-header {
+    flex-direction: row;
+    justify-content: space-between;
+  }
+}
+
+.dashboard-title {
+  font-size: 30px;
+  font-weight: 700;
+  text-align: center;
+  font-family: 'Cinzel', serif;
+  background: linear-gradient(to right, #22d3ee, #a855f7);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+}
+
+.user-quick-info {
+  display: flex;
+  gap: 16px;
+}
+
+.user-stat {
+  padding: 8px 16px;
+  border-radius: 9999px;
+  font-weight: 600;
+  font-size: 14px;
+}
+
+.user-stat.val {
+  background: rgba(250, 204, 21, 0.2);
+  color: #facc15;
+  border: 1px solid rgba(250, 204, 21, 0.3);
+}
+
+.user-stat.boletos {
+  background: rgba(168, 85, 247, 0.2);
+  color: #a855f7;
+  border: 1px solid rgba(168, 85, 247, 0.3);
+}
+
+/* Welcome Card */
+.welcome-card {
+  background: #1f2937;
+  border-radius: 12px;
+  padding: 24px;
+  margin-bottom: 24px;
+  border: 1px solid rgba(34, 211, 238, 0.2);
+}
+
+.welcome-title {
+  font-size: 20px;
+  font-weight: 600;
+  margin-bottom: 16px;
+  color: #22d3ee;
+}
+
+.user-stats {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 12px;
+}
+
+@media (min-width: 640px) {
+  .user-stats {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+.stat-item {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #9ca3af;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.stat-value {
+  font-size: 16px;
+  color: #d1d5db;
+}
+
+.stat-value.highlight {
+  color: #facc15;
+  font-weight: 700;
+}
+
+/* Menu Grid */
+.menu-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 16px;
+}
+
+@media (min-width: 640px) {
+  .menu-grid {
+    grid-template-columns: repeat(3, 1fr);
+  }
+}
+
+@media (min-width: 1024px) {
+  .menu-grid {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
+
+.menu-item {
+  padding: 24px 16px;
+  border-radius: 12px;
+  text-align: center;
+  border: none;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 8px;
+}
+
+.menu-item:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 10px 20px -5px rgba(0, 0, 0, 0.3);
+}
+
+.menu-item:active {
+  transform: translateY(-2px);
+}
+
+.menu-icon {
+  font-size: 32px;
+}
+
+.menu-label {
+  font-weight: 600;
+  color: white;
+}
+
+/* Menu Colors */
+.menu-blue {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+}
+
+.menu-blue:hover {
+  background: linear-gradient(135deg, #3b82f6, #2563eb);
+}
+
+.menu-green {
+  background: linear-gradient(135deg, #16a34a, #15803d);
+}
+
+.menu-green:hover {
+  background: linear-gradient(135deg, #22c55e, #16a34a);
+}
+
+.menu-purple {
+  background: linear-gradient(135deg, #9333ea, #7e22ce);
+}
+
+.menu-purple:hover {
+  background: linear-gradient(135deg, #a855f7, #9333ea);
+}
+
+.menu-orange {
+  background: linear-gradient(135deg, #ea580c, #c2410c);
+}
+
+.menu-orange:hover {
+  background: linear-gradient(135deg, #f97316, #ea580c);
+}
+
+.menu-red {
+  background: linear-gradient(135deg, #dc2626, #b91c1c);
+}
+
+.menu-red:hover {
+  background: linear-gradient(135deg, #ef4444, #dc2626);
+}
+
+.menu-yellow {
+  background: linear-gradient(135deg, #ca8a04, #a16207);
+}
+
+.menu-yellow:hover {
+  background: linear-gradient(135deg, #eab308, #ca8a04);
+}
+
+.menu-cyan {
+  background: linear-gradient(135deg, #0891b2, #0e7490);
+}
+
+.menu-cyan:hover {
+  background: linear-gradient(135deg, #06b6d4, #0891b2);
+}
+
+.menu-indigo {
+  background: linear-gradient(135deg, #4f46e5, #4338ca);
+}
+
+.menu-indigo:hover {
+  background: linear-gradient(135deg, #6366f1, #4f46e5);
+}
+
+/* Modal Overlay */
+.modal-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.7);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 50;
+  padding: 16px;
+}
+
+/* Settings Modal */
+.settings-modal {
+  background: #1f2937;
+  border-radius: 16px;
+  width: 100%;
+  max-width: 400px;
+  border: 1px solid rgba(34, 211, 238, 0.3);
+  overflow: hidden;
+}
+
+.modal-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 16px 20px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.modal-header h3 {
+  margin: 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.close-button {
+  background: transparent;
+  border: none;
+  color: #9ca3af;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 4px 8px;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.close-button:hover {
+  color: white;
+  background: rgba(255, 255, 255, 0.1);
+}
+
+.modal-content {
+  padding: 20px;
+}
+
+.profile-info {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding-bottom: 16px;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  margin-bottom: 16px;
+}
+
+.profile-avatar {
+  width: 64px;
+  height: 64px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #9333ea, #06b6d4);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.avatar-icon {
+  font-size: 32px;
+}
+
+.profile-details h4 {
+  margin: 0 0 4px 0;
+  font-size: 18px;
+  color: white;
+}
+
+.profile-details p {
+  margin: 0;
+  font-size: 14px;
+  color: #9ca3af;
+}
+
+.settings-section h5 {
+  margin: 0 0 12px 0;
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #22d3ee;
+}
+
+.stats-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.stats-list li {
+  display: flex;
+  justify-content: space-between;
+  font-size: 14px;
+  color: #d1d5db;
+}
+
+.stats-list strong {
+  color: white;
+}
+
+/* Under Construction */
+.under-construction {
+  margin-top: 24px;
+  background: rgba(161, 98, 7, 0.3);
+  border: 1px solid rgba(234, 179, 8, 0.3);
+  border-radius: 12px;
+  padding: 16px;
+}
+
+.under-construction h3 {
+  margin: 0 0 8px 0;
+  font-size: 18px;
+  font-weight: 600;
+}
+
+.under-construction p {
+  margin: 0 0 12px 0;
+  color: #d1d5db;
+}
+
+.close-construction-btn {
+  background: #ca8a04;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 6px;
+  cursor: pointer;
+  font-weight: 600;
+  transition: background 0.3s ease;
+}
+
+.close-construction-btn:hover {
+  background: #a16207;
+}
+
+/* Animations */
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* ========================================
+   RESPONSIVE: LANDSCAPE MODE (Mobile)
+   ======================================== */
+@media (max-height: 500px) and (orientation: landscape) {
+  .dashboard-page {
+    min-height: auto;
+    height: 100vh;
+    overflow-y: auto;
+    padding: 8px 16px;
+  }
+
+  .dashboard-header {
+    margin-bottom: 12px;
+    gap: 8px;
+  }
+
+  .dashboard-title {
+    font-size: 20px;
+  }
+
+  .user-stat {
+    padding: 4px 10px;
+    font-size: 12px;
+  }
+
+  .welcome-card {
+    padding: 12px 16px;
+    margin-bottom: 12px;
+  }
+
+  .welcome-title {
+    font-size: 16px;
+    margin-bottom: 10px;
+  }
+
+  .user-stats {
+    gap: 8px;
+    grid-template-columns: repeat(3, 1fr);
+  }
+
+  .stat-label {
+    font-size: 10px;
+  }
+
+  .stat-value {
+    font-size: 14px;
+  }
+
+  .menu-grid {
+    grid-template-columns: repeat(4, 1fr);
+    gap: 10px;
+  }
+
+  .menu-item {
+    padding: 10px;
+  }
+
+  .menu-icon {
+    width: 28px;
+    height: 28px;
+    font-size: 14px;
+    margin-bottom: 4px;
+  }
+
+  .menu-title {
+    font-size: 11px;
+  }
+
+  .menu-description {
+    display: none;
+  }
+
+  .under-construction {
+    padding: 12px;
+    margin-top: 12px;
+  }
+
+  .under-construction h3 {
+    font-size: 14px;
+  }
+
+  .under-construction p {
+    font-size: 12px;
+  }
+
+  .loading-spinner {
+    width: 36px;
+    height: 36px;
+  }
+}
+
+/* ========================================
+   RESPONSIVE: TABLET LANDSCAPE
+   ======================================== */
+@media (min-width: 700px) and (max-height: 500px) and (orientation: landscape) {
+  .dashboard-container {
+    max-width: 100%;
+  }
+
+  .menu-grid {
+    grid-template-columns: repeat(5, 1fr);
+  }
+
+  .user-stats {
+    grid-template-columns: repeat(4, 1fr);
+  }
+}
