@@ -1,18 +1,22 @@
 /**
  * Splash Screen - Pantalla de inicio
  * Migrado desde Angular splash-screen.component
- * Optimizado para orientación horizontal y vertical
+ * Ahora con opciones: Jugar como invitado o Iniciar sesión
  */
 
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSessionStore } from '../../stores/sessionStore';
+import { IconPlay, IconUser, IconBook } from '../../components/ui/GameIcons';
 import './SplashScreen.css';
 
 function SplashScreen() {
   const [isExiting, setIsExiting] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
+  const [showOptions, setShowOptions] = useState(false);
   const navigate = useNavigate();
+  const { startAsGuest, isInitialized } = useSessionStore();
 
   // Detectar orientación
   useEffect(() => {
@@ -37,22 +41,56 @@ function SplashScreen() {
     };
   }, []);
 
-  const handleStart = useCallback(() => {
+  // Mostrar opciones al tocar la pantalla
+  const handleTap = useCallback(() => {
+    if (isAnimating) return;
+    setShowOptions(true);
+  }, [isAnimating]);
+
+  // Entrar como invitado
+  const handleGuestMode = useCallback(() => {
+    if (isAnimating) return;
+    
+    setIsAnimating(true);
+    setIsExiting(true);
+    
+    // Iniciar sesión como invitado
+    startAsGuest();
+
+    // Ir al dashboard
+    setTimeout(() => {
+      navigate('/dashboard');
+    }, 600);
+  }, [isAnimating, navigate, startAsGuest]);
+
+  // Ir al landing (para registro/login)
+  const handleEnter = useCallback(() => {
     if (isAnimating) return;
     
     setIsAnimating(true);
     setIsExiting(true);
 
-    // Esperar animación y navegar a la landing
     setTimeout(() => {
       navigate('/landing');
+    }, 600);
+  }, [isAnimating, navigate]);
+
+  // Ir a la wiki para más info
+  const handleWiki = useCallback(() => {
+    if (isAnimating) return;
+    
+    setIsAnimating(true);
+    setIsExiting(true);
+
+    setTimeout(() => {
+      navigate('/wiki');
     }, 600);
   }, [isAnimating, navigate]);
 
   return (
     <div 
       className={`splash-container ${isExiting ? 'exiting' : ''} ${isLandscape ? 'landscape' : 'portrait'}`}
-      onClick={handleStart}
+      onClick={!showOptions ? handleTap : undefined}
     >
       {/* Overlay cinematográfico */}
       <div className={`cinematic-overlay ${isExiting ? 'exit' : ''}`} />
@@ -76,20 +114,76 @@ function SplashScreen() {
             EXPLORADORES DE VALNOR
           </h1>
           
-          {/* Subtítulo */}
-          <p className={`valnor-sub ${isExiting ? 'exit' : ''}`}>
-            Toca para entrar
-          </p>
+          {/* Subtítulo o botones */}
+          {!showOptions ? (
+            <p className={`valnor-sub ${isExiting ? 'exit' : ''}`}>
+              Toca para comenzar
+            </p>
+          ) : (
+            <div className={`splash-options ${isExiting ? 'exit' : ''}`}>
+              {/* Botón principal - Modo Invitado */}
+              <button 
+                className="splash-btn splash-btn-primary"
+                onClick={handleGuestMode}
+              >
+                <span className="btn-icon"><IconPlay size={28} color="#1a1a2e" /></span>
+                <span className="btn-text">Modo Invitado</span>
+                <span className="btn-sub">Juega sin registro</span>
+              </button>
+              
+              {/* Botones secundarios */}
+              <div className="splash-btn-row">
+                <button 
+                  className="splash-btn splash-btn-secondary"
+                  onClick={handleEnter}
+                >
+                  <span className="btn-icon"><IconUser size={20} /></span>
+                  <span className="btn-text">Entrar / Registro</span>
+                </button>
+                
+                <button 
+                  className="splash-btn splash-btn-secondary"
+                  onClick={handleWiki}
+                >
+                  <span className="btn-icon"><IconBook size={20} /></span>
+                  <span className="btn-text">Wiki</span>
+                </button>
+              </div>
+            </div>
+          )}
         </div>
       </div>
 
       {/* Partículas decorativas */}
       <div className="particles">
-        <div className="particle"></div>
-        <div className="particle"></div>
-        <div className="particle"></div>
-        <div className="particle"></div>
-        <div className="particle"></div>
+        {/* Partículas doradas ascendentes */}
+        <div className="particle gold"></div>
+        <div className="particle gold"></div>
+        <div className="particle gold"></div>
+        <div className="particle gold"></div>
+        <div className="particle gold"></div>
+        <div className="particle gold"></div>
+        <div className="particle gold"></div>
+        <div className="particle gold"></div>
+        {/* Partículas de brillo */}
+        <div className="particle sparkle"></div>
+        <div className="particle sparkle"></div>
+        <div className="particle sparkle"></div>
+        <div className="particle sparkle"></div>
+        <div className="particle sparkle"></div>
+        <div className="particle sparkle"></div>
+        {/* Partículas flotantes laterales */}
+        <div className="particle float"></div>
+        <div className="particle float"></div>
+        <div className="particle float"></div>
+        <div className="particle float"></div>
+      </div>
+      
+      {/* Rayos de luz */}
+      <div className="light-rays">
+        <div className="ray"></div>
+        <div className="ray"></div>
+        <div className="ray"></div>
       </div>
     </div>
   );

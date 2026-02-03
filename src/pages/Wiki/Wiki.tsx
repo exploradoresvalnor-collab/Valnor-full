@@ -1,10 +1,29 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
+import {
+  IconPlay,
+  IconKey,
+  IconUser,
+  IconShield,
+  IconSword,
+  IconDungeon,
+  IconSkull,
+  IconTrophy,
+  IconGold,
+  IconGem,
+  IconHeart,
+  IconBook,
+  IconBackpack,
+  IconStaff,
+  IconBow,
+  IconDagger,
+  IconHeal,
+} from '../../components/ui/GameIcons';
 import './Wiki.css';
 
 interface WikiSection {
   id: string;
-  icon: string;
+  icon: React.ReactNode;
   title: string;
 }
 
@@ -13,13 +32,14 @@ const Wiki: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('intro');
 
   const wikiSections: WikiSection[] = [
-    { id: 'intro', icon: '📚', title: 'Introducción' },
-    { id: 'valnor-explorer', icon: '🗺️', title: 'Valnor Explorer' },
-    { id: 'survival-valnor', icon: '⚡', title: 'Survival Valnor' },
-    { id: 'pvp-arena', icon: '⚔️', title: 'PvP Arena' },
-    { id: 'economy', icon: '💰', title: 'Economía' },
-    { id: 'classes', icon: '🎭', title: 'Clases' },
-    { id: 'items', icon: '🎒', title: 'Items' },
+    { id: 'intro', icon: <IconBook size={18} />, title: 'Introducción' },
+    { id: 'how-to-play', icon: <IconPlay size={18} />, title: 'Cómo Jugar' },
+    { id: 'valnor-explorer', icon: <IconDungeon size={18} />, title: 'Valnor Explorer' },
+    { id: 'survival-valnor', icon: <IconSkull size={18} />, title: 'Survival Valnor' },
+    { id: 'pvp-arena', icon: <IconSword size={18} />, title: 'PvP Arena' },
+    { id: 'economy', icon: <IconGold size={18} />, title: 'Economía' },
+    { id: 'classes', icon: <IconUser size={18} />, title: 'Clases' },
+    { id: 'items', icon: <IconBackpack size={18} />, title: 'Items' },
   ];
 
   const scrollToSection = (sectionId: string) => {
@@ -51,7 +71,7 @@ const Wiki: React.FC = () => {
         {/* Sidebar */}
         <aside className="wiki-sidebar">
           <div className="sidebar-content">
-            <h3 className="sidebar-title">📚 Contenido</h3>
+            <h3 className="sidebar-title"><IconBook size={18} /> Contenido</h3>
             <nav className="sidebar-nav">
               {wikiSections.map((section) => (
                 <button
@@ -59,7 +79,8 @@ const Wiki: React.FC = () => {
                   onClick={() => scrollToSection(section.id)}
                   className={`sidebar-link ${activeSection === section.id ? 'active' : ''}`}
                 >
-                  {section.icon} {section.title}
+                  <span className="sidebar-icon">{section.icon}</span>
+                  <span>{section.title}</span>
                 </button>
               ))}
             </nav>
@@ -71,7 +92,7 @@ const Wiki: React.FC = () => {
           {/* Hero Section */}
           <section id="intro" className="wiki-section hero-section">
             <div className="hero-card">
-              <h1 className="hero-title">📚 Wiki Oficial</h1>
+              <h1 className="hero-title"><IconBook size={32} /> Wiki Oficial</h1>
               <p className="hero-description">
                 Bienvenido a la wiki oficial de <strong className="text-cyan">Valnor</strong>,
                 el RPG multiplataforma donde tu <strong className="text-purple">skill</strong> tiene
@@ -81,6 +102,183 @@ const Wiki: React.FC = () => {
                 Aquí encontrarás toda la información sobre los modos de juego, sistema de evolución,
                 monetización, ventajas competitivas y mucho más.
               </p>
+            </div>
+          </section>
+
+          {/* ============================================ */}
+          {/* NUEVA SECCIÓN: CÓMO JUGAR                   */}
+          {/* ============================================ */}
+          <section id="how-to-play" className="wiki-section">
+            <div className="section-header gold">
+              <div className="section-icon"><IconPlay size={28} color="#ffd700" /></div>
+              <h2 className="section-title gold">Cómo Jugar</h2>
+            </div>
+            <div className="section-description">
+              <p>
+                Valnor ofrece diferentes formas de comenzar tu aventura. Elige la que mejor 
+                se adapte a tus necesidades y empieza a explorar el mundo.
+              </p>
+            </div>
+            
+            {/* Modos de acceso */}
+            <div className="access-modes-grid">
+              {/* Modo Invitado */}
+              <div className="access-card guest">
+                <div className="access-header">
+                  <div className="access-icon"><IconPlay size={32} color="#27ae60" /></div>
+                  <h3>Modo Invitado</h3>
+                  <span className="access-badge free">Gratis • Inmediato</span>
+                </div>
+                <div className="access-content">
+                  <p className="access-description">
+                    ¡Empieza a jugar al instante sin necesidad de registro! Perfecto para 
+                    probar el juego y decidir si quieres continuar.
+                  </p>
+                  <ul className="access-features">
+                    <li><IconHeart size={14} /> Acceso completo al modo historia</li>
+                    <li><IconSkull size={14} /> Survival mode disponible</li>
+                    <li><IconDungeon size={14} /> Explora todas las dungeons</li>
+                    <li><IconBackpack size={14} /> Guarda tu progreso localmente</li>
+                  </ul>
+                  <div className="access-limitations">
+                    <h4>Limitaciones:</h4>
+                    <ul>
+                      <li>Sin acceso al Marketplace (comercio entre jugadores)</li>
+                      <li>Sin Rankings globales</li>
+                      <li>Progreso solo guardado en este dispositivo</li>
+                      <li>Sin sincronización entre dispositivos</li>
+                    </ul>
+                  </div>
+                </div>
+                <button className="access-action-btn guest" onClick={() => navigate('/splash')}>
+                  <IconPlay size={18} /> Jugar como Invitado
+                </button>
+              </div>
+
+              {/* Registro */}
+              <div className="access-card register">
+                <div className="access-header">
+                  <div className="access-icon"><IconUser size={32} color="#9b59b6" /></div>
+                  <h3>Crear Cuenta</h3>
+                  <span className="access-badge premium">Recomendado</span>
+                </div>
+                <div className="access-content">
+                  <p className="access-description">
+                    Crea tu cuenta gratuita y desbloquea todas las funcionalidades de Valnor.
+                    ¡Tu progreso se sincroniza en todos tus dispositivos!
+                  </p>
+                  <ul className="access-features">
+                    <li><IconShield size={14} /> Todo el contenido del modo invitado</li>
+                    <li><IconGold size={14} /> Acceso al Marketplace</li>
+                    <li><IconTrophy size={14} /> Rankings y competiciones</li>
+                    <li><IconGem size={14} /> Sincronización cloud</li>
+                    <li><IconSword size={14} /> PvP Arena competitivo</li>
+                  </ul>
+                  <div className="access-benefits">
+                    <h4>Beneficios exclusivos:</h4>
+                    <ul>
+                      <li>Guarda múltiples personajes</li>
+                      <li>Comercia items con otros jugadores</li>
+                      <li>Participa en eventos especiales</li>
+                      <li>Gana VAL (moneda con valor real)</li>
+                    </ul>
+                  </div>
+                </div>
+                <button className="access-action-btn register" onClick={() => navigate('/auth/register')}>
+                  <IconUser size={18} /> Crear Cuenta Gratis
+                </button>
+              </div>
+
+              {/* Iniciar Sesión */}
+              <div className="access-card login">
+                <div className="access-header">
+                  <div className="access-icon"><IconKey size={32} color="#3498db" /></div>
+                  <h3>Iniciar Sesión</h3>
+                  <span className="access-badge returning">Usuarios existentes</span>
+                </div>
+                <div className="access-content">
+                  <p className="access-description">
+                    ¿Ya tienes cuenta? Inicia sesión para continuar tu aventura donde 
+                    la dejaste. Todo tu progreso te está esperando.
+                  </p>
+                  <ul className="access-features">
+                    <li><IconHeart size={14} /> Recupera todos tus personajes</li>
+                    <li><IconBackpack size={14} /> Accede a tu inventario</li>
+                    <li><IconGold size={14} /> Revisa tu balance de VAL</li>
+                    <li><IconTrophy size={14} /> Consulta tu ranking</li>
+                  </ul>
+                  <div className="access-info">
+                    <p>
+                      <strong>¿Olvidaste tu contraseña?</strong><br />
+                      No te preocupes, puedes recuperarla fácilmente desde la pantalla de login.
+                    </p>
+                  </div>
+                </div>
+                <button className="access-action-btn login" onClick={() => navigate('/auth/login')}>
+                  <IconKey size={18} /> Iniciar Sesión
+                </button>
+              </div>
+            </div>
+
+            {/* Comparación rápida */}
+            <div className="comparison-table-wrapper">
+              <h3 className="comparison-title">Comparación de Modos</h3>
+              <table className="comparison-table">
+                <thead>
+                  <tr>
+                    <th>Característica</th>
+                    <th>Invitado</th>
+                    <th>Registrado</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td>Modo Historia</td>
+                    <td className="yes">✓</td>
+                    <td className="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>Survival Mode</td>
+                    <td className="yes">✓</td>
+                    <td className="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>Dungeons</td>
+                    <td className="yes">✓</td>
+                    <td className="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>PvP Arena</td>
+                    <td className="limited">Local</td>
+                    <td className="yes">✓ Online</td>
+                  </tr>
+                  <tr>
+                    <td>Marketplace</td>
+                    <td className="no">✗</td>
+                    <td className="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>Rankings Globales</td>
+                    <td className="no">✗</td>
+                    <td className="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>Sincronización Cloud</td>
+                    <td className="no">✗</td>
+                    <td className="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>Ganar VAL</td>
+                    <td className="no">✗</td>
+                    <td className="yes">✓</td>
+                  </tr>
+                  <tr>
+                    <td>Eventos Especiales</td>
+                    <td className="limited">Algunos</td>
+                    <td className="yes">✓ Todos</td>
+                  </tr>
+                </tbody>
+              </table>
             </div>
           </section>
 

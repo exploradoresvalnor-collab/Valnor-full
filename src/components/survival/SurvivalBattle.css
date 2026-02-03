@@ -1,0 +1,526 @@
+/**
+ * SurvivalBattle.css - Estilos para el modo Survival
+ */
+
+.survival-battle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a0f2e 50%, #0f1a2e 100%);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* Header */
+.survival-battle .battle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: rgba(0, 0, 0, 0.5);
+  border-bottom: 2px solid rgba(139, 92, 246, 0.4);
+}
+
+.wave-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.wave-number {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #a78bfa;
+  text-shadow: 0 0 10px rgba(139, 92, 246, 0.5);
+}
+
+.wave-number.boss {
+  color: #ef4444;
+  text-shadow: 0 0 15px rgba(239, 68, 68, 0.7);
+  animation: pulse-text 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-text {
+  from { transform: scale(1); }
+  to { transform: scale(1.05); }
+}
+
+.enemies-count {
+  font-size: 0.85rem;
+  color: #9ca3af;
+}
+
+.battle-stats {
+  display: flex;
+  gap: 1.5rem;
+}
+
+.battle-stats .stat {
+  font-size: 1rem;
+  color: #e0e0e0;
+}
+
+.survival-battle .exit-btn {
+  background: rgba(239, 68, 68, 0.2);
+  border: 1px solid rgba(239, 68, 68, 0.5);
+  color: #ef4444;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.survival-battle .exit-btn:hover {
+  background: rgba(239, 68, 68, 0.4);
+}
+
+/* Health Bar */
+.team-health-bar {
+  padding: 0.75rem 1.5rem;
+  background: rgba(0, 0, 0, 0.3);
+}
+
+.health-info {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-bottom: 0.5rem;
+  font-size: 0.9rem;
+  color: #ccc;
+}
+
+.hp-value {
+  margin-left: auto;
+  font-weight: 600;
+}
+
+.health-track {
+  height: 16px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 8px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.survival-battle .health-fill {
+  height: 100%;
+  border-radius: 8px;
+  transition: all 0.3s ease;
+  position: relative;
+}
+
+.survival-battle .health-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent);
+}
+
+/* Active Power-Ups */
+.active-powerups {
+  display: flex;
+  gap: 0.5rem;
+  padding: 0.5rem 1.5rem;
+  flex-wrap: wrap;
+}
+
+.active-buff {
+  background: rgba(139, 92, 246, 0.3);
+  border: 1px solid rgba(139, 92, 246, 0.6);
+  padding: 0.3rem 0.6rem;
+  border-radius: 6px;
+  font-size: 0.8rem;
+  color: #d4a5ff;
+  animation: glow-buff 1s ease-in-out infinite alternate;
+}
+
+@keyframes glow-buff {
+  from { box-shadow: 0 0 5px rgba(139, 92, 246, 0.3); }
+  to { box-shadow: 0 0 10px rgba(139, 92, 246, 0.6); }
+}
+
+/* Power-Up Drop */
+.powerup-drop {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  background: linear-gradient(145deg, rgba(139, 92, 246, 0.9), rgba(168, 85, 247, 0.9));
+  border: 2px solid #a855f7;
+  border-radius: 16px;
+  padding: 1.5rem 2rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  animation: bounce-drop 0.5s ease infinite alternate;
+  z-index: 10;
+}
+
+@keyframes bounce-drop {
+  from { transform: translate(-50%, -50%) scale(1); }
+  to { transform: translate(-50%, -55%) scale(1.05); }
+}
+
+.drop-icon {
+  font-size: 2.5rem;
+}
+
+.drop-name {
+  font-size: 1.1rem;
+  font-weight: 600;
+  color: white;
+}
+
+.drop-hint {
+  font-size: 0.75rem;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+.powerup-drop:hover {
+  transform: translate(-50%, -50%) scale(1.1);
+  box-shadow: 0 0 30px rgba(168, 85, 247, 0.8);
+}
+
+/* Battle Area */
+.survival-battle .battle-area {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 250px 1fr;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  overflow: hidden;
+}
+
+/* Team Panel */
+.survival-battle .team-panel {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.survival-battle .team-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  color: #3498db;
+  font-size: 0.95rem;
+}
+
+.survival-battle .team-member {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.5rem 0.75rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  margin-bottom: 0.5rem;
+}
+
+.survival-battle .member-name {
+  color: #fff;
+  font-size: 0.9rem;
+}
+
+.survival-battle .member-level {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+/* Battle Log */
+.survival-battle .battle-log {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+}
+
+.survival-battle .battle-log h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  color: #f39c12;
+  font-size: 0.95rem;
+}
+
+.survival-battle .log-container {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.25rem;
+}
+
+.survival-battle .log-entry {
+  padding: 0.4rem 0.6rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #ccc;
+  animation: fadeIn 0.2s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.survival-battle .log-entry.attack {
+  border-left: 2px solid #3498db;
+  color: #74b9ff;
+}
+
+.survival-battle .log-entry.damage {
+  border-left: 2px solid #e74c3c;
+  color: #ff7675;
+}
+
+.survival-battle .log-entry.kill {
+  border-left: 2px solid #2ecc71;
+  color: #55efc4;
+}
+
+.survival-battle .log-entry.wave {
+  border-left: 2px solid #f39c12;
+  color: #ffeaa7;
+  font-weight: 500;
+}
+
+.survival-battle .log-entry.boss {
+  border-left: 2px solid #9b59b6;
+  color: #d4a5ff;
+  font-weight: 600;
+  background: rgba(155, 89, 182, 0.2);
+}
+
+.survival-battle .log-entry.powerup {
+  border-left: 2px solid #a855f7;
+  color: #d4a5ff;
+}
+
+.survival-battle .log-entry.gameover {
+  border-left: 2px solid #e74c3c;
+  color: #ff7675;
+  font-weight: 600;
+  background: rgba(231, 76, 60, 0.2);
+}
+
+/* Game Over Modal */
+.gameover-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.85);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+  animation: fadeIn 0.3s ease;
+}
+
+.gameover-modal {
+  background: linear-gradient(145deg, #1e1e2e, #2d2d44);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 420px;
+  text-align: center;
+  border: 2px solid rgba(239, 68, 68, 0.4);
+  box-shadow: 0 0 40px rgba(239, 68, 68, 0.3);
+}
+
+.gameover-icon {
+  margin-bottom: 1rem;
+}
+
+.gameover-modal h2 {
+  margin: 0 0 1.5rem 0;
+  color: #e74c3c;
+  font-size: 1.6rem;
+}
+
+.final-stats {
+  display: flex;
+  justify-content: center;
+  gap: 1.5rem;
+  margin-bottom: 1.5rem;
+}
+
+.final-stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.final-stat .stat-icon {
+  font-size: 1.5rem;
+}
+
+.final-stat .stat-value {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: #fff;
+}
+
+.final-stat .stat-label {
+  font-size: 0.75rem;
+  color: #888;
+}
+
+.gameover-modal .rewards-section {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  margin-bottom: 1.5rem;
+}
+
+.gameover-modal .rewards-section h3 {
+  margin: 0 0 0.75rem 0;
+  font-size: 1rem;
+  color: #f39c12;
+}
+
+.gameover-modal .rewards-grid {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+}
+
+.gameover-modal .reward-item {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  font-size: 1.2rem;
+  font-weight: 600;
+  color: #fff;
+}
+
+.bonus-items {
+  margin-top: 0.75rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.bonus-item {
+  color: #d4a5ff;
+  font-size: 0.9rem;
+}
+
+.survival-battle .continue-btn {
+  width: 100%;
+  padding: 0.875rem;
+  background: linear-gradient(135deg, #8b5cf6, #7c3aed);
+  border: none;
+  border-radius: 10px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.survival-battle .continue-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(139, 92, 246, 0.5);
+}
+
+/* Confirm Modal */
+.survival-battle .confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 30;
+}
+
+.survival-battle .confirm-modal {
+  background: linear-gradient(145deg, #1e1e2e, #2d2d44);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 320px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.survival-battle .confirm-modal h3 {
+  margin: 0 0 0.5rem 0;
+  color: #f39c12;
+}
+
+.survival-battle .confirm-modal p {
+  margin: 0 0 1.5rem 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.survival-battle .confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.survival-battle .confirm-actions button {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.survival-battle .cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.survival-battle .confirm-btn.danger {
+  background: #e74c3c;
+  border: none;
+  color: white;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .survival-battle .battle-area {
+    grid-template-columns: 1fr;
+  }
+  
+  .survival-battle .team-panel {
+    display: none;
+  }
+  
+  .final-stats {
+    gap: 1rem;
+  }
+  
+  .final-stat .stat-value {
+    font-size: 1.2rem;
+  }
+}

@@ -1,0 +1,185 @@
+/**
+ * EnergyBar - Estilos para barra de energía con regeneración
+ * Diseño compacto que se integra con la barra de recursos del header
+ */
+
+.energy-bar-container {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+  padding: 0.5rem 0.75rem;
+  background: linear-gradient(135deg, rgba(52, 152, 219, 0.15) 0%, rgba(20, 20, 40, 0.6) 100%);
+  border: 1px solid rgba(52, 152, 219, 0.3);
+  border-radius: 10px;
+  min-width: 130px;
+  max-width: 160px;
+  transition: all 0.2s ease;
+  overflow: hidden;
+}
+
+.energy-bar-container:hover {
+  border-color: rgba(52, 152, 219, 0.5);
+  box-shadow: 0 4px 15px rgba(52, 152, 219, 0.2);
+  transform: translateY(-2px);
+}
+
+.energy-bar-container.full {
+  border-color: rgba(46, 204, 113, 0.4);
+  background: linear-gradient(135deg, rgba(46, 204, 113, 0.15) 0%, rgba(20, 20, 40, 0.6) 100%);
+}
+
+.energy-bar-container.full:hover {
+  border-color: rgba(46, 204, 113, 0.6);
+  box-shadow: 0 4px 15px rgba(46, 204, 113, 0.25);
+}
+
+.energy-bar-main {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.energy-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  min-width: 28px;
+  color: #3498db;
+  background: rgba(52, 152, 219, 0.15);
+  border-radius: 6px;
+  flex-shrink: 0;
+}
+
+.energy-bar-container.full .energy-icon {
+  color: #2ecc71;
+  background: rgba(46, 204, 113, 0.2);
+}
+
+.energy-info {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.energy-values {
+  display: flex;
+  align-items: baseline;
+  gap: 0.1rem;
+  font-weight: 700;
+}
+
+.energy-current {
+  font-size: 1.1rem;
+  color: #fff;
+}
+
+.energy-separator {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.energy-max {
+  font-size: 0.85rem;
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.energy-bar-track {
+  width: 100%;
+  height: 6px;
+  background: rgba(0, 0, 0, 0.4);
+  border-radius: 3px;
+  overflow: hidden;
+}
+
+.energy-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2980b9, #3498db);
+  border-radius: 3px;
+  transition: width 0.3s ease;
+}
+
+.energy-bar-container.full .energy-bar-fill {
+  background: linear-gradient(90deg, #27ae60, #2ecc71);
+}
+
+/* Regeneración */
+.energy-regen {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding-left: calc(28px + 0.5rem); /* alinear con info (icon width + gap) */
+}
+
+.regen-progress {
+  flex: 1;
+  height: 3px;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.regen-progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #e67e22, #f39c12);
+  border-radius: 2px;
+  transition: width 0.1s linear;
+}
+
+.regen-timer {
+  font-size: 0.65rem;
+  color: #f39c12;
+  white-space: nowrap;
+  font-weight: 600;
+}
+
+/* Badge de lleno */
+.energy-full-badge {
+  padding-left: calc(28px + 0.5rem);
+}
+
+.energy-full-badge span {
+  font-size: 0.6rem;
+  font-weight: 700;
+  color: #2ecc71;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .energy-bar-container {
+    min-width: 110px;
+    padding: 0.4rem 0.6rem;
+  }
+  
+  .energy-icon {
+    width: 24px;
+    height: 24px;
+    min-width: 24px;
+  }
+  
+  .energy-current {
+    font-size: 0.95rem;
+  }
+  
+  .energy-max {
+    font-size: 0.75rem;
+  }
+  
+  .energy-bar-track {
+    height: 5px;
+  }
+  
+  .regen-timer {
+    font-size: 0.6rem;
+  }
+  
+  .energy-regen,
+  .energy-full-badge {
+    padding-left: calc(24px + 0.5rem);
+  }
+}

@@ -26,6 +26,11 @@
   background-clip: text;
 }
 
+/* Guest Banner */
+.marketplace-guest-banner {
+  padding: 1rem 2rem 0;
+}
+
 /* Tabs */
 .marketplace-tabs {
   display: flex;

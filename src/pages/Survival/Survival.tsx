@@ -1,6 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { usePlayerStore } from '../../stores/playerStore';
+import { useActiveTeam } from '../../stores/teamStore';
+import { SurvivalBattle } from '../../components/survival';
 import './Survival.css';
 
 interface SurvivalStats {
@@ -54,8 +57,14 @@ const weeklyLeaderboard: LeaderboardEntry[] = [
 const Survival: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  
+  // Conectamos con los stores
+  const { energy, maxEnergy, useEnergy, addGold, addExperience } = usePlayerStore();
+  const team = useActiveTeam();
+  
   const [stats] = useState<SurvivalStats>(mockStats);
   const [showRulesModal, setShowRulesModal] = useState(false);
+  const [showBattle, setShowBattle] = useState(false);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -79,13 +88,35 @@ const Survival: React.FC = () => {
     return `${mins}m`;
   };
 
-  const userEnergy = user?.energia || 0;
+  const userEnergy = energy; // Ahora viene del store
   const energyCost = 15;
-  const canPlay = userEnergy >= energyCost;
+  const canPlay = userEnergy >= energyCost && team.length > 0;
 
   const handleStartGame = () => {
-    console.log('Iniciando partida de Survival...');
-    // Aquí iría la navegación al juego real
+    if (!canPlay) return;
+    
+    // Verificar equipo
+    if (team.length === 0) {
+      alert('¡Necesitas un equipo para jugar Survival!');
+      return;
+    }
+    
+    // Consumir energía
+    useEnergy(energyCost);
+    
+    // Iniciar batalla
+    setShowBattle(true);
+  };
+
+  const handleBattleComplete = (result: { waveReached: number; enemiesKilled: number; timeAlive: number; rewards: { gold: number; exp: number; items: string[] } }) => {
+    // Dar recompensas
+    addGold(result.rewards.gold);
+    addExperience(result.rewards.exp);
+    setShowBattle(false);
+  };
+
+  const handleBattleExit = () => {
+    setShowBattle(false);
   };
 
   return (
@@ -99,7 +130,7 @@ const Survival: React.FC = () => {
         <div className="energy-display">
           <span className="energy-icon">⚡</span>
           <span className="energy-amount">{userEnergy}</span>
-          <span className="energy-max">/{user?.energiaMaxima || 100}</span>
+          <span className="energy-max">/{maxEnergy}</span>
         </div>
       </header>
 
@@ -124,6 +155,11 @@ const Survival: React.FC = () => {
                     <span className="btn-icon">⚔️</span>
                     <span>Iniciar Partida</span>
                     <span className="btn-cost">⚡ {energyCost}</span>
+                  </>
+                ) : team.length === 0 ? (
+                  <>
+                    <span className="btn-icon">👥</span>
+                    <span>Sin Equipo</span>
                   </>
                 ) : (
                   <>
@@ -299,6 +335,14 @@ const Survival: React.FC = () => {
             </button>
           </div>
         </div>
+      )}
+
+      {/* Battle Screen */}
+      {showBattle && (
+        <SurvivalBattle
+          onComplete={handleBattleComplete}
+          onExit={handleBattleExit}
+        />
       )}
     </div>
   );

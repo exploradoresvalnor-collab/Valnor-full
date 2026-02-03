@@ -328,3 +328,52 @@ p {
     font-size: 0.9rem;
   }
 }
+
+/* === TRANSICIONES DE PÁGINA === */
+.page-transition-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+}
+
+.page-content {
+  animation: pageEnter 0.4s ease-out forwards;
+}
+
+@keyframes pageEnter {
+  from {
+    opacity: 0;
+    transform: translateY(10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+@keyframes pageFadeIn {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
+}
+
+/* Variante de transición suave */
+.smooth-transition {
+  animation: smoothEnter 0.5s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+@keyframes smoothEnter {
+  from {
+    opacity: 0;
+    filter: blur(4px);
+    transform: scale(0.98);
+  }
+  to {
+    opacity: 1;
+    filter: blur(0px);
+    transform: scale(1);
+  }
+}

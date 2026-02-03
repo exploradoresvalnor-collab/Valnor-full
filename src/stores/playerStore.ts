@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
+import { useShallow } from 'zustand/shallow';
 import type { CharacterClass, CharacterStats } from '../types';
 
 export interface PlayerState {
@@ -46,6 +47,11 @@ export interface PlayerState {
   // Recursos
   gold: number;
   gems: number;
+  tickets: number; // boletos para mazmorras
+  energy: number;
+  maxEnergy: number;
+  lastEnergyUpdate: number; // timestamp de última actualización
+  energyRegenMinutes: number; // minutos para regenerar 1 energía
 }
 
 export interface PlayerActions {
@@ -89,6 +95,11 @@ export interface PlayerActions {
   removeGold: (amount: number) => boolean;
   addGems: (amount: number) => void;
   removeGems: (amount: number) => boolean;
+  addTickets: (amount: number) => void;
+  useTickets: (amount: number) => boolean;
+  addEnergy: (amount: number) => void;
+  useEnergy: (amount: number) => boolean;
+  updateEnergyRegen: () => void; // calcula y aplica regeneración
 }
 
 const defaultStats: CharacterStats = {
@@ -138,6 +149,11 @@ const initialState: PlayerState = {
   
   gold: 0,
   gems: 0,
+  tickets: 10, // boletos iniciales
+  energy: 50,
+  maxEnergy: 50,
+  lastEnergyUpdate: Date.now(),
+  energyRegenMinutes: 5, // 1 energía cada 5 minutos
 };
 
 // Función para calcular XP requerido
@@ -298,6 +314,55 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           }
           return false;
         },
+        
+        addTickets: (amount) => set((state) => ({
+          tickets: state.tickets + amount,
+        })),
+        
+        useTickets: (amount) => {
+          const state = get();
+          if (state.tickets >= amount) {
+            set({ tickets: state.tickets - amount });
+            return true;
+          }
+          return false;
+        },
+        
+        addEnergy: (amount) => set((state) => ({
+          energy: Math.min(state.energy + amount, state.maxEnergy),
+        })),
+        
+        useEnergy: (amount) => {
+          const state = get();
+          if (state.energy >= amount) {
+            set({ energy: state.energy - amount, lastEnergyUpdate: Date.now() });
+            return true;
+          }
+          return false;
+        },
+        
+        updateEnergyRegen: () => {
+          const state = get();
+          if (state.energy >= state.maxEnergy) {
+            // Ya está llena, actualizar timestamp
+            set({ lastEnergyUpdate: Date.now() });
+            return;
+          }
+          
+          const now = Date.now();
+          const elapsed = now - state.lastEnergyUpdate;
+          const regenInterval = state.energyRegenMinutes * 60 * 1000; // en ms
+          const energyToAdd = Math.floor(elapsed / regenInterval);
+          
+          if (energyToAdd > 0) {
+            const newEnergy = Math.min(state.energy + energyToAdd, state.maxEnergy);
+            const remainder = elapsed % regenInterval;
+            set({ 
+              energy: newEnergy, 
+              lastEnergyUpdate: now - remainder // mantener el tiempo sobrante
+            });
+          }
+        },
       }),
       {
         name: 'valnor-player-storage',
@@ -307,6 +372,10 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           experience: state.experience,
           gold: state.gold,
           gems: state.gems,
+          energy: state.energy,
+          maxEnergy: state.maxEnergy,
+          lastEnergyUpdate: state.lastEnergyUpdate,
+          energyRegenMinutes: state.energyRegenMinutes,
         }),
       }
     ),
@@ -314,22 +383,56 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
   )
 );
 
-// Selectores helper
-export const usePlayerHealth = () => usePlayerStore((state) => ({
-  current: state.currentHealth,
-  max: state.maxHealth,
-  percentage: (state.currentHealth / state.maxHealth) * 100,
-}));
+// Selectores helper - usando shallow para evitar re-renders infinitos
 
-export const usePlayerMana = () => usePlayerStore((state) => ({
-  current: state.currentMana,
-  max: state.maxMana,
-  percentage: (state.currentMana / state.maxMana) * 100,
-}));
+export const usePlayerHealth = () => usePlayerStore(
+  useShallow((state) => ({
+    current: state.currentHealth,
+    max: state.maxHealth,
+    percentage: (state.currentHealth / state.maxHealth) * 100,
+  }))
+);
 
-export const usePlayerLevel = () => usePlayerStore((state) => ({
-  level: state.level,
-  exp: state.experience,
-  expRequired: state.experienceToNextLevel,
-  percentage: (state.experience / state.experienceToNextLevel) * 100,
-}));
+export const usePlayerMana = () => usePlayerStore(
+  useShallow((state) => ({
+    current: state.currentMana,
+    max: state.maxMana,
+    percentage: (state.currentMana / state.maxMana) * 100,
+  }))
+);
+
+export const usePlayerLevel = () => usePlayerStore(
+  useShallow((state) => ({
+    level: state.level,
+    exp: state.experience,
+    expRequired: state.experienceToNextLevel,
+    percentage: (state.experience / state.experienceToNextLevel) * 100,
+  }))
+);
+
+export const usePlayerResources = () => usePlayerStore(
+  useShallow((state) => ({
+    gold: state.gold,
+    gems: state.gems,
+  }))
+);
+
+// Selectores para Profile page
+export const usePlayerStats = () => usePlayerStore(
+  useShallow((state) => ({
+    battlesWon: 0, // TODO: agregar al state real
+    battlesLost: 0,
+    dungeonsCompleted: 0,
+    maxSurvivalWave: 0,
+    charactersOwned: 1,
+    level: state.level,
+  }))
+);
+
+export const usePlayerWallet = () => usePlayerStore(
+  useShallow((state) => ({
+    gold: state.gold,
+    gems: state.gems,
+    tickets: state.tickets,
+  }))
+);

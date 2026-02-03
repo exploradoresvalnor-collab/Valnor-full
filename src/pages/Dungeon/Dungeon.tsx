@@ -1,6 +1,10 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { usePlayerStore } from '../../stores/playerStore';
+import { useActiveTeam } from '../../stores/teamStore';
+import { useDungeonStore, type Dungeon as DungeonType } from '../../stores/dungeonStore';
+import { DungeonBattle } from '../../components/dungeons';
 import './Dungeon.css';
 
 interface DungeonInfo {
@@ -182,8 +186,16 @@ const difficultyNames = {
 const Dungeon: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  
+  // Conectamos con los stores
+  const { level: playerLevel, tickets, energy, maxEnergy, addGold, addExperience, useTickets, useEnergy } = usePlayerStore();
+  const team = useActiveTeam();
+  const { dungeons: storeDungeons, selectDungeon, selectedDungeon: storeDungeon } = useDungeonStore();
+  
   const [selectedDungeon, setSelectedDungeon] = useState<DungeonInfo | null>(null);
   const [showEnterModal, setShowEnterModal] = useState(false);
+  const [showBattle, setShowBattle] = useState(false);
+  const [battleDungeon, setBattleDungeon] = useState<DungeonType | null>(null);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -200,8 +212,8 @@ const Dungeon: React.FC = () => {
     );
   }
 
-  const userLevel = user?.personajes?.[0]?.nivel || 1;
-  const userEnergy = user?.energia || 0;
+  const userLevel = playerLevel; // Ahora viene del store
+  const userEnergy = energy; // Ahora viene del store
 
   const canEnter = (dungeon: DungeonInfo) => {
     return userLevel >= dungeon.nivelMinimo && userEnergy >= dungeon.costoEnergia;
@@ -215,9 +227,55 @@ const Dungeon: React.FC = () => {
 
   const handleEnterDungeon = () => {
     if (!selectedDungeon) return;
-    console.log(`Entrando a ${selectedDungeon.nombre}`);
+    
+    // Verificar si hay equipo activo
+    if (team.length === 0) {
+      alert('¡Necesitas un equipo para entrar a la dungeon!');
+      return;
+    }
+    
+    // Usar energía
+    useEnergy(selectedDungeon.costoEnergia);
+    
+    // Convertir dungeon local a formato del store para el combate
+    const dungeonForBattle: DungeonType = {
+      id: selectedDungeon.id,
+      name: selectedDungeon.nombre,
+      description: selectedDungeon.descripcion,
+      difficulty: selectedDungeon.dificultad === 'extremo' ? 'legendary' : 
+                  selectedDungeon.dificultad === 'dificil' ? 'hard' :
+                  selectedDungeon.dificultad === 'normal' ? 'medium' : 'easy',
+      levelRequired: selectedDungeon.nivelMinimo,
+      ticketCost: 1,
+      energyCost: selectedDungeon.costoEnergia,
+      waves: selectedDungeon.pisos,
+      bossName: selectedDungeon.boss,
+      rewards: {
+        gold: { min: selectedDungeon.recompensas.valMin, max: selectedDungeon.recompensas.valMax },
+        exp: { min: selectedDungeon.recompensas.evoMin, max: selectedDungeon.recompensas.evoMax },
+        items: selectedDungeon.recompensas.items,
+      },
+      enemies: selectedDungeon.enemigos,
+    };
+    
+    setBattleDungeon(dungeonForBattle);
     setShowEnterModal(false);
-    // Aquí iría la navegación al combate
+    setShowBattle(true);
+  };
+
+  const handleBattleComplete = (result: { victory: boolean; rewards: { gold: number; exp: number; items: string[] } }) => {
+    if (result.victory) {
+      // Dar recompensas
+      addGold(result.rewards.gold);
+      addExperience(result.rewards.exp);
+    }
+    setShowBattle(false);
+    setBattleDungeon(null);
+  };
+
+  const handleBattleExit = () => {
+    setShowBattle(false);
+    setBattleDungeon(null);
   };
 
   return (
@@ -427,6 +485,12 @@ const Dungeon: React.FC = () => {
               </span>
             </div>
 
+            {team.length === 0 && (
+              <div className="modal-warning team-warning">
+                ⚠️ ¡No tienes equipo activo! Ve al Dashboard para configurar tu equipo.
+              </div>
+            )}
+
             <div className="modal-warning">
               ⚠️ Si abandonas la dungeon, perderás todo el progreso y la energía consumida.
             </div>
@@ -435,12 +499,25 @@ const Dungeon: React.FC = () => {
               <button className="cancel-btn" onClick={() => setShowEnterModal(false)}>
                 Cancelar
               </button>
-              <button className="confirm-btn" onClick={handleEnterDungeon}>
+              <button 
+                className="confirm-btn" 
+                onClick={handleEnterDungeon}
+                disabled={team.length === 0}
+              >
                 ⚔️ ¡Adelante!
               </button>
             </div>
           </div>
         </div>
+      )}
+
+      {/* Battle Screen */}
+      {showBattle && battleDungeon && (
+        <DungeonBattle
+          dungeon={battleDungeon}
+          onComplete={handleBattleComplete}
+          onExit={handleBattleExit}
+        />
       )}
     </div>
   );

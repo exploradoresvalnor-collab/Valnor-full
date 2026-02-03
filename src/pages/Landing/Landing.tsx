@@ -120,7 +120,7 @@ const Landing = () => {
   }, []);
 
   return (
-    <>
+    <div className="smooth-transition">
       {/* NAV */}
       <nav className="landing-nav">
         <div className="nav-container">
@@ -227,7 +227,7 @@ const Landing = () => {
           </div>
         </div>
       </section>
-    </>
+    </div>
   );
 };
 

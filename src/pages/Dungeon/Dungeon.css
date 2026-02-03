@@ -479,6 +479,18 @@
   margin: 1rem 0;
 }
 
+.modal-warning.team-warning {
+  background: rgba(239, 68, 68, 0.15);
+  border-color: rgba(239, 68, 68, 0.5);
+  color: #f87171;
+}
+
+.confirm-btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+  background: #555;
+}
+
 .modal-actions {
   display: flex;
   gap: 1rem;

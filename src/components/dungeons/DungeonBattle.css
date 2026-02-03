@@ -1,0 +1,563 @@
+/**
+ * DungeonBattle.css - Estilos para la pantalla de combate automático
+ */
+
+.dungeon-battle {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: linear-gradient(135deg, #1a1a2e 0%, #16213e 50%, #0f3460 100%);
+  display: flex;
+  flex-direction: column;
+  z-index: 1000;
+  overflow: hidden;
+}
+
+/* Header */
+.battle-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 1rem 1.5rem;
+  background: rgba(0, 0, 0, 0.4);
+  border-bottom: 2px solid rgba(255, 215, 0, 0.3);
+}
+
+.dungeon-info h2 {
+  margin: 0;
+  font-size: 1.4rem;
+  color: #ffd700;
+  text-shadow: 0 0 10px rgba(255, 215, 0, 0.5);
+}
+
+.wave-indicator {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: #e0e0e0;
+  font-size: 0.9rem;
+  margin-top: 0.25rem;
+}
+
+.exit-btn {
+  background: rgba(231, 76, 60, 0.2);
+  border: 1px solid rgba(231, 76, 60, 0.5);
+  color: #e74c3c;
+  padding: 0.5rem;
+  border-radius: 8px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.exit-btn:hover {
+  background: rgba(231, 76, 60, 0.4);
+  transform: scale(1.05);
+}
+
+/* Progress Bar */
+.battle-progress {
+  padding: 1rem 1.5rem;
+  background: rgba(0, 0, 0, 0.2);
+}
+
+.progress-bar {
+  height: 12px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 6px;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.progress-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #2ecc71, #27ae60);
+  border-radius: 6px;
+  transition: width 0.3s ease;
+  position: relative;
+}
+
+.progress-fill::after {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 50%;
+  background: linear-gradient(180deg, rgba(255, 255, 255, 0.3), transparent);
+}
+
+.progress-fill.boss {
+  background: linear-gradient(90deg, #e74c3c, #c0392b);
+  animation: pulse-boss 0.5s ease-in-out infinite alternate;
+}
+
+@keyframes pulse-boss {
+  from { box-shadow: 0 0 5px rgba(231, 76, 60, 0.5); }
+  to { box-shadow: 0 0 15px rgba(231, 76, 60, 0.8); }
+}
+
+.progress-markers {
+  display: flex;
+  justify-content: space-between;
+  margin-top: 0.5rem;
+  padding: 0 0.5rem;
+}
+
+.marker {
+  width: 24px;
+  height: 24px;
+  background: rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.7rem;
+  color: #888;
+  transition: all 0.3s ease;
+}
+
+.marker.completed {
+  background: #2ecc71;
+  border-color: #27ae60;
+  color: white;
+}
+
+.marker.boss {
+  border-color: #e74c3c;
+}
+
+.marker.boss.completed {
+  background: #e74c3c;
+  border-color: #c0392b;
+}
+
+/* Battle Area */
+.battle-area {
+  flex: 1;
+  display: grid;
+  grid-template-columns: 1fr 1.5fr;
+  gap: 1rem;
+  padding: 1rem 1.5rem;
+  overflow: hidden;
+}
+
+/* Team Panel */
+.team-panel {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.team-panel h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  color: #3498db;
+  font-size: 1rem;
+}
+
+.team-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.team-member {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.member-info {
+  display: flex;
+  justify-content: space-between;
+  margin-bottom: 0.5rem;
+}
+
+.member-name {
+  color: #fff;
+  font-weight: 500;
+}
+
+.member-class {
+  color: #888;
+  font-size: 0.85rem;
+}
+
+.member-health {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.health-bar {
+  flex: 1;
+  height: 8px;
+  background: rgba(0, 0, 0, 0.5);
+  border-radius: 4px;
+  overflow: hidden;
+}
+
+.health-fill {
+  height: 100%;
+  border-radius: 4px;
+  transition: all 0.3s ease;
+}
+
+.health-text {
+  color: #888;
+  font-size: 0.75rem;
+  min-width: 35px;
+  text-align: right;
+}
+
+/* Battle Log */
+.battle-log {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 12px;
+  padding: 1rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  display: flex;
+  flex-direction: column;
+}
+
+.battle-log h3 {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin: 0 0 1rem 0;
+  color: #f39c12;
+  font-size: 1rem;
+}
+
+.log-container {
+  flex: 1;
+  overflow-y: auto;
+  display: flex;
+  flex-direction: column-reverse;
+  gap: 0.25rem;
+  padding-right: 0.5rem;
+}
+
+.log-container::-webkit-scrollbar {
+  width: 6px;
+}
+
+.log-container::-webkit-scrollbar-track {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 3px;
+}
+
+.log-container::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 3px;
+}
+
+.log-entry {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0.6rem;
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 6px;
+  font-size: 0.85rem;
+  color: #ccc;
+  animation: slideIn 0.3s ease;
+}
+
+@keyframes slideIn {
+  from {
+    opacity: 0;
+    transform: translateX(-10px);
+  }
+  to {
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.log-entry.attack {
+  color: #3498db;
+  border-left: 2px solid #3498db;
+}
+
+.log-entry.damage {
+  color: #e74c3c;
+  border-left: 2px solid #e74c3c;
+}
+
+.log-entry.heal {
+  color: #2ecc71;
+  border-left: 2px solid #2ecc71;
+}
+
+.log-entry.wave {
+  color: #f39c12;
+  border-left: 2px solid #f39c12;
+  font-weight: 500;
+}
+
+.log-entry.boss {
+  color: #9b59b6;
+  border-left: 2px solid #9b59b6;
+  font-weight: 600;
+  background: rgba(155, 89, 182, 0.1);
+}
+
+.log-entry.victory {
+  color: #ffd700;
+  border-left: 2px solid #ffd700;
+  font-weight: 600;
+  background: rgba(255, 215, 0, 0.1);
+}
+
+.log-entry.defeat {
+  color: #e74c3c;
+  border-left: 2px solid #e74c3c;
+  font-weight: 600;
+  background: rgba(231, 76, 60, 0.1);
+}
+
+/* Results Modal */
+.results-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 10;
+  animation: fadeIn 0.3s ease;
+}
+
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+.results-modal {
+  background: linear-gradient(145deg, #1e1e2e, #2d2d44);
+  border-radius: 16px;
+  padding: 2rem;
+  width: 90%;
+  max-width: 400px;
+  text-align: center;
+  border: 2px solid rgba(255, 255, 255, 0.1);
+  animation: scaleIn 0.4s ease;
+}
+
+@keyframes scaleIn {
+  from {
+    opacity: 0;
+    transform: scale(0.8);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+.results-modal.victory {
+  border-color: rgba(255, 215, 0, 0.5);
+  box-shadow: 0 0 30px rgba(255, 215, 0, 0.3);
+}
+
+.results-modal.defeat {
+  border-color: rgba(231, 76, 60, 0.5);
+  box-shadow: 0 0 30px rgba(231, 76, 60, 0.3);
+}
+
+.results-icon {
+  margin-bottom: 1rem;
+  animation: bounce 0.5s ease;
+}
+
+@keyframes bounce {
+  0%, 100% { transform: scale(1); }
+  50% { transform: scale(1.2); }
+}
+
+.results-modal h2 {
+  margin: 0 0 0.5rem 0;
+  font-size: 1.8rem;
+}
+
+.results-modal.victory h2 {
+  color: #ffd700;
+  text-shadow: 0 0 20px rgba(255, 215, 0, 0.5);
+}
+
+.results-modal.defeat h2 {
+  color: #e74c3c;
+}
+
+.results-subtitle {
+  color: #888;
+  margin: 0 0 1.5rem 0;
+}
+
+.rewards-section h3 {
+  color: #f39c12;
+  margin: 0 0 1rem 0;
+  font-size: 1rem;
+}
+
+.rewards-grid {
+  display: flex;
+  justify-content: center;
+  gap: 2rem;
+  margin-bottom: 1rem;
+}
+
+.reward-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.25rem;
+}
+
+.reward-value {
+  color: #fff;
+  font-size: 1.2rem;
+  font-weight: 600;
+}
+
+.reward-label {
+  color: #888;
+  font-size: 0.8rem;
+}
+
+.loot-section {
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 8px;
+  padding: 1rem;
+  margin-top: 1rem;
+}
+
+.loot-section h4 {
+  color: #9b59b6;
+  margin: 0 0 0.5rem 0;
+  font-size: 0.9rem;
+}
+
+.loot-list {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.loot-item {
+  color: #d4a5ff;
+  font-size: 0.85rem;
+}
+
+.continue-btn {
+  margin-top: 1.5rem;
+  padding: 0.75rem 2rem;
+  background: linear-gradient(135deg, #f39c12, #e67e22);
+  border: none;
+  border-radius: 8px;
+  color: white;
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.continue-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 15px rgba(243, 156, 18, 0.4);
+}
+
+/* Exit Confirmation */
+.confirm-overlay {
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.7);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 20;
+}
+
+.confirm-modal {
+  background: linear-gradient(145deg, #1e1e2e, #2d2d44);
+  border-radius: 12px;
+  padding: 1.5rem;
+  width: 90%;
+  max-width: 320px;
+  text-align: center;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.confirm-modal h3 {
+  margin: 0 0 0.5rem 0;
+  color: #f39c12;
+}
+
+.confirm-modal p {
+  margin: 0 0 1.5rem 0;
+  color: #888;
+  font-size: 0.9rem;
+}
+
+.confirm-actions {
+  display: flex;
+  gap: 0.75rem;
+}
+
+.confirm-actions button {
+  flex: 1;
+  padding: 0.6rem;
+  border-radius: 8px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.cancel-btn {
+  background: rgba(255, 255, 255, 0.1);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+  color: #fff;
+}
+
+.cancel-btn:hover {
+  background: rgba(255, 255, 255, 0.2);
+}
+
+.confirm-btn.danger {
+  background: #e74c3c;
+  border: none;
+  color: white;
+}
+
+.confirm-btn.danger:hover {
+  background: #c0392b;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+  .battle-area {
+    grid-template-columns: 1fr;
+  }
+  
+  .team-panel {
+    order: -1;
+  }
+  
+  .battle-log {
+    max-height: 200px;
+  }
+}

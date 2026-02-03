@@ -702,3 +702,367 @@
     grid-template-columns: repeat(3, 1fr);
   }
 }
+
+/* ========================================
+   SECTION: CÓMO JUGAR / ACCESS MODES
+   ======================================== */
+
+.section-header.gold {
+  background: linear-gradient(90deg, rgba(255, 215, 0, 0.2), transparent);
+  border-left: 4px solid #ffd700;
+}
+
+.section-title.gold {
+  color: #ffd700;
+}
+
+/* Grid de modos de acceso */
+.access-modes-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+  gap: 1.5rem;
+  margin-top: 1.5rem;
+}
+
+/* Tarjeta de modo de acceso */
+.access-card {
+  background: rgba(20, 20, 35, 0.9);
+  border-radius: 16px;
+  overflow: hidden;
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
+
+.access-card:hover {
+  transform: translateY(-5px);
+}
+
+.access-card.guest {
+  border: 1px solid rgba(39, 174, 96, 0.3);
+}
+
+.access-card.guest:hover {
+  box-shadow: 0 10px 40px rgba(39, 174, 96, 0.2);
+  border-color: rgba(39, 174, 96, 0.6);
+}
+
+.access-card.register {
+  border: 1px solid rgba(155, 89, 182, 0.3);
+}
+
+.access-card.register:hover {
+  box-shadow: 0 10px 40px rgba(155, 89, 182, 0.2);
+  border-color: rgba(155, 89, 182, 0.6);
+}
+
+.access-card.login {
+  border: 1px solid rgba(52, 152, 219, 0.3);
+}
+
+.access-card.login:hover {
+  box-shadow: 0 10px 40px rgba(52, 152, 219, 0.2);
+  border-color: rgba(52, 152, 219, 0.6);
+}
+
+/* Header de tarjeta */
+.access-header {
+  padding: 1.25rem;
+  text-align: center;
+  position: relative;
+}
+
+.access-card.guest .access-header {
+  background: linear-gradient(135deg, rgba(39, 174, 96, 0.2), transparent);
+}
+
+.access-card.register .access-header {
+  background: linear-gradient(135deg, rgba(155, 89, 182, 0.2), transparent);
+}
+
+.access-card.login .access-header {
+  background: linear-gradient(135deg, rgba(52, 152, 219, 0.2), transparent);
+}
+
+.access-icon {
+  width: 60px;
+  height: 60px;
+  margin: 0 auto 0.75rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: rgba(0, 0, 0, 0.3);
+  border-radius: 50%;
+}
+
+.access-header h3 {
+  font-size: 1.3rem;
+  margin: 0 0 0.5rem 0;
+  font-weight: 700;
+}
+
+.access-badge {
+  display: inline-block;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.access-badge.free {
+  background: rgba(39, 174, 96, 0.2);
+  color: #27ae60;
+  border: 1px solid rgba(39, 174, 96, 0.4);
+}
+
+.access-badge.premium {
+  background: linear-gradient(135deg, rgba(155, 89, 182, 0.3), rgba(255, 215, 0, 0.2));
+  color: #ffd700;
+  border: 1px solid rgba(255, 215, 0, 0.4);
+}
+
+.access-badge.returning {
+  background: rgba(52, 152, 219, 0.2);
+  color: #3498db;
+  border: 1px solid rgba(52, 152, 219, 0.4);
+}
+
+/* Contenido de tarjeta */
+.access-content {
+  padding: 1.25rem;
+  flex: 1;
+}
+
+.access-description {
+  font-size: 0.95rem;
+  color: #b0b0c0;
+  line-height: 1.6;
+  margin-bottom: 1rem;
+}
+
+.access-features {
+  list-style: none;
+  padding: 0;
+  margin: 0 0 1rem 0;
+}
+
+.access-features li {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  padding: 0.4rem 0;
+  font-size: 0.9rem;
+  color: #e0e0e0;
+}
+
+.access-features li svg {
+  color: #27ae60;
+  flex-shrink: 0;
+}
+
+.access-limitations,
+.access-benefits,
+.access-info {
+  background: rgba(0, 0, 0, 0.2);
+  border-radius: 8px;
+  padding: 0.75rem;
+  margin-top: 1rem;
+}
+
+.access-limitations h4,
+.access-benefits h4 {
+  font-size: 0.8rem;
+  color: #888;
+  margin: 0 0 0.5rem 0;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.access-limitations ul,
+.access-benefits ul {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+}
+
+.access-limitations ul li {
+  font-size: 0.85rem;
+  color: #e74c3c;
+  padding: 0.2rem 0;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.access-limitations ul li::before {
+  content: '×';
+  position: absolute;
+  left: 0;
+  color: #e74c3c;
+}
+
+.access-benefits ul li {
+  font-size: 0.85rem;
+  color: #2ecc71;
+  padding: 0.2rem 0;
+  padding-left: 1rem;
+  position: relative;
+}
+
+.access-benefits ul li::before {
+  content: '✓';
+  position: absolute;
+  left: 0;
+  color: #2ecc71;
+}
+
+.access-info p {
+  font-size: 0.85rem;
+  color: #b0b0c0;
+  margin: 0;
+  line-height: 1.5;
+}
+
+/* Botón de acción */
+.access-action-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  width: calc(100% - 2rem);
+  margin: 1rem;
+  padding: 0.9rem;
+  border: none;
+  border-radius: 10px;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+}
+
+.access-action-btn.guest {
+  background: linear-gradient(135deg, #27ae60, #2ecc71);
+  color: #fff;
+}
+
+.access-action-btn.guest:hover {
+  background: linear-gradient(135deg, #2ecc71, #27ae60);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(39, 174, 96, 0.4);
+}
+
+.access-action-btn.register {
+  background: linear-gradient(135deg, #9b59b6, #8e44ad);
+  color: #fff;
+}
+
+.access-action-btn.register:hover {
+  background: linear-gradient(135deg, #8e44ad, #9b59b6);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(155, 89, 182, 0.4);
+}
+
+.access-action-btn.login {
+  background: linear-gradient(135deg, #3498db, #2980b9);
+  color: #fff;
+}
+
+.access-action-btn.login:hover {
+  background: linear-gradient(135deg, #2980b9, #3498db);
+  transform: translateY(-2px);
+  box-shadow: 0 5px 20px rgba(52, 152, 219, 0.4);
+}
+
+/* Tabla de comparación */
+.comparison-table-wrapper {
+  margin-top: 2rem;
+  background: rgba(20, 20, 35, 0.8);
+  border-radius: 12px;
+  padding: 1.5rem;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.comparison-title {
+  font-size: 1.2rem;
+  color: #ffd700;
+  margin: 0 0 1rem 0;
+  text-align: center;
+}
+
+.comparison-table {
+  width: 100%;
+  border-collapse: collapse;
+}
+
+.comparison-table th,
+.comparison-table td {
+  padding: 0.75rem;
+  text-align: center;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.comparison-table th {
+  background: rgba(0, 0, 0, 0.3);
+  color: #fff;
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.comparison-table th:first-child {
+  text-align: left;
+}
+
+.comparison-table td:first-child {
+  text-align: left;
+  color: #b0b0c0;
+}
+
+.comparison-table td.yes {
+  color: #2ecc71;
+  font-weight: 600;
+}
+
+.comparison-table td.no {
+  color: #e74c3c;
+  font-weight: 600;
+}
+
+.comparison-table td.limited {
+  color: #f39c12;
+  font-size: 0.85rem;
+}
+
+.comparison-table tr:hover td {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+/* Sidebar icon styling */
+.sidebar-link {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.sidebar-icon {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  flex-shrink: 0;
+}
+
+/* Responsive para access modes */
+@media (max-width: 768px) {
+  .access-modes-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .comparison-table-wrapper {
+    overflow-x: auto;
+  }
+  
+  .comparison-table {
+    min-width: 400px;
+  }
+}

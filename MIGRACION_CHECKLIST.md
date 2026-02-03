@@ -1,7 +1,8 @@
 # ✅ CHECKLIST DE MIGRACIÓN VALNOR: Angular → React
 
 > **Inicio:** 31 de enero de 2026  
-> **Estado:** 🔄 EN PROGRESO
+> **Última actualización:** 2 de febrero de 2026  
+> **Estado:** 🔄 EN PROGRESO (~85%)
 
 ---
 
@@ -13,9 +14,11 @@ Fase 2: Motor 3D Core      [██████████] 100% ✅
 Fase 3: Sistemas Engine    [██████████] 100% ✅
 Fase 4: Niveles            [██████████] 100% ✅
 Fase 5: RPG y Combate      [██████████] 100% ✅
-Fase 6: Shaders y VFX      [░░░░░░░░░░]   0%
-Fase 7: Integración        [██████░░░░]  60% 🔄
+Fase 6: Shaders y VFX      [░░░░░░░░░░]   0% ⏳
+Fase 7: Integración        [████████░░]  80% 🔄
 Fase 8: PWA + Móvil        [██████████] 100% ✅
+Fase 9: UI Juego           [██████████] 100% ✅ (NUEVA)
+Fase 10: Profile/Settings  [██████████] 100% ✅ (NUEVA)
 ```
 
 ---
@@ -189,13 +192,17 @@ Fase 8: PWA + Móvil        [██████████] 100% ✅
 
 ### 7.2 Componentes UI Adicionales
 - [x] `components/ui/CookieConsent.tsx` - Banner de cookies GDPR ✅
-- [ ] `components/ui/SettingsModal.tsx` - Configuración
+- [x] `components/ui/EnergyBar.tsx` - Barra de energía con temporizador ✅
+- [x] `components/ui/InventorySummary.tsx` - Resumen de inventario ✅
+- [x] `components/ui/GuestBanner.tsx` - Banner para usuarios invitados ✅
+- [ ] `components/ui/SettingsModal.tsx` - Configuración (migrado a página)
 - [ ] `components/ui/CharacterCard.tsx` - Tarjeta personaje
 - [ ] `components/ui/RPGToast.tsx` - Notificaciones RPG
 - [ ] `components/ui/ProgressBar.tsx` - Barra de progreso
 
 ### 7.3 Integración de Rutas
 - [x] Actualizar `App.tsx` con guards ✅
+- [x] Rutas Profile y Settings añadidas ✅
 - [ ] Conectar Demo con motor 3D
 - [x] Transiciones entre páginas (Framer Motion) ✅
 
@@ -237,6 +244,89 @@ Fase 8: PWA + Móvil        [██████████] 100% ✅
 
 ---
 
+## 🎮 FASE 9: UI DE JUEGO (NUEVA)
+
+### 9.1 Selección de Modo de Juego
+- [x] `pages/PortalSelection/PortalSelection.tsx` - Portales 3D animados ✅
+- [x] `stores/gameModeStore.ts` - Store para modo seleccionado ✅
+- [x] Guard `RequireModeSelection` en App.tsx ✅
+
+### 9.2 Sistema de Mazmorras (Dungeons)
+- [x] `stores/dungeonStore.ts` - Lista de mazmorras y selección ✅
+- [x] `components/dungeon/DungeonList.tsx` - Lista de mazmorras disponibles ✅
+- [x] `components/dungeon/DungeonBattle.tsx` - Combate automático por turnos ✅
+- [x] `pages/Dungeon/Dungeon.tsx` - Página integrada con stores ✅
+
+### 9.3 Modo Survival
+- [x] `components/survival/SurvivalBattle.tsx` - Combate por oleadas ✅
+- [x] `pages/Survival/Survival.tsx` - Página integrada con stores ✅
+
+### 9.4 Sistema de Equipo
+- [x] `stores/teamStore.ts` - Equipo activo y personajes ✅
+- [x] Selectores: useActiveTeam, useTeamPower, useTeamMembers ✅
+
+### 9.5 Dashboard 3D Mejorado
+- [x] Escena 3D de fortaleza medieval ✅
+- [x] Tarjetas de acción con iconos SVG ✅
+- [x] Panel de información del jugador ✅
+- [x] Integración con NotificationBell ✅
+- [x] Botones a Profile y Settings ✅
+
+---
+
+## ⚙️ FASE 10: PERFIL Y CONFIGURACIÓN (NUEVA)
+
+### 10.1 Stores
+- [x] `stores/settingsStore.ts` - Configuración persistida (localStorage) ✅
+  - Audio: musicVolume, sfxVolume, masterVolume
+  - Idioma: language (es/en)
+  - Notificaciones: enabled, sounds
+  - Visual: damageNumbers, screenShake, particleEffects
+  - Controles: invertYAxis, mouseSensitivity
+- [x] `stores/notificationsStore.ts` - Notificaciones del servidor ✅
+  - 12 tipos de notificación definidos
+  - Paginación con limit/skip/hasMore
+  - Contador de no leídas
+
+### 10.2 Hooks
+- [x] `hooks/useSettings.ts` - API de configuración ✅
+  - GET /api/user/settings
+  - PUT /api/user/settings  
+  - POST /api/user/settings/reset
+- [x] `hooks/useNotifications.ts` - API de notificaciones ✅
+  - GET /api/notifications (paginado)
+  - GET /api/notifications/unread/count
+  - PUT /api/notifications/:id/read
+  - PUT /api/notifications/read-all
+  - DELETE /api/notifications/:id
+
+### 10.3 Componentes de Notificaciones
+- [x] `components/notifications/NotificationBell.tsx` - Campanita con badge ✅
+- [x] `components/notifications/NotificationList.tsx` - Lista con paginación ✅
+- [x] `components/notifications/NotificationItem.tsx` - Item con iconos por tipo ✅
+- [x] CSS para todos los componentes ✅
+
+### 10.4 Páginas
+- [x] `pages/Profile/Profile.tsx` - Perfil del jugador ✅
+  - Estadísticas de combate, mazmorras, survival
+  - Sistema de logros (6 logros base)
+  - Historial de batallas
+  - Equipo actual
+  - Banner para invitados
+- [x] `pages/Settings/Settings.tsx` - Configuración completa ✅
+  - Sección Audio (sliders)
+  - Sección Idioma (es/en)
+  - Sección Notificaciones (toggles)
+  - Sección Visual (toggles)
+  - Sección Controles (slider + keybindings)
+
+### 10.5 Banners para Invitados
+- [x] `components/ui/GuestBanner.tsx` - Componente reutilizable ✅
+- [x] Integrado en Profile, Marketplace, Shop ✅
+- [x] 3 variantes: warning, info, locked ✅
+
+---
+
 ## 📁 ESTRUCTURA DE CARPETAS FINAL
 
 ```
@@ -256,14 +346,20 @@ src/
 ├── hooks/
 │   ├── useAuth.ts             ✅
 │   ├── usePlatform.ts         ✅ (PWA/nativa detection)
-│   ├── useCanShowPurchases.ts ✅ (ocultar compras en app)
-│   ├── PlatformOnly.tsx       ✅ (componente helper)
+│   ├── useSettings.ts         ✅ (API settings)
+│   ├── useNotifications.ts    ✅ (API notifications)
 │   └── index.ts               ✅
 │
 ├── stores/                    ✅ COMPLETO
 │   ├── gameStore.ts           ✅
 │   ├── uiStore.ts             ✅
-│   ├── playerStore.ts         ✅
+│   ├── playerStore.ts         ✅ (+ usePlayerStats, usePlayerWallet)
+│   ├── sessionStore.ts        ✅ (useIsGuest)
+│   ├── teamStore.ts           ✅ (+ useTeamMembers)
+│   ├── gameModeStore.ts       ✅ (modo RPG/Survival)
+│   ├── dungeonStore.ts        ✅ (lista mazmorras)
+│   ├── settingsStore.ts       ✅ (configuración)
+│   ├── notificationsStore.ts  ✅ (notificaciones)
 │   └── index.ts               ✅
 │
 ├── services/                  ✅ COMPLETO
@@ -361,9 +457,66 @@ src/
 - ✅ **Fix loading:** SplashScreen cambiado de lazy() a import directo
 - ✅ **Hooks de plataforma:** usePlatform, useCanShowPurchases, PlatformOnly
 - ✅ **Guías creadas:** CAPACITOR_GUIDE.md, DEPLOY_GUIDE.md
-- 📋 **Pendiente:** Decidir estilo visual 3D (Toon/Low Poly/Cartoon/Fantasy)
+
+### 2 de febrero de 2026 - Sesión 3 (UI de Juego)
+- ✅ **FASE 9 completada:** UI de Juego
+  - PortalSelection con portales 3D animados
+  - Sistema de mazmorras (DungeonList, DungeonBattle)
+  - Modo Survival con combate por oleadas
+  - gameModeStore, dungeonStore, teamStore
+- ✅ **FASE 10 completada:** Perfil y Configuración
+  - settingsStore con persistencia localStorage
+  - notificationsStore con 12 tipos de notificación
+  - useSettings y useNotifications hooks
+  - NotificationBell/List/Item componentes
+  - Profile page con stats, logros, historial
+  - Settings page con 5 secciones configurables
+- ✅ **GuestBanner:** Componente para modo invitado (3 variantes)
+- ✅ **Dashboard mejorado:** Integración con NotificationBell
+- ✅ **Rutas añadidas:** /profile, /settings
 
 ---
 
-> **Última actualización:** 31/01/2026 - Sesión 2 (Tarde)  
-> **Progreso total:** ~70%
+## 🚀 PRÓXIMOS PASOS SUGERIDOS
+
+### Opción A: Combat 3D (Prioridad Alta)
+- [ ] Escenarios 3D para combate (arena, bosque, cueva)
+- [ ] Animaciones de ataque y habilidades
+- [ ] VFX de impactos y efectos mágicos
+- [ ] Cámara cinemática para habilidades ultimate
+
+### Opción B: Sistema de Gacha/Invocación
+- [ ] Banners de invocación con rates
+- [ ] Animación de invocación 3D
+- [ ] Sistema de pity (garantizado)
+- [ ] Historial de invocaciones
+
+### Opción C: Sistema de Inventario Completo
+- [ ] Equipar/desequipar items
+- [ ] Mejora de items (+1, +2, etc)
+- [ ] Fusión de duplicados
+- [ ] Desbloqueo de personajes
+
+### Opción D: Social/Chat
+- [ ] Chat global en tiempo real
+- [ ] Sistema de amigos
+- [ ] Gremios/Guilds
+- [ ] Comercio entre jugadores
+
+### Opción E: Eventos/Misiones
+- [ ] Misiones diarias y semanales
+- [ ] Eventos temporales
+- [ ] Recompensas por login
+- [ ] Sistema de logros expandido
+
+### Opción F: Shaders y VFX (FASE 6)
+- [ ] skyShader procedural
+- [ ] waterShader con Fresnel
+- [ ] grassShader animado
+- [ ] Materiales personalizados R3F
+
+---
+
+> **Última actualización:** 02/02/2026 - Sesión 3  
+> **Progreso total:** ~85%  
+> **Autor:** Desarrollo con GitHub Copilot

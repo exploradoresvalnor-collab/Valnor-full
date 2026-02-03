@@ -14,7 +14,6 @@ import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import * as THREE from 'three';
 import { UltraSkySystem } from '../systems/UltraSkySystem';
 import { Player } from '../components/Player';
-import { PhysicsWorldProvider } from '../components/PhysicsWorld';
 
 interface PreviewLevelProps {
   timeOfDay?: number;
@@ -227,7 +226,7 @@ export function PreviewLevel({
   showPlayer = true,
 }: PreviewLevelProps) {
   return (
-    <PhysicsWorldProvider>
+    <>
       {/* Cielo */}
       <UltraSkySystem 
         timeOfDay={timeOfDay}
@@ -257,7 +256,7 @@ export function PreviewLevel({
       
       {/* Jugador */}
       {showPlayer && <Player position={[0, 2, 5]} />}
-    </PhysicsWorldProvider>
+    </>
   );
 }
 

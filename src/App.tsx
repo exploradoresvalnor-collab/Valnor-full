@@ -3,11 +3,12 @@
  */
 
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
-import { Suspense, lazy } from 'react';
+import { Suspense, lazy, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
 import { RequireAuth, RequireNoAuth } from './components/guards';
 import { InstallPrompt } from './components/pwa';
 import CookieConsent from './components/CookieConsent';
+import { useGameModeStore } from './stores/gameModeStore';
 
 // SplashScreen - Carga directa (primera pantalla, no lazy)
 import SplashScreen from './pages/SplashScreen';
@@ -22,6 +23,9 @@ const Verify = lazy(() => import('./pages/Auth/Verify'));
 const ForgotPassword = lazy(() => import('./pages/Auth/ForgotPassword'));
 const ResetPassword = lazy(() => import('./pages/Auth/ResetPassword'));
 
+// Mode Selection
+const PortalSelection = lazy(() => import('./pages/PortalSelection/PortalSelection'));
+
 // Protected Pages
 const Dashboard = lazy(() => import('./pages/Dashboard'));
 const Inventory = lazy(() => import('./pages/Inventory'));
@@ -30,6 +34,8 @@ const Marketplace = lazy(() => import('./pages/Marketplace'));
 const Dungeon = lazy(() => import('./pages/Dungeon'));
 const Ranking = lazy(() => import('./pages/Ranking'));
 const Survival = lazy(() => import('./pages/Survival'));
+const Profile = lazy(() => import('./pages/Profile'));
+const Settings = lazy(() => import('./pages/Settings'));
 
 // Public Pages
 const Wiki = lazy(() => import('./pages/Wiki'));
@@ -41,6 +47,29 @@ function LoadingScreen() {
       <div className="loading-spinner" />
     </div>
   );
+}
+
+// Guard para requerir selección de modo
+function RequireModeSelection({ children }: { children: React.ReactNode }) {
+  const { mode, isLoaded, loadMode } = useGameModeStore();
+  
+  useEffect(() => {
+    if (!isLoaded) {
+      loadMode();
+    }
+  }, [isLoaded, loadMode]);
+  
+  // Mientras carga, mostrar loading
+  if (!isLoaded) {
+    return <LoadingScreen />;
+  }
+  
+  // Si no hay modo seleccionado, redirigir a portales
+  if (!mode) {
+    return <Navigate to="/portals" replace />;
+  }
+  
+  return <>{children}</>;
 }
 
 function App() {
@@ -86,44 +115,82 @@ function App() {
             <Route path="/auth/verify" element={<Verify />} />
 
             {/* ============================================ */}
+            {/* SELECCIÓN DE MODO DE JUEGO                  */}
+            {/* ============================================ */}
+            <Route path="/portals" element={
+              <RequireAuth>
+                <PortalSelection />
+              </RequireAuth>
+            } />
+
+            {/* ============================================ */}
             {/* RUTAS PROTEGIDAS - Requieren login          */}
             {/* Si no está logueado → redirige a /auth/login*/}
             {/* requireVerified=true → también debe tener   */}
             {/* el email verificado                         */}
             {/* ============================================ */}
+            {/* Dashboard permite modo invitado - pero requiere selección de modo */}
             <Route path="/dashboard" element={
-              <RequireAuth requireVerified>
-                <Dashboard />
+              <RequireAuth>
+                <RequireModeSelection>
+                  <Dashboard />
+                </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/inventory" element={
-              <RequireAuth requireVerified>
-                <Inventory />
+              <RequireAuth>
+                <RequireModeSelection>
+                  <Inventory />
+                </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/shop" element={
-              <RequireAuth requireVerified>
-                <Shop />
+              <RequireAuth>
+                <RequireModeSelection>
+                  <Shop />
+                </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/marketplace" element={
-              <RequireAuth requireVerified>
-                <Marketplace />
+              <RequireAuth>
+                <RequireModeSelection>
+                  <Marketplace />
+                </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/dungeon" element={
-              <RequireAuth requireVerified>
-                <Dungeon />
+              <RequireAuth>
+                <RequireModeSelection>
+                  <Dungeon />
+                </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/ranking" element={
-              <RequireAuth requireVerified>
-                <Ranking />
+              <RequireAuth>
+                <RequireModeSelection>
+                  <Ranking />
+                </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/survival" element={
-              <RequireAuth requireVerified>
-                <Survival />
+              <RequireAuth>
+                <RequireModeSelection>
+                  <Survival />
+                </RequireModeSelection>
+              </RequireAuth>
+            } />
+            <Route path="/profile" element={
+              <RequireAuth>
+                <RequireModeSelection>
+                  <Profile />
+                </RequireModeSelection>
+              </RequireAuth>
+            } />
+            <Route path="/settings" element={
+              <RequireAuth>
+                <RequireModeSelection>
+                  <Settings />
+                </RequireModeSelection>
               </RequireAuth>
             } />
 
