@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { rankingService } from '../../services';
 import './Ranking.css';
 
 interface RankingPlayer {
@@ -15,57 +16,6 @@ interface RankingPlayer {
 
 type RankingCategory = 'val' | 'survival' | 'pvp' | 'dungeons';
 
-const mockRankings: Record<RankingCategory, RankingPlayer[]> = {
-  val: [
-    { posicion: 1, id: 'u1', username: 'CryptoKing', nivel: 45, clase: 'Mago', valor: 1250000, cambio: 0 },
-    { posicion: 2, id: 'u2', username: 'DragonSlayer99', nivel: 42, clase: 'Guerrero', valor: 980500, cambio: 2 },
-    { posicion: 3, id: 'u3', username: 'ShadowNinja', nivel: 40, clase: 'Pícaro', valor: 875200, cambio: -1 },
-    { posicion: 4, id: 'u4', username: 'HealerQueen', nivel: 38, clase: 'Sanador', valor: 720000, cambio: 1 },
-    { posicion: 5, id: 'u5', username: 'MysticWizard', nivel: 37, clase: 'Mago', valor: 650000, cambio: -2 },
-    { posicion: 6, id: 'u6', username: 'IronTank', nivel: 36, clase: 'Guerrero', valor: 580000, cambio: 3 },
-    { posicion: 7, id: 'u7', username: 'SwiftBlade', nivel: 35, clase: 'Pícaro', valor: 520000, cambio: 0 },
-    { posicion: 8, id: 'u8', username: 'LightBringer', nivel: 34, clase: 'Sanador', valor: 485000, cambio: -1 },
-    { posicion: 9, id: 'u9', username: 'PhoenixKnight', nivel: 33, clase: 'Guerrero', valor: 450000, cambio: 5 },
-    { posicion: 10, id: 'u10', username: 'DarkMage', nivel: 32, clase: 'Mago', valor: 420000, cambio: -2 },
-  ],
-  survival: [
-    { posicion: 1, id: 'u3', username: 'ShadowNinja', nivel: 40, clase: 'Pícaro', valor: 158, cambio: 0 },
-    { posicion: 2, id: 'u1', username: 'CryptoKing', nivel: 45, clase: 'Mago', valor: 145, cambio: 1 },
-    { posicion: 3, id: 'u7', username: 'SwiftBlade', nivel: 35, clase: 'Pícaro', valor: 142, cambio: -1 },
-    { posicion: 4, id: 'u6', username: 'IronTank', nivel: 36, clase: 'Guerrero', valor: 138, cambio: 0 },
-    { posicion: 5, id: 'u2', username: 'DragonSlayer99', nivel: 42, clase: 'Guerrero', valor: 135, cambio: 2 },
-    { posicion: 6, id: 'u5', username: 'MysticWizard', nivel: 37, clase: 'Mago', valor: 130, cambio: -1 },
-    { posicion: 7, id: 'u4', username: 'HealerQueen', nivel: 38, clase: 'Sanador', valor: 125, cambio: 0 },
-    { posicion: 8, id: 'u9', username: 'PhoenixKnight', nivel: 33, clase: 'Guerrero', valor: 120, cambio: 3 },
-    { posicion: 9, id: 'u10', username: 'DarkMage', nivel: 32, clase: 'Mago', valor: 118, cambio: -2 },
-    { posicion: 10, id: 'u8', username: 'LightBringer', nivel: 34, clase: 'Sanador', valor: 115, cambio: -1 },
-  ],
-  pvp: [
-    { posicion: 1, id: 'u2', username: 'DragonSlayer99', nivel: 42, clase: 'Guerrero', valor: 2450, cambio: 0 },
-    { posicion: 2, id: 'u3', username: 'ShadowNinja', nivel: 40, clase: 'Pícaro', valor: 2380, cambio: 1 },
-    { posicion: 3, id: 'u1', username: 'CryptoKing', nivel: 45, clase: 'Mago', valor: 2320, cambio: -1 },
-    { posicion: 4, id: 'u7', username: 'SwiftBlade', nivel: 35, clase: 'Pícaro', valor: 2180, cambio: 2 },
-    { posicion: 5, id: 'u6', username: 'IronTank', nivel: 36, clase: 'Guerrero', valor: 2100, cambio: -1 },
-    { posicion: 6, id: 'u5', username: 'MysticWizard', nivel: 37, clase: 'Mago', valor: 2050, cambio: 0 },
-    { posicion: 7, id: 'u9', username: 'PhoenixKnight', nivel: 33, clase: 'Guerrero', valor: 1980, cambio: 4 },
-    { posicion: 8, id: 'u10', username: 'DarkMage', nivel: 32, clase: 'Mago', valor: 1920, cambio: -2 },
-    { posicion: 9, id: 'u4', username: 'HealerQueen', nivel: 38, clase: 'Sanador', valor: 1850, cambio: -1 },
-    { posicion: 10, id: 'u8', username: 'LightBringer', nivel: 34, clase: 'Sanador', valor: 1800, cambio: 0 },
-  ],
-  dungeons: [
-    { posicion: 1, id: 'u1', username: 'CryptoKing', nivel: 45, clase: 'Mago', valor: 487, cambio: 0 },
-    { posicion: 2, id: 'u2', username: 'DragonSlayer99', nivel: 42, clase: 'Guerrero', valor: 456, cambio: 0 },
-    { posicion: 3, id: 'u6', username: 'IronTank', nivel: 36, clase: 'Guerrero', valor: 423, cambio: 2 },
-    { posicion: 4, id: 'u4', username: 'HealerQueen', nivel: 38, clase: 'Sanador', valor: 412, cambio: -1 },
-    { posicion: 5, id: 'u5', username: 'MysticWizard', nivel: 37, clase: 'Mago', valor: 398, cambio: 1 },
-    { posicion: 6, id: 'u3', username: 'ShadowNinja', nivel: 40, clase: 'Pícaro', valor: 385, cambio: -2 },
-    { posicion: 7, id: 'u7', username: 'SwiftBlade', nivel: 35, clase: 'Pícaro', valor: 367, cambio: 0 },
-    { posicion: 8, id: 'u8', username: 'LightBringer', nivel: 34, clase: 'Sanador', valor: 352, cambio: 1 },
-    { posicion: 9, id: 'u9', username: 'PhoenixKnight', nivel: 33, clase: 'Guerrero', valor: 340, cambio: -1 },
-    { posicion: 10, id: 'u10', username: 'DarkMage', nivel: 32, clase: 'Mago', valor: 328, cambio: 0 },
-  ],
-};
-
 const categoryInfo: Record<RankingCategory, { icon: string; title: string; unit: string; color: string }> = {
   val: { icon: '💰', title: 'Riqueza (VAL)', unit: 'VAL', color: '#f59e0b' },
   survival: { icon: '⚡', title: 'Survival', unit: 'oleadas', color: '#ef4444' },
@@ -78,13 +28,32 @@ const classIcons: Record<string, string> = {
   'Mago': '🔮',
   'Pícaro': '🗡️',
   'Sanador': '💚',
+  'warrior': '⚔️',
+  'mage': '🔮',
+  'archer': '🗡️',
+  'paladin': '💚',
 };
+
+/** Map backend ranking entry */
+function mapRankingPlayer(raw: any, index: number): RankingPlayer {
+  return {
+    posicion: raw.posicion || raw.position || raw.rank || index + 1,
+    id: raw._id || raw.id || raw.userId || `p${index}`,
+    username: raw.username || raw.nombre || raw.name || 'Jugador',
+    nivel: raw.nivel || raw.level || 1,
+    clase: raw.clase || raw.class || raw.characterClass || 'Guerrero',
+    valor: raw.valor || raw.value || raw.score || raw.val || 0,
+    cambio: raw.cambio || raw.change || 0,
+  };
+}
 
 const Ranking: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const [category, setCategory] = useState<RankingCategory>('val');
   const [myRank, setMyRank] = useState<number | null>(null);
+  const [rankings, setRankings] = useState<RankingPlayer[]>([]);
+  const [rankLoading, setRankLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -92,12 +61,57 @@ const Ranking: React.FC = () => {
     }
   }, [user, loading, navigate]);
 
+  // Fetch rankings from backend
   useEffect(() => {
-    // Simular posición del usuario
-    setMyRank(Math.floor(Math.random() * 500) + 50);
-  }, [category]);
+    if (loading) return;
+    let cancelled = false;
 
-  if (loading) {
+    const fetchRankings = async () => {
+      setRankLoading(true);
+      try {
+        const [leaderboard, myRanking] = await Promise.all([
+          rankingService.getLeaderboard(category, { limit: '20' }).catch(() => null),
+          rankingService.getMyRanking().catch(() => null),
+        ]);
+
+        if (cancelled) return;
+
+        // Process leaderboard
+        if (leaderboard) {
+          const lb = leaderboard as any;
+          const entries = lb.rankings || lb.leaderboard || lb.data || (Array.isArray(lb) ? lb : []);
+          if (Array.isArray(entries) && entries.length > 0) {
+            setRankings(entries.map(mapRankingPlayer));
+          } else {
+            setRankings([]);
+          }
+        } else {
+          // Try general ranking as fallback
+          const general = await rankingService.getGeneralRanking({ limit: '20' }).catch(() => null);
+          if (!cancelled && general) {
+            const g = general as any;
+            const entries = g.rankings || g.data || (Array.isArray(g) ? g : []);
+            setRankings(Array.isArray(entries) ? entries.map(mapRankingPlayer) : []);
+          }
+        }
+
+        // My position
+        if (myRanking) {
+          const mr = myRanking as any;
+          setMyRank(mr.posicion || mr.position || mr.rank || null);
+        }
+      } catch (err) {
+        console.error('[Ranking] Error:', err);
+      } finally {
+        if (!cancelled) setRankLoading(false);
+      }
+    };
+
+    fetchRankings();
+    return () => { cancelled = true; };
+  }, [loading, category]);
+
+  if (loading || rankLoading) {
     return (
       <div className="ranking-loading">
         <div className="loading-spinner" />
@@ -106,7 +120,6 @@ const Ranking: React.FC = () => {
     );
   }
 
-  const rankings = mockRankings[category];
   const info = categoryInfo[category];
 
   const formatValue = (value: number, cat: RankingCategory) => {
@@ -171,13 +184,14 @@ const Ranking: React.FC = () => {
         </div>
 
         {/* Top 3 Podium */}
+        {rankings.length >= 3 ? (
         <div className="podium">
           {/* Second Place */}
           <div className="podium-place second">
             <div className="podium-avatar">🥈</div>
-            <span className="podium-username">{rankings[1].username}</span>
+            <span className="podium-username">{rankings[1]?.username}</span>
             <span className="podium-value">
-              {formatValue(rankings[1].valor, category)} {info.unit}
+              {formatValue(rankings[1]?.valor || 0, category)} {info.unit}
             </span>
             <div className="podium-stand" style={{ backgroundColor: info.color + '40' }}>2</div>
           </div>
@@ -186,9 +200,9 @@ const Ranking: React.FC = () => {
           <div className="podium-place first">
             <div className="crown">👑</div>
             <div className="podium-avatar">🥇</div>
-            <span className="podium-username">{rankings[0].username}</span>
+            <span className="podium-username">{rankings[0]?.username}</span>
             <span className="podium-value">
-              {formatValue(rankings[0].valor, category)} {info.unit}
+              {formatValue(rankings[0]?.valor || 0, category)} {info.unit}
             </span>
             <div className="podium-stand" style={{ backgroundColor: info.color }}>1</div>
           </div>
@@ -196,13 +210,18 @@ const Ranking: React.FC = () => {
           {/* Third Place */}
           <div className="podium-place third">
             <div className="podium-avatar">🥉</div>
-            <span className="podium-username">{rankings[2].username}</span>
+            <span className="podium-username">{rankings[2]?.username}</span>
             <span className="podium-value">
-              {formatValue(rankings[2].valor, category)} {info.unit}
+              {formatValue(rankings[2]?.valor || 0, category)} {info.unit}
             </span>
             <div className="podium-stand" style={{ backgroundColor: info.color + '30' }}>3</div>
           </div>
         </div>
+        ) : (
+          <div className="no-selection" style={{ textAlign: 'center', padding: '2rem' }}>
+            <p>No hay datos de ranking disponibles aún</p>
+          </div>
+        )}
 
         {/* Rankings Table */}
         <div className="rankings-table">

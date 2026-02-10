@@ -194,13 +194,6 @@ function App() {
               </RequireAuth>
             } />
 
-            {/* Demo - también protegido */}
-            <Route path="/demo" element={
-              <RequireAuth requireVerified>
-                <Landing />
-              </RequireAuth>
-            } />
-
             {/* Ruta por defecto */}
             <Route path="*" element={<Navigate to="/splash" replace />} />
           </Routes>

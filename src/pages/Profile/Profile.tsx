@@ -8,12 +8,13 @@
  * - Equipo actual
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayerStore, usePlayerStats, usePlayerWallet } from '../../stores/playerStore';
 import { useTeamMembers } from '../../stores/teamStore';
 import { useIsGuest } from '../../stores/sessionStore';
 import { GuestBanner } from '../../components/ui';
+import { rankingService, userService } from '../../services';
 import './Profile.css';
 
 type ProfileTab = 'stats' | 'achievements' | 'history';
@@ -27,24 +28,98 @@ export function Profile() {
   const isGuest = useIsGuest();
   
   const [activeTab, setActiveTab] = useState<ProfileTab>('stats');
-  
-  // Mock achievements - en producción vendría del backend
-  const achievements = [
-    { id: 1, name: 'Primer Paso', desc: 'Completa tu primera mazmorra', unlocked: true, icon: '🏆' },
-    { id: 2, name: 'Coleccionista', desc: 'Colecciona 10 personajes', unlocked: stats.charactersOwned >= 10, icon: '📚' },
-    { id: 3, name: 'Superviviente', desc: 'Sobrevive 50 oleadas en Survival', unlocked: false, icon: '🛡️' },
-    { id: 4, name: 'Comerciante', desc: 'Realiza 5 transacciones en el marketplace', unlocked: false, icon: '💰' },
-    { id: 5, name: 'Veterano', desc: 'Alcanza nivel 50', unlocked: player.level >= 50, icon: '⭐' },
-    { id: 6, name: 'Maestro', desc: 'Completa todas las mazmorras', unlocked: false, icon: '👑' },
-  ];
-  
-  // Mock battle history
-  const battleHistory = [
-    { id: 1, type: 'dungeon', name: 'Cavernas Oscuras', result: 'victory', date: new Date(Date.now() - 3600000) },
-    { id: 2, type: 'survival', name: 'Arena Survival', result: 'defeat', waves: 23, date: new Date(Date.now() - 7200000) },
-    { id: 3, type: 'dungeon', name: 'Bosque Encantado', result: 'victory', date: new Date(Date.now() - 86400000) },
-    { id: 4, type: 'survival', name: 'Arena Survival', result: 'defeat', waves: 45, date: new Date(Date.now() - 172800000) },
-  ];
+  const [achievements, setAchievements] = useState<{id: number|string; name: string; desc: string; unlocked: boolean; icon: string}[]>([]);
+  const [battleHistory, setBattleHistory] = useState<{id: number|string; type: string; name: string; result: string; waves?: number; date: Date}[]>([]);
+  const [profileLoading, setProfileLoading] = useState(true);
+
+  // Fetch real profile data
+  useEffect(() => {
+    if (isGuest) {
+      setProfileLoading(false);
+      return;
+    }
+
+    let cancelled = false;
+
+    const fetchProfile = async () => {
+      setProfileLoading(true);
+      try {
+        // Fetch achievements and profile data in parallel
+        const [allAchievements, me, myProfile] = await Promise.all([
+          rankingService.getAllAchievements().catch(() => []),
+          userService.getMe().catch(() => null),
+          rankingService.getMyPublicProfile().catch(() => null),
+        ]);
+
+        if (cancelled) return;
+
+        // Update player store with latest server data
+        if (me) {
+          const m = me as any;
+          const store = usePlayerStore.getState();
+          if (m.username || m.nombre) {
+            store.initPlayer({
+              characterId: m._id || m.id || store.characterId,
+              characterName: m.username || m.nombre || store.characterName,
+              characterClass: m.clase || store.characterClass || 'warrior',
+              level: m.nivel || m.level || store.level,
+              gold: m.val ?? store.gold,
+              gems: m.evo ?? store.gems,
+              energy: m.energia ?? store.energy,
+              maxEnergy: m.energiaMaxima ?? store.maxEnergy,
+            });
+          }
+        }
+
+        // Map achievements
+        if (Array.isArray(allAchievements) && allAchievements.length > 0) {
+          setAchievements((allAchievements as any[]).map((a: any) => ({
+            id: a._id || a.id,
+            name: a.nombre || a.name || 'Logro',
+            desc: a.descripcion || a.description || '',
+            unlocked: a.desbloqueado || a.unlocked || false,
+            icon: a.icono || a.icon || '🏆',
+          })));
+        } else {
+          // Fallback static achievements
+          setAchievements([
+            { id: 1, name: 'Primer Paso', desc: 'Completa tu primera mazmorra', unlocked: stats.dungeonsCompleted > 0, icon: '🏆' },
+            { id: 2, name: 'Coleccionista', desc: 'Colecciona 10 personajes', unlocked: stats.charactersOwned >= 10, icon: '📚' },
+            { id: 3, name: 'Superviviente', desc: 'Sobrevive 50 oleadas en Survival', unlocked: stats.maxSurvivalWave >= 50, icon: '🛡️' },
+            { id: 4, name: 'Veterano', desc: 'Alcanza nivel 50', unlocked: player.level >= 50, icon: '⭐' },
+          ]);
+        }
+
+        // Battle history from dashboard
+        try {
+          const dashboard = await userService.getDashboard();
+          if (!cancelled && dashboard) {
+            const d = dashboard as any;
+            if (d.historialBatallas || d.battleHistory) {
+              const history = d.historialBatallas || d.battleHistory || [];
+              setBattleHistory((history as any[]).map((b: any, i: number) => ({
+                id: b._id || b.id || i,
+                type: b.tipo || b.type || 'dungeon',
+                name: b.nombre || b.name || 'Batalla',
+                result: b.resultado || b.result || 'victory',
+                waves: b.oleadas || b.waves,
+                date: new Date(b.fecha || b.date || Date.now()),
+              })));
+            }
+          }
+        } catch {
+          // Dashboard might not have battle history
+        }
+      } catch (err) {
+        console.error('[Profile] Error:', err);
+      } finally {
+        if (!cancelled) setProfileLoading(false);
+      }
+    };
+
+    fetchProfile();
+    return () => { cancelled = true; };
+  }, [isGuest]);
   
   const formatDate = (date: Date) => {
     const now = new Date();

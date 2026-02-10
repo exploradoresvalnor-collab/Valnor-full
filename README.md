@@ -1,108 +1,83 @@
 # 🎮 Valnor - Juego RPG
 
 ## 📋 Descripción
-Proyecto de juego RPG migrado desde Angular a React. El proyecto está en fase inicial de desarrollo.
+Juego RPG 3D con motor propio construido con React Three Fiber. Migrado desde Angular 17 a React 19. Incluye sistema de mazmorras, modo survival, marketplace, ranking y chat en tiempo real. Desplegable como PWA y app nativa Android (Capacitor).
 
-## 🚀 Estado Actual
+## 🚀 Estado Actual — ~92%
 
 ### ✅ Completado
-- **Proyecto base** configurado con Vite + React 19 + TypeScript
-- **Splash Screen** migrado desde Angular con animaciones cinematográficas
-- **Landing Page** migrada desde Angular con:
-  - Navegación responsive (desktop/mobile)
-  - Hero con fondo parallax animado
-  - Logo con efectos de glow y float
-  - Botón CTA con animaciones
-  - Footer transparente
-  - Soporte para preload de imágenes
-  - Animaciones de entrada/salida
-- **Assets** copiados (logo.png, caballero_dorado.png, portada_pc.webp, portada_movil.webp, Logo_2.webp)
-- **Routing** configurado con react-router-dom
+- **13 páginas** completas: SplashScreen, Landing, Auth, Dashboard, Inventory, Shop, Marketplace, Dungeon, Survival, Ranking, Wiki, Profile, Settings
+- **Motor 3D** con React Three Fiber + Rapier: 14 sistemas, 9 niveles, 5 módulos RPG, entidades, personajes
+- **9 stores** Zustand: game, ui, player, session, team, gameMode, dungeon, settings, notifications
+- **5 servicios**: api, auth (rutas `/auth/*`), dungeon, ranking, socket (Socket.IO)
+- **9 tipos** completos con interfaces alineadas al backend
+- **Guards**: RequireAuth, RequireNoAuth
+- **PWA** configurada con VitePWA + Service Worker
+- **Capacitor** Android configurado
+- **Tailwind CSS v4** integrado
+- **Responsive** landscape + portrait en todas las páginas
+- **Notificaciones**: Bell + List + Item con paginación
+- **Guest mode**: GuestBanner en 3 variantes
 
-### 🔄 Pendiente de Migrar (desde guía Angular)
-
-#### 🔐 **Auth Module** - Autenticación
-- [ ] **Login** - Formulario con validación, conexión a API `/api/auth/login`
-- [ ] **Register** - Registro con política de contraseña, API `/api/auth/register`
-- [ ] **Verify** - Verificación de email con token
-- [ ] **Forgot Password** - Recuperación de contraseña
-- [ ] **Reset Password** - Restablecer contraseña con token
-
-#### 🎮 **Demo** - Motor de Juego 3D (Three.js)
-- [ ] **ValnorWorld** - Motor del mundo 3D
-- [ ] **Engine** - Sistema de físicas, personajes, IA, shaders
-- [ ] **Lobby Panel** - Selector de nivel/personaje
-- [ ] **Game HUD** - Interfaz durante el juego
-
-#### 📊 **Dashboard** - Panel Principal (requiere auth)
-- [ ] Dashboard principal del usuario
-
-#### 🎒 **Inventory** - Inventario (requiere auth)
-- [ ] Sistema de inventario
-
-#### 🛒 **Shop** - Tienda (requiere auth)
-- [ ] Tienda del juego
-
-#### 🏪 **Marketplace** - Mercado (requiere auth)
-- [ ] Mercado de items
-
-#### 🏰 **Dungeon** - Mazmorras (requiere auth)
-- [ ] Sistema de mazmorras
-
-#### 🏆 **Ranking** - Rankings (requiere auth)
-- [ ] Tablas de clasificación
-
-#### ⚔️ **Survival** - Modo Supervivencia (requiere auth)
-- [ ] Modo supervivencia
-
-#### 📚 **Wiki** - Documentación (público)
-- [ ] Wiki del juego
+### 🔄 Pendiente
+- [ ] **Fase 6 — Shaders/VFX**: skyShader, waterShader, grassShader, fireShader, stoneShader, groundShader, materiales custom
+- [ ] **Página Demo**: Integrar motor 3D con lobby + HUD (actualmente `/demo` usa Landing como placeholder)
+- [ ] **Componentes UI**: RPGToast, ProgressBar, OfflineIndicator
+- [ ] **PWA offline API**: Sin estrategia de caching para peticiones al backend
 
 ---
 
-## 🔌 Servicios del Backend (Endpoints)
+## 🔌 Servicios del Backend
 
-| Servicio | Endpoints | Descripción |
-|----------|-----------|-------------|
-| **AuthService** | `/api/auth/login`, `/api/auth/register`, `/api/auth/logout`, `/api/auth/verify/:token` | Autenticación |
-| **ApiService** | Base para todas las llamadas HTTP con cookies httpOnly | HTTP Client |
-| **LoadingService** | - | Spinner global |
-| **NotificationService** | - | Toasts/Alertas |
-| **DungeonService** | `/api/dungeon/*` | Mazmorras |
-| **ItemService** | `/api/items/*` | Items |
-| **RankingService** | `/api/ranking/*` | Rankings |
-| **SocketService** | WebSocket | Tiempo real |
+**Base URL:** `https://valgame-backend.onrender.com`
+
+| Servicio | Endpoints | Protocolo |
+|----------|-----------|-----------|
+| **Auth** | `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/verify/:token`, `/auth/forgot-password`, `/auth/reset-password/:token` | HTTP |
+| **Users** | `/api/users/me` | HTTP |
+| **Dungeons** | `/api/dungeons`, `/api/dungeons/:id/start` | HTTP |
+| **Rankings** | `/api/rankings`, `/api/rankings/leaderboard/:category`, `/api/rankings/me` | HTTP |
+| **Survival** | `/api/survival/start`, `/api/survival/:id/complete-wave`, `/api/survival/:id/end`, `/api/survival/leaderboard` | HTTP |
+| **Notifications** | `/api/notifications`, `/api/notifications/unread/count`, `/api/notifications/:id/read` | HTTP |
+| **Settings** | `/api/user/settings` (GET/PUT), `/api/user/settings/reset` (POST) | HTTP |
+| **Realtime** | Socket.IO — eventos: `auth`, `character:*`, `inventory:*`, `marketplace:*`, `survival:*`, `chat:*`, `notification:*`, `rankings:update`, `battle:update` | WebSocket |
 
 ---
 
 ## 📁 Estructura del Proyecto
 
 ```
-Valnor-juego/
-├── public/
-│   └── assets/
-│       ├── logo.png
-│       ├── caballero_dorado.png
-│       └── icons/
-│           ├── Logo_2.webp
-│           ├── portada_pc.webp
-│           └── portada_movil.webp
-├── src/
-│   ├── pages/
-│   │   ├── SplashScreen/
-│   │   │   ├── index.ts
-│   │   │   ├── SplashScreen.tsx
-│   │   │   └── SplashScreen.css
-│   │   └── Landing/
-│   │       ├── index.ts
-│   │       ├── Landing.tsx
-│   │       └── Landing.css
-│   ├── App.tsx          # Router principal
-│   ├── main.tsx         # Entry point
-│   └── index.css        # Estilos globales
-├── index.html
-├── package.json
-└── vite.config.js
+src/
+├── App.tsx                    # Router principal con guards
+├── main.tsx                   # Entry point
+├── index.css                  # Tailwind v4 + CSS custom
+├── config/                    # api.config.ts, game.config.ts
+├── context/                   # AuthContext.tsx
+├── hooks/                     # useAuth, useNotifications, useSettings, usePlatform
+├── stores/                    # 9 stores Zustand
+├── services/                  # api, auth, dungeon, ranking, socket (Socket.IO)
+├── types/                     # 9 archivos de tipos alineados con backend
+├── utils/                     # constants.ts, helpers.ts
+├── components/
+│   ├── guards/                # RequireAuth, RequireNoAuth
+│   ├── ui/                    # LoadingScreen, GlobalNavbar, EnergyBar, GuestBanner, CookieConsent
+│   ├── icons/                 # GameIcons
+│   ├── characters/            # CharacterCard
+│   ├── dungeons/              # DungeonList, DungeonBattle
+│   ├── survival/              # SurvivalBattle
+│   ├── notifications/         # NotificationBell, NotificationList, NotificationItem
+│   └── pwa/                   # PWA install prompt
+├── pages/                     # 13 páginas
+└── engine/                    # Motor 3D completo
+    ├── components/            # GameCanvas, Player, PhysicsWorld, GameCamera
+    ├── hooks/                 # useCamera, useInput, useMovement
+    ├── systems/               # 14 sistemas
+    ├── scenes/                # 9 niveles
+    ├── rpg/                   # rpg-calculator, enemy-factory, leveling, loot, save
+    ├── entities/              # GameEntity, BossEntity, EnemyEntity
+    ├── character/             # Character, states, registry
+    ├── stores/                # engineStore
+    └── utils/                 # physics, math, logger
 ```
 
 ## 🛠️ Tecnologías
@@ -111,53 +86,27 @@ Valnor-juego/
 |------------|---------|-----|
 | React | 19.2.4 | UI Framework |
 | Vite | 7.3.1 | Build Tool |
-| TypeScript | - | Tipado |
-| react-router-dom | 7.6.1 | Navegación |
-| three | 0.177.0 | Gráficos 3D (futuro) |
-| @react-three/fiber | 9.1.2 | React + Three.js (futuro) |
-| @react-three/drei | 10.3.0 | Helpers 3D (futuro) |
-| @react-three/rapier | 2.1.0 | Física (futuro) |
+| TypeScript | 5.x | Tipado estático |
+| react-router-dom | ^7.13.0 | Navegación SPA |
+| three | ^0.182.0 | Gráficos 3D |
+| @react-three/fiber | ^9.5.0 | React + Three.js |
+| @react-three/drei | ^10.7.7 | Helpers 3D |
+| @react-three/rapier | ^2.2.0 | Física 3D |
+| zustand | ^5.0.10 | Estado global |
+| socket.io-client | ^4.8.1 | Tiempo real |
+| framer-motion | ^12.12.2 | Animaciones UI |
+| Tailwind CSS | v4.1 | Estilos utilitarios |
+| @capacitor/core | ^8.0.2 | App nativa Android |
+| vite-plugin-pwa | ^1.1.0 | PWA + Service Worker |
 
 ## 🏃 Ejecutar Proyecto
 
 ```bash
-# Instalar dependencias
 npm install
-
-# Iniciar servidor de desarrollo
-npm run dev
-
-# El proyecto se abrirá en http://localhost:3000
+npm run dev          # → http://localhost:5173
+npm run build        # Producción
+npm run cap:sync     # Sincronizar con Android
 ```
 
-## 📝 Commits
-
-### v0.2.0 - Landing Page
-- ✅ Landing Page migrada desde Angular
-- ✅ Navegación responsive con menú hamburguesa móvil
-- ✅ Hero con fondo parallax y animaciones cinematográficas
-- ✅ Logo con efectos glow, float y ambient glow
-- ✅ CTA button con animaciones y hover effects
-- ✅ Footer transparente dentro del hero
-- ✅ Soporte para viewport mobile (--vh variable)
-- ✅ Preload de imágenes hero
-- ✅ Animaciones de entrada/salida suaves
-
-### v0.1.0 - Proyecto Base
-- ✅ Setup inicial con Vite + React
-- ✅ Splash Screen migrado desde Angular
-- ✅ Animaciones cinematográficas (fadeOut, cinematicZoom)
-- ✅ Navegación a /landing configurada
-
 ---
-
-## 🎯 Próximos Pasos
-- Implementar páginas de autenticación (Login, Register)
-- Crear la sección Demo
-- Implementar Wiki
-
-## 📚 Proyecto Original
-Migrado desde: `Angular-game2` (Angular)
-
----
-*Última actualización: 31 de Enero 2026*
+*Última actualización: 7 de febrero de 2026*

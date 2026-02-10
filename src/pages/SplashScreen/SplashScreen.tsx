@@ -7,7 +7,7 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionStore } from '../../stores/sessionStore';
-import { IconPlay, IconUser, IconBook } from '../../components/ui/GameIcons';
+import { IconPlay, IconUser, IconBook } from '../../components/icons/GameIcons';
 import './SplashScreen.css';
 
 function SplashScreen() {

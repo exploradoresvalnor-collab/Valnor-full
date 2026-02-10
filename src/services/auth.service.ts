@@ -17,6 +17,7 @@ import {
   ValidateResetTokenResponse,
   VerifyEmailResponse,
 } from '../types';
+import { STORAGE_KEYS } from '../utils/constants';
 
 // Estado de autenticación
 let currentUser: User | null = null;
@@ -38,7 +39,7 @@ export const authService = {
    * POST /api/auth/register
    */
   async register(data: RegisterRequest): Promise<RegisterResponse> {
-    const response = await api.post<RegisterResponse>('/api/auth/register', data);
+    const response = await api.post<RegisterResponse>('/auth/register', data);
     return response;
   },
 
@@ -48,18 +49,18 @@ export const authService = {
    */
   async login(data: LoginRequest): Promise<LoginResponse> {
     // Limpiar tokens previos
-    localStorage.removeItem('token');
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
     localStorage.removeItem('DEV_TOKEN');
 
-    const response = await api.post<LoginResponse>('/api/auth/login', data);
+    const response = await api.post<LoginResponse>('/auth/login', data);
 
     // Guardar usuario y token
     currentUser = response.user;
     if (response.token) {
-      localStorage.setItem('token', response.token);
+      localStorage.setItem(STORAGE_KEYS.TOKEN, response.token);
     }
     if (response.user) {
-      localStorage.setItem('user', JSON.stringify(response.user));
+      localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));
     }
 
     notifyListeners(currentUser);
@@ -74,14 +75,14 @@ export const authService = {
    */
   async logout(): Promise<void> {
     try {
-      await api.post<void>('/api/auth/logout', {});
+      await api.post<void>('/auth/logout', {});
     } catch (e) {
       console.warn('Logout en backend falló, limpiando localmente');
     }
 
     currentUser = null;
-    localStorage.removeItem('token');
-    localStorage.removeItem('user');
+    localStorage.removeItem(STORAGE_KEYS.TOKEN);
+    localStorage.removeItem(STORAGE_KEYS.USER);
     notifyListeners(null);
     console.log('🗑️ Sesión cerrada');
   },
@@ -91,7 +92,7 @@ export const authService = {
    * GET /api/auth/verify/:token
    */
   async verifyEmail(token: string): Promise<VerifyEmailResponse> {
-    return api.get<VerifyEmailResponse>(`/api/auth/verify/${token}`);
+    return api.get<VerifyEmailResponse>(`/auth/verify/${token}`);
   },
 
   /**
@@ -99,7 +100,7 @@ export const authService = {
    * POST /api/auth/forgot-password
    */
   async forgotPassword(email: string): Promise<ForgotPasswordResponse> {
-    return api.post<ForgotPasswordResponse>('/api/auth/forgot-password', { email });
+    return api.post<ForgotPasswordResponse>('/auth/forgot-password', { email });
   },
 
   /**
@@ -107,7 +108,7 @@ export const authService = {
    * POST /api/auth/reset-password/:token
    */
   async resetPassword(token: string, password: string): Promise<ResetPasswordResponse> {
-    return api.post<ResetPasswordResponse>(`/api/auth/reset-password/${token}`, { password });
+    return api.post<ResetPasswordResponse>(`/auth/reset-password/${token}`, { password });
   },
 
   /**
@@ -115,7 +116,7 @@ export const authService = {
    * GET /api/auth/reset-password/validate/:token
    */
   async validateResetToken(token: string): Promise<ValidateResetTokenResponse> {
-    return api.get<ValidateResetTokenResponse>(`/api/auth/reset-password/validate/${token}`);
+    return api.get<ValidateResetTokenResponse>(`/auth/reset-password/validate/${token}`);
   },
 
   /**
@@ -123,18 +124,18 @@ export const authService = {
    * POST /api/auth/resend-verification
    */
   async resendVerification(email: string): Promise<{ message: string }> {
-    return api.post<{ message: string }>('/api/auth/resend-verification', { email });
+    return api.post<{ message: string }>('/auth/resend-verification', { email });
   },
 
   /**
    * Verificar disponibilidad de email/username
-   * GET /api/auth/check
+   * @deprecated Este endpoint NO existe en el backend. La disponibilidad se
+   * verifica al enviar el registro (409 = email/username duplicado).
    */
   async checkAvailability(params: CheckAvailabilityParams): Promise<CheckAvailabilityResponse> {
-    const queryParams: Record<string, string> = {};
-    if (params.email) queryParams.email = params.email;
-    if (params.username) queryParams.username = params.username;
-    return api.get<CheckAvailabilityResponse>('/api/auth/check', queryParams);
+    console.warn('[auth] checkAvailability no tiene endpoint en el backend — la validación se hace en /auth/register (409)');
+    // Devolver siempre disponible; la validación real ocurre al hacer register
+    return { available: true };
   },
 
   /**
@@ -144,7 +145,7 @@ export const authService = {
   async getCurrentUser(): Promise<User> {
     const user = await api.get<User>('/api/users/me');
     currentUser = user;
-    localStorage.setItem('user', JSON.stringify(user));
+    localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(user));
     notifyListeners(user);
     return user;
   },
@@ -172,14 +173,14 @@ export const authService = {
    * Verificar si está autenticado
    */
   isAuthenticated(): boolean {
-    return currentUser !== null || localStorage.getItem('token') !== null;
+    return currentUser !== null || localStorage.getItem(STORAGE_KEYS.TOKEN) !== null;
   },
 
   /**
    * Cargar usuario desde localStorage al iniciar
    */
   loadFromStorage(): void {
-    const storedUser = localStorage.getItem('user');
+    const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
     if (storedUser) {
       try {
         currentUser = JSON.parse(storedUser);
@@ -206,10 +207,13 @@ export const authService = {
 
   /**
    * Obtener token para Socket.IO
-   * GET /api/auth/socket-token
+   * @deprecated Este endpoint NO existe en el backend. El token JWT principal
+   * almacenado en localStorage se usa directamente para autenticar WebSocket.
    */
   async getSocketToken(): Promise<{ token: string }> {
-    return api.get<{ token: string }>('/api/auth/socket-token');
+    console.warn('[auth] getSocketToken no tiene endpoint — usa el JWT de localStorage directamente');
+    const token = localStorage.getItem('valnor_token') || '';
+    return { token };
   },
 };
 

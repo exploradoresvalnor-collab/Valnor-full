@@ -9,167 +9,43 @@ import {
   RARITY_COLORS, 
   RARITY_NAMES 
 } from '../../types/item.types';
+import { inventoryService } from '../../services';
 import './Inventory.css';
 
-// Mock data para demostración
-const mockEquippedItems: EquippedItems = {
-  weapon: {
-    id: '1',
-    nombre: 'Espada del Dragón',
-    descripcion: 'Una espada forjada con escamas de dragón',
-    tipo: 'weapon',
-    rareza: 'epic',
-    nivel: 15,
-    stats: { ataque: 45, critico: 12 },
-    precio: 5000,
-    equipado: true,
-    slot: 'weapon',
-    mejoras: 3,
-    maxMejoras: 10,
-  },
-  armor: {
-    id: '2',
-    nombre: 'Armadura de Mithril',
-    descripcion: 'Ligera pero extremadamente resistente',
-    tipo: 'armor',
-    rareza: 'rare',
-    nivel: 12,
-    stats: { defensa: 35, hp: 100 },
-    precio: 3500,
-    equipado: true,
-    slot: 'armor',
-    mejoras: 2,
-    maxMejoras: 10,
-  },
-  helmet: {
-    id: '3',
-    nombre: 'Yelmo del Guardián',
-    descripcion: 'Protege contra ataques críticos',
-    tipo: 'helmet',
-    rareza: 'uncommon',
-    nivel: 10,
-    stats: { defensa: 15, evasion: 5 },
-    precio: 1500,
-    equipado: true,
-    slot: 'helmet',
-    mejoras: 1,
-    maxMejoras: 10,
-  },
-  boots: {
-    id: '4',
-    nombre: 'Botas de Viento',
-    descripcion: 'Aumentan la velocidad de movimiento',
-    tipo: 'boots',
-    rareza: 'rare',
-    nivel: 11,
-    stats: { velocidad: 20, evasion: 8 },
-    precio: 2000,
-    equipado: true,
-    slot: 'boots',
-    mejoras: 0,
-    maxMejoras: 10,
-  },
-  accessory1: {
-    id: '5',
-    nombre: 'Anillo de Poder',
-    descripcion: 'Aumenta el daño de habilidades',
-    tipo: 'accessory',
-    rareza: 'legendary',
-    nivel: 20,
-    stats: { ataque: 25, critico: 15 },
-    precio: 10000,
-    equipado: true,
-    slot: 'accessory1',
-    mejoras: 5,
-    maxMejoras: 10,
-  },
-  accessory2: null,
-};
+/** Maps raw backend equipment item */
+function mapEquipment(raw: any): EquipmentItem {
+  return {
+    id: raw._id || raw.id,
+    nombre: raw.nombre || raw.name || 'Item',
+    descripcion: raw.descripcion || raw.description || '',
+    tipo: raw.tipo || raw.type || 'weapon',
+    rareza: raw.rareza || raw.rarity || 'common',
+    nivel: raw.nivel || raw.level || 1,
+    stats: raw.stats || raw.estadisticas || {},
+    precio: raw.precio || raw.price || 0,
+    equipado: raw.equipado || raw.isEquipped || false,
+    slot: raw.slot || raw.tipo || 'weapon',
+    mejoras: raw.mejoras || raw.upgrades || 0,
+    maxMejoras: raw.maxMejoras || raw.maxUpgrades || 10,
+  };
+}
 
-const mockBackpackItems: EquipmentItem[] = [
-  {
-    id: '6',
-    nombre: 'Daga Sombría',
-    descripcion: 'Perfecta para ataques sigilosos',
-    tipo: 'weapon',
-    rareza: 'uncommon',
-    nivel: 8,
-    stats: { ataque: 20, critico: 18 },
-    precio: 800,
-    equipado: false,
-    slot: 'weapon',
-    mejoras: 0,
-    maxMejoras: 10,
-  },
-  {
-    id: '7',
-    nombre: 'Escudo de Roble',
-    descripcion: 'Un escudo básico pero confiable',
-    tipo: 'armor',
-    rareza: 'common',
-    nivel: 5,
-    stats: { defensa: 12 },
-    precio: 200,
-    equipado: false,
-    slot: 'armor',
-    mejoras: 0,
-    maxMejoras: 10,
-  },
-  {
-    id: '8',
-    nombre: 'Capa del Errante',
-    descripcion: 'Otorga resistencia al frío',
-    tipo: 'armor',
-    rareza: 'rare',
-    nivel: 14,
-    stats: { defensa: 18, evasion: 10 },
-    precio: 2500,
-    equipado: false,
-    slot: 'armor',
-    mejoras: 1,
-    maxMejoras: 10,
-  },
-];
-
-const mockConsumables: ConsumableItem[] = [
-  {
-    id: 'c1',
-    nombre: 'Poción de Vida',
-    descripcion: 'Restaura 100 HP',
+/** Maps raw backend consumable */
+function mapConsumable(raw: any): ConsumableItem {
+  return {
+    id: raw._id || raw.id,
+    nombre: raw.nombre || raw.name || 'Consumible',
+    descripcion: raw.descripcion || raw.description || '',
     tipo: 'consumable',
-    rareza: 'common',
-    nivel: 1,
-    stats: {},
-    precio: 50,
-    cantidad: 15,
-    efecto: 'heal',
-  },
-  {
-    id: 'c2',
-    nombre: 'Elixir de Fuerza',
-    descripcion: 'Aumenta el ataque por 5 minutos',
-    tipo: 'consumable',
-    rareza: 'uncommon',
-    nivel: 5,
-    stats: {},
-    precio: 150,
-    cantidad: 5,
-    efecto: 'buff_attack',
-    duracion: 300,
-  },
-  {
-    id: 'c3',
-    nombre: 'Pergamino de Teletransporte',
-    descripcion: 'Te lleva al pueblo más cercano',
-    tipo: 'consumable',
-    rareza: 'rare',
-    nivel: 1,
-    stats: {},
-    precio: 500,
-    cantidad: 2,
-    efecto: 'teleport',
-  },
-];
+    rareza: raw.rareza || raw.rarity || 'common',
+    nivel: raw.nivel || raw.level || 1,
+    stats: raw.stats || {},
+    precio: raw.precio || raw.price || 0,
+    cantidad: raw.cantidad || raw.quantity || 1,
+    efecto: raw.efecto || raw.effect || '',
+    duracion: raw.duracion || raw.duration,
+  };
+}
 
 type InventoryTab = 'equipment' | 'consumables';
 
@@ -178,9 +54,14 @@ const Inventory: React.FC = () => {
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<InventoryTab>('equipment');
   const [selectedItem, setSelectedItem] = useState<EquipmentItem | ConsumableItem | null>(null);
-  const [equippedItems] = useState<EquippedItems>(mockEquippedItems);
-  const [backpackItems] = useState<EquipmentItem[]>(mockBackpackItems);
-  const [consumables] = useState<ConsumableItem[]>(mockConsumables);
+  const [equippedItems, setEquippedItems] = useState<EquippedItems>({
+    weapon: null, armor: null, helmet: null, boots: null, accessory1: null, accessory2: null,
+  });
+  const [backpackItems, setBackpackItems] = useState<EquipmentItem[]>([]);
+  const [consumables, setConsumables] = useState<ConsumableItem[]>([]);
+  const [invLoading, setInvLoading] = useState(true);
+  const [invError, setInvError] = useState<string | null>(null);
+  const [invCapacity, setInvCapacity] = useState({ current: 0, max: 50 });
 
   useEffect(() => {
     if (!loading && !user) {
@@ -188,7 +69,72 @@ const Inventory: React.FC = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  // Fetch real inventory data
+  useEffect(() => {
+    if (loading || !user) return;
+    let cancelled = false;
+
+    const fetchInventory = async () => {
+      setInvLoading(true);
+      setInvError(null);
+      try {
+        const inventory = await inventoryService.getMyInventory();
+        if (cancelled) return;
+
+        const inv = inventory as any;
+
+        // Equipment
+        if (inv.equipment || inv.equipamiento) {
+          const eqArr = (inv.equipment || inv.equipamiento || []) as any[];
+          const equipped: EquippedItems = {
+            weapon: null, armor: null, helmet: null, boots: null, accessory1: null, accessory2: null,
+          };
+          const backpack: EquipmentItem[] = [];
+
+          eqArr.forEach((raw: any) => {
+            const item = mapEquipment(raw);
+            if (item.equipado) {
+              const slot = item.slot as keyof EquippedItems;
+              if (slot in equipped) {
+                equipped[slot] = item;
+              }
+            } else {
+              backpack.push(item);
+            }
+          });
+
+          setEquippedItems(equipped);
+          setBackpackItems(backpack);
+        }
+
+        // Consumables
+        if (inv.consumables || inv.consumibles) {
+          const conArr = (inv.consumables || inv.consumibles || []) as any[];
+          setConsumables(conArr.map(mapConsumable));
+        }
+
+        // Capacity limits
+        if (inv.limits || inv.limites) {
+          const limits = inv.limits || inv.limites;
+          setInvCapacity({
+            current: (inv.equipment?.length || 0) + (inv.consumables?.length || 0),
+            max: limits.maxEquipamiento || limits.maxEquipment || 50,
+          });
+        }
+
+      } catch (err: any) {
+        console.error('[Inventory] Error loading:', err);
+        if (!cancelled) setInvError(err.message || 'Error cargando inventario');
+      } finally {
+        if (!cancelled) setInvLoading(false);
+      }
+    };
+
+    fetchInventory();
+    return () => { cancelled = true; };
+  }, [loading, user]);
+
+  if (loading || invLoading) {
     return (
       <div className="inventory-loading">
         <div className="loading-spinner" />
@@ -231,7 +177,7 @@ const Inventory: React.FC = () => {
         </button>
         <h1>🎒 Inventario</h1>
         <div className="inventory-capacity">
-          {backpackItems.length}/{user?.limiteInventarioEquipamiento || 50}
+          {invCapacity.current}/{invCapacity.max}
         </div>
       </header>
 

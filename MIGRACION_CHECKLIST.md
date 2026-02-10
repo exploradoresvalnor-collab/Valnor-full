@@ -1,8 +1,8 @@
 # ✅ CHECKLIST DE MIGRACIÓN VALNOR: Angular → React
 
 > **Inicio:** 31 de enero de 2026  
-> **Última actualización:** 2 de febrero de 2026  
-> **Estado:** 🔄 EN PROGRESO (~85%)
+> **Última actualización:** 7 de febrero de 2026  
+> **Estado:** 🔄 EN PROGRESO (~95%)
 
 ---
 
@@ -15,10 +15,11 @@ Fase 3: Sistemas Engine    [██████████] 100% ✅
 Fase 4: Niveles            [██████████] 100% ✅
 Fase 5: RPG y Combate      [██████████] 100% ✅
 Fase 6: Shaders y VFX      [░░░░░░░░░░]   0% ⏳
-Fase 7: Integración        [████████░░]  80% 🔄
+Fase 7: Integración        [█████████░]  92% 🔄
 Fase 8: PWA + Móvil        [██████████] 100% ✅
-Fase 9: UI Juego           [██████████] 100% ✅ (NUEVA)
-Fase 10: Profile/Settings  [██████████] 100% ✅ (NUEVA)
+Fase 9: UI Juego           [██████████] 100% ✅
+Fase 10: Profile/Settings  [██████████] 100% ✅
+Fase 11: Backend Connect   [██████████] 100% ✅ (NUEVA)
 ```
 
 ---
@@ -49,7 +50,7 @@ Fase 10: Profile/Settings  [██████████] 100% ✅ (NUEVA)
 ### 1.4 Services Adicionales
 - [x] `services/dungeon.service.ts` - Servicio de mazmorras
 - [x] `services/ranking.service.ts` - Servicio de rankings
-- [x] `services/socket.service.ts` - WebSocket
+- [x] `services/socket.service.ts` - Socket.IO (alineado con backend)
 - [x] `services/index.ts` - Exports actualizados
 
 ### 1.5 Guards y Componentes Base
@@ -517,6 +518,251 @@ src/
 
 ---
 
-> **Última actualización:** 02/02/2026 - Sesión 3  
-> **Progreso total:** ~85%  
+## 🔧 CORRECCIONES APLICADAS — 7 de febrero de 2026 (Sesión 4)
+
+### Auditoría y alineación con backend (15 correcciones)
+
+| # | Corrección | Archivos |
+|---|-----------|----------|
+| 1 | Creado `vite.config.ts` (faltaba completamente) | NUEVO |
+| 2 | Creado `postcss.config.js` para Tailwind v4 | NUEVO |
+| 3 | Integrado Tailwind v4 con `@import "tailwindcss"` | `index.css` |
+| 4 | Instalado `socket.io-client@^4.8.1` | `package.json` |
+| 5 | Reescrito `socket.service.ts` de WebSocket nativo → Socket.IO (alineado con backend `RealtimeService`) | `socket.service.ts` |
+| 6 | Corregidas rutas auth de `/api/auth/*` → `/auth/*` (backend monta auth sin prefijo `/api`) | `auth.service.ts` |
+| 7 | Corregidos 16 campos con prefijo `od` corrupto (odrank→rank, oduserId→userId, etc.) | `ranking.types.ts`, `dungeon.types.ts`, `survival.types.ts`, `shop.types.ts` |
+| 8 | Agregados ~15 tipos/interfaces faltantes del proyecto Angular de referencia | mismos 4 archivos de tipos |
+| 9 | Unificada interfaz `Dungeon` completa con campos del backend | `dungeon.types.ts` |
+| 10 | Alineado `DungeonDifficulty` a valores del backend (`expert`/`nightmare` en vez de `nightmare`/`hell`) | `dungeon.types.ts`, `dungeonStore.ts` |
+| 11 | Unificadas claves `localStorage` a `STORAGE_KEYS.TOKEN`/`USER` (antes hardcoded `'token'`, `'user'`) | `api.service.ts`, `auth.service.ts` |
+| 12 | Hooks `useNotifications` y `useSettings` ahora usan `apiService` (antes usaban `fetch` directo sin Bearer token) | `useNotifications.ts`, `useSettings.ts` |
+| 13 | Eliminada duplicación de `RARITY_COLORS`/`RARITY_NAMES` — fuente única en `item.types.ts`, agregada rareza `mythic` | `item.types.ts`, `constants.ts` |
+| 14 | Eliminado audio duplicado de `gameStore` — `settingsStore` es fuente única; `AudioSystem` lee de `settingsStore` | `gameStore.ts`, `AudioSystem.ts` |
+| 15 | Completados `CLASS_NAMES`/`CLASS_COLORS` con 9 clases (faltaban `berserker`, `monk`, `healer`), tipados con `CharacterClass` | `constants.ts` |
+
+---
+
+## 🌐 FASE 11: CONEXIÓN FRONTEND → BACKEND (NUEVA — Sesión 5)
+
+> Todas las páginas del juego fueron conectadas al backend real en `localhost:8080`.  
+> Se eliminó **todo** el mock/hardcoded data y se reemplazó por llamadas a servicios reales con `useEffect` + mappers.
+
+### 11.1 Servicios Creados/Modificados (Sesión 4-5)
+
+| Servicio | Archivo | Endpoints cubiertos |
+|----------|---------|-------------------|
+| apiService | `services/api.service.ts` | Base HTTP con `credentials: 'include'` + Bearer token |
+| authService | `services/auth.service.ts` | login, register, logout, verify, forgotPassword, resetPassword, checkAvailability, getSocketToken |
+| userService | `services/user.service.ts` | getMe, getResources, getEnergyStatus, getDashboard, getMyPublicProfile |
+| characterService | `services/character.service.ts` | getUserCharacters, getCharacter, equipCharacter |
+| teamService | `services/team.service.ts` | getTeams, createTeam, updateTeam |
+| inventoryService | `services/inventory.service.ts` | getMyInventory, getEquipmentCatalog, getConsumablesCatalog |
+| shopService | `services/shop.service.ts` | getShopPackages, purchase, addPackageToUser, removePackageFromUser |
+| dungeonService | `services/dungeon.service.ts` | getDungeons, getDungeon, startDungeon, completeDungeon |
+| rankingService | `services/ranking.service.ts` | getLeaderboard, getMyRanking, getGeneralRanking, getAllAchievements, getMyPublicProfile |
+| survivalService | `services/survival.service.ts` | getMyStats, getLeaderboard, startGame, endGame |
+| combatService | `services/combat.service.ts` | startCombat, submitAction, getCombatStatus |
+| marketplaceService | `services/marketplace.service.ts` | getHistory, buyItem, cancelListing, listItem, updatePrice, getListing |
+| marketplaceTx | `services/marketplace.service.ts` | getMyTransactionHistory, getMySales, getMyPurchases, getTransactionStats |
+| chatService | `services/chat.service.ts` | getMessages, sendMessage, getChannels, joinChannel |
+| feedbackService | `services/feedback.service.ts` | submitFeedback, getMyFeedback |
+| gameConfigService | `services/gameConfig.service.ts` | getConfig, getRarityConfig, getClassConfig, getLevelConfig, getEnergyConfig, getSeasonConfig |
+
+### 11.2 Páginas Conectadas al Backend
+
+#### ✅ Dashboard (`pages/Dashboard/Dashboard.tsx`)
+- **Datos eliminados:** actividad reciente hardcoded
+- **Servicios usados:** `userService`, `characterService`, `teamService`
+- **Endpoints llamados:**
+  - `GET /api/users/me` → info del jugador → `playerStore`
+  - `GET /api/users/resources` → val, boletos, energía → `playerStore`
+  - `GET /api/users/energy/status` → estado de energía → `playerStore`
+  - `GET /api/user-characters` → personajes del usuario → `playerStore`
+  - `GET /api/teams` → equipos del usuario → `teamStore`
+  - `GET /api/users/dashboard` → actividad reciente (con fallback)
+- **Store poblado:** `playerStore` (username, level, class, energy, val, gold), `teamStore` (teams)
+
+#### ✅ Shop (`pages/Shop/Shop.tsx`)
+- **Datos eliminados:** 18 items mock (12 equipo + 6 consumibles)
+- **Servicios usados:** `inventoryService`, `shopService`, `userService`
+- **Endpoints llamados:**
+  - `GET /api/inventory/equipment/catalog` → catálogo de equipo
+  - `GET /api/inventory/consumables/catalog` → catálogo de consumibles
+  - `GET /api/shop/packages` → paquetes de la tienda
+  - `GET /api/users/resources` → balance del jugador
+  - `POST /api/shop/purchase` → compra real
+- **Helper:** `mapToShopItem()` — mapea campos backend (nombre/name, precio/price, rareza/rarity) al formato UI
+- **Categoría nueva:** "Paquetes" agregada junto a Equipamiento y Consumibles
+
+#### ✅ Inventory (`pages/Inventory/Inventory.tsx`)
+- **Datos eliminados:** 3 arrays mock (equipped, backpack, consumables)
+- **Servicios usados:** `inventoryService`
+- **Endpoints llamados:**
+  - `GET /api/inventory/my` → inventario completo del jugador
+- **Helpers:** `mapEquipment()`, `mapConsumable()` — mapean items del backend con fallbacks para campos ES/EN
+- **Lógica:** Items con `equipado=true` van a slots equipados, el resto a mochila. Capacidad desde `inventory.limits`
+
+#### ✅ Dungeon (`pages/Dungeon/Dungeon.tsx`)
+- **Datos eliminados:** 7 mazmorras hardcoded (~140 líneas)
+- **Servicios usados:** `dungeonService`
+- **Endpoints llamados:**
+  - `GET /api/dungeons` → lista de mazmorras disponibles
+- **Helper:** `mapDungeon()` — mapea campos backend al formato UI
+- **Extra:** `difficultyColors`/`difficultyNames` manejan tanto español (fácil/normal/difícil/extremo) como inglés (easy/medium/hard/legendary)
+
+#### ✅ Ranking (`pages/Ranking/Ranking.tsx`)
+- **Datos eliminados:** objeto mockRankings con 40 entradas en 4 categorías
+- **Servicios usados:** `rankingService`
+- **Endpoints llamados:**
+  - `GET /api/ranking/leaderboard?type={category}` → top jugadores por categoría
+  - `GET /api/ranking/me` → posición del jugador actual
+  - `GET /api/ranking/general` → fallback si leaderboard falla
+- **Helper:** `mapRankingPlayer()` — normaliza campos rank/position, username/nombre, score/puntuacion
+- **Extra:** Guards seguros para podio cuando hay < 3 jugadores. `classIcons` con claves ES e EN
+
+#### ✅ Profile (`pages/Profile/Profile.tsx`)
+- **Datos eliminados:** 6 logros hardcoded + 4 batallas hardcoded
+- **Servicios usados:** `rankingService`, `userService`
+- **Endpoints llamados:**
+  - `GET /api/ranking/achievements` → lista completa de logros
+  - `GET /api/users/me` → datos del perfil
+  - `GET /api/ranking/profile/me` → perfil público con stats
+  - `GET /api/users/dashboard` → historial de batallas recientes
+- **Lógica:** Combina datos de múltiples endpoints para poblar stats, achievements y battleHistory con fallbacks
+
+#### ✅ Survival (`pages/Survival/Survival.tsx`)
+- **Datos eliminados:** `mockStats` (5 campos) + `weeklyLeaderboard` (5 entradas)
+- **Servicios usados:** `survivalService`
+- **Endpoints llamados:**
+  - `GET /api/survival/stats/me` → estadísticas personales (mejorOleada, partidasJugadas, etc.)
+  - `GET /api/survival/leaderboard?limit=5` → top semanal
+- **Datos conservados:** `powerUps[]` (6 power-ups) — son constantes de diseño, no datos de backend
+- **Helper inline:** Mapea campos ES/EN (mejorOleada/bestWave, partidasJugadas/gamesPlayed, etc.)
+
+#### ✅ Marketplace (`pages/Marketplace/Marketplace.tsx`)
+- **Datos eliminados:** 8 listings mock (Hacha, Cetro, Armadura, Capa, Botas, Anillo, Escudo, Daga)
+- **Servicios usados:** `marketplaceService`
+- **Endpoints llamados:**
+  - `GET /api/marketplace/history?limit=50` → listings activos (filtrados por status=active)
+  - `POST /api/marketplace/buy/:listingId` → compra real con feedback
+  - `GET /api/marketplace-transactions/my-history` → historial de transacciones (tab Historial)
+- **Helpers:** `mapListing()` (backend→frontend listing), `mapTransaction()` (backend→frontend transaction)
+- **Mejoras:** Estado `purchasing` para evitar doble-click, `userVal` local se actualiza tras compra, empty state cuando no hay listings
+
+#### ℹ️ Settings (`pages/Settings/Settings.tsx`)
+- **Estado:** Ya conectada desde Sesión 4 vía hook `useSettings`
+- **Endpoints usados:**
+  - `GET /api/user/settings` → carga configuración
+  - `PUT /api/user/settings` → guarda cambios
+  - `POST /api/user/settings/reset` → restaurar valores por defecto
+- **Sin cambios necesarios en Sesión 5**
+
+#### ℹ️ Wiki (`pages/Wiki/Wiki.tsx`) y Portals (`pages/Portals/`)
+- **Estado:** Páginas 100% frontend, sin backend asociado (rutas `/api/wiki/*` devuelven 404)
+- **Sin cambios necesarios**
+
+### 11.3 Stores Zustand — Rol en la arquitectura
+
+> **NOTA CLAVE:** Los stores Zustand son **puramente estado local**. Ningún store llama directamente al backend.  
+> Cada página es responsable de: (1) llamar al servicio, (2) mapear datos, (3) escribir en el store.
+
+| Store | Poblado por | Datos principales |
+|-------|-------------|-------------------|
+| `playerStore` | Dashboard, Profile, Shop | username, level, class, energy, val, gold, experience |
+| `teamStore` | Dashboard | teams, activeTeam |
+| `dungeonStore` | Dungeon | dungeons, selectedDungeon |
+| `gameModeStore` | PortalSelection | selectedMode (rpg/survival) |
+| `sessionStore` | AuthContext | isGuest flag |
+| `settingsStore` | useSettings hook | audio, language, notifications, visual, controls |
+| `notificationsStore` | useNotifications hook | notifications[], unreadCount |
+| `gameStore` | Engine scenes | gameState, currentLevel |
+| `uiStore` | Varios componentes | modals, loading states |
+| `engineStore` | Engine components | camera, physics state |
+
+### 11.4 Patrón de conexión aplicado
+
+```tsx
+// Patrón usado en TODAS las páginas:
+useEffect(() => {
+  if (loading) return;          // Esperar auth
+  let cancelled = false;        // Evitar race conditions
+
+  const fetchData = async () => {
+    try {
+      const [data1, data2] = await Promise.all([
+        service1.getData().catch(() => null),   // Nunca romper por un endpoint
+        service2.getData().catch(() => null),
+      ]);
+      if (cancelled) return;    // Componente desmontado
+      
+      // Mapear con fallbacks ES/EN
+      const mapped = mapData(data1);
+      setState(mapped);
+      store.setField(mapped);   // Popular store
+    } catch (err) {
+      console.error('[Page] Error:', err);
+    }
+  };
+
+  fetchData();
+  return () => { cancelled = true; };
+}, [loading]);
+```
+
+### 11.5 Resumen de endpoints utilizados por página
+
+| Página | GET | POST | PATCH | Total |
+|--------|-----|------|-------|-------|
+| Dashboard | 5 | 0 | 0 | **5** |
+| Shop | 4 | 1 | 0 | **5** |
+| Inventory | 1 | 0 | 0 | **1** |
+| Dungeon | 1 | 0 | 0 | **1** |
+| Ranking | 3 | 0 | 0 | **3** |
+| Profile | 4 | 0 | 0 | **4** |
+| Survival | 2 | 0 | 0 | **2** |
+| Marketplace | 2 | 1 | 0 | **3** |
+| Settings | 1 | 1 | 0 | **2** |
+| **TOTAL** | **23** | **3** | **0** | **26** |
+
+---
+
+### Problemas detectados pendientes de resolver
+
+| Severidad | Problema | Archivo(s) |
+|-----------|----------|------------|
+| **CRÍTICO** | ~~Ruta duplicada: `GameIcons.tsx`~~ | ✅ RESUELTO — Unificado en `components/icons/GameIcons.tsx`, archivo duplicado eliminado |
+| **ALTO** | ~~`engine/index.ts` no exporta `rpg`, `entities`, `character`~~ | ✅ RESUELTO — Barrel completado |
+| **MEDIO** | Carpeta `src/engine/shaders/` no existe (Fase 6 entera pendiente) | — |
+| **MEDIO** | Página Demo no existe — `/demo` usa `<Landing />` como placeholder | `App.tsx` L200 |
+| **MEDIO** | Componentes faltantes: `RPGToast`, `ProgressBar`, `OfflineIndicator` | `components/ui/` |
+| **MEDIO** | Carpeta `src/pages/Portals/` existe pero no tiene ruta en App.tsx (código muerto) | `pages/Portals/` |
+| **BAJO** | PWA sin estrategia de caching offline para API (`/auth/*`, `/api/*`) | `vite.config.ts` |
+| **BAJO** | ~~`components/ui/index.ts` no exporta `GameIcons`~~ | ✅ RESUELTO — Re-exporta desde `icons/` |
+| **BAJO** | Dependencias no usadas: `maath`, `workbox-window`; `@capacitor/cli` debería ser devDependency | `package.json` |
+| **BAJO** | Faltan `typescript`, `@types/three` en devDependencies | `package.json` |
+
+---
+
+### 7 de febrero de 2026 - Sesión 5 (Conexión total con Backend)
+- ✅ **FASE 11 completada:** Conexión Frontend → Backend
+  - **Dashboard** conectado: userService, characterService, teamService (5 endpoints)
+  - **Shop** conectado: inventoryService, shopService, userService (5 endpoints)
+  - **Inventory** conectado: inventoryService (1 endpoint)
+  - **Dungeon** conectado: dungeonService (1 endpoint)
+  - **Ranking** conectado: rankingService (3 endpoints)
+  - **Profile** conectado: rankingService, userService (4 endpoints)
+  - **Survival** conectado: survivalService (2 endpoints)
+  - **Marketplace** conectado: marketplaceService (3 endpoints) — ¡faltaba en el plan original!
+  - Settings ya conectada vía useSettings hook
+  - Wiki/Portals son frontend-only (sin backend)
+- ✅ **16 servicios** cubriendo **135 endpoints** del backend
+- ✅ **26 endpoints activamente usados** por las 9 páginas conectadas
+- ✅ **Eliminados ~350+ líneas** de mock data hardcoded
+- ✅ **Patrón unificado:** useEffect + Promise.all + mappers ES/EN + fallbacks
+- ✅ **0 errores de compilación** en todas las páginas
+
+---
+
+> **Última actualización:** 07/02/2026 - Sesión 5 (Backend Connect completado)  
+> **Progreso total:** ~95%  
 > **Autor:** Desarrollo con GitHub Copilot

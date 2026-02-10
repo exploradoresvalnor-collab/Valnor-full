@@ -326,3 +326,122 @@ export const ValnorLogo = ({ size = 32, className }: IconProps) => (
     <path d="M16 10l5 3v4l-5 6-5-6v-4l5-3z" fill="url(#valnorGrad)" />
   </svg>
 );
+
+// ============================================
+// ALIAS Icon* (compatibilidad con imports legacy)
+// Estos alias permiten que cualquier archivo importe
+// con el patrón IconNombre desde esta única fuente.
+// ============================================
+
+export const IconSword = WarriorIcon;
+export const IconShield = ShieldIcon;
+export const IconSkull = SkullIcon;
+export const IconTrophy = TrophyIcon;
+export const IconGold = GoldIcon;
+export const IconGem = GemIcon;
+export const IconHeart = HeartIcon;
+export const IconBook = BookIcon;
+export const IconBackpack = BackpackIcon;
+export const IconUser = UserIcon;
+export const IconDungeon = SwordIcon;
+export const IconKey = LockIcon;
+export const IconRefresh = RefreshIcon;
+export const IconSettings = SettingsIcon;
+export const IconLogout = LogoutIcon;
+export const IconChart = ChartIcon;
+
+export const IconStaff = ({ size = 24, color = 'currentColor', className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M6 21L18 9" />
+    <circle cx="19" cy="5" r="3" fill={color} fillOpacity="0.3" />
+    <path d="M19 2v6" />
+    <path d="M16 5h6" />
+    <path d="M4 19l2 2" />
+  </svg>
+);
+
+export const IconBow = ({ size = 24, color = 'currentColor', className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M4 20c4-4 8-4 12-4s8-4 4-12" />
+    <path d="M4 20L20 4" />
+    <path d="M14 14l4-4" />
+    <path d="M18 10l2-2" />
+  </svg>
+);
+
+export const IconDagger = ({ size = 24, color = 'currentColor', className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M14.5 17.5L3 6V3h3l11.5 11.5" />
+    <path d="M6.5 6.5l11 11" />
+    <path d="M15 15l6 6" />
+  </svg>
+);
+
+export const IconHeal = ({ size = 24, color = 'currentColor', className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <path d="M12 2v20" />
+    <path d="M2 12h20" />
+    <circle cx="12" cy="12" r="9" strokeOpacity="0.3" />
+  </svg>
+);
+
+export const IconPlay = ({ size = 24, color = 'currentColor', className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} className={className}>
+    <polygon points="6,4 20,12 6,20" />
+  </svg>
+);
+
+export const IconStar = ({ size = 24, color = '#f1c40f', className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill={color} className={className}>
+    <polygon points="12,2 15,9 22,9 17,14 19,22 12,17 5,22 7,14 2,9 9,9" />
+  </svg>
+);
+
+export const IconMana = ManaIcon;
+export const IconInfo = ({ size = 24, color = 'currentColor', className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <circle cx="12" cy="12" r="10" />
+    <line x1="12" y1="16" x2="12" y2="12" />
+    <circle cx="12" cy="8" r="0.5" fill={color} />
+  </svg>
+);
+export const IconGamepad = ({ size = 24, color = 'currentColor', className }: IconProps) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none" stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round" className={className}>
+    <rect x="2" y="6" width="20" height="12" rx="2" fill={color} fillOpacity="0.15" />
+    <line x1="6" y1="12" x2="10" y2="12" />
+    <line x1="8" y1="10" x2="8" y2="14" />
+    <circle cx="15" cy="11" r="1" fill={color} />
+    <circle cx="18" cy="13" r="1" fill={color} />
+  </svg>
+);
+
+// Exportación agrupada legacy
+export const GameIcons = {
+  Sword: IconSword,
+  Staff: IconStaff,
+  Bow: IconBow,
+  Dagger: IconDagger,
+  Heal: IconHeal,
+  Shield: IconShield,
+  Gold: IconGold,
+  Gem: IconGem,
+  Heart: IconHeart,
+  Mana: IconMana,
+  Star: IconStar,
+  Dungeon: IconDungeon,
+  Skull: IconSkull,
+  Backpack: IconBackpack,
+  Shop: ShopIcon,
+  Market: MarketIcon,
+  Trophy: IconTrophy,
+  Book: IconBook,
+  Play: IconPlay,
+  Settings: IconSettings,
+  Logout: IconLogout,
+  Refresh: IconRefresh,
+  Chart: IconChart,
+  Gamepad: IconGamepad,
+  User: IconUser,
+  Info: IconInfo,
+  Key: IconKey,
+};

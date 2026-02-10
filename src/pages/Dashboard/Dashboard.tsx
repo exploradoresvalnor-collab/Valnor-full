@@ -26,7 +26,8 @@ import { useSessionStore, useIsGuest } from '../../stores/sessionStore';
 import { usePlayerStore, usePlayerLevel, usePlayerHealth, usePlayerMana } from '../../stores/playerStore';
 import { useGameStore } from '../../stores/gameStore';
 import { useGameModeStore, useGameMode } from '../../stores/gameModeStore';
-import { useActiveTeam, useTeamPower } from '../../stores/teamStore';
+import { useActiveTeam, useTeamPower, useTeamStore } from '../../stores/teamStore';
+import { userService, characterService, teamService } from '../../services';
 import { EnergyBar, InventorySummary } from '../../components/ui';
 import { NotificationBell } from '../../components/notifications';
 import {
@@ -646,13 +647,143 @@ const Dashboard = () => {
   const [showModeSelector, setShowModeSelector] = useState(false);
   const [showGuestBanner, setShowGuestBanner] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
+  const [dashboardLoading, setDashboardLoading] = useState(false);
 
   const playerName = isGuest 
     ? (guestProfile?.name || 'Invitado')
     : (characterName || 'Aventurero');
 
   const playerClass = characterClass || 'warrior';
-  
+
+  // ---- FETCH REAL DATA FROM BACKEND ----
+  const [recentActivity, setRecentActivity] = useState<{id: number; text: string; time: string; icon: ReactNode}[]>([]);
+
+  useEffect(() => {
+    if (isGuest) return;
+
+    let cancelled = false;
+    const fetchDashboardData = async () => {
+      setDashboardLoading(true);
+      try {
+        // Fetch user profile, resources, and energy in parallel
+        const [me, resources, energyStatus] = await Promise.all([
+          userService.getMe().catch(() => null),
+          userService.getResources().catch(() => null),
+          userService.getEnergyStatus().catch(() => null),
+        ]);
+
+        if (cancelled) return;
+
+        // Populate playerStore with real data
+        const store = usePlayerStore.getState();
+
+        if (me) {
+          store.initPlayer({
+            characterId: (me as any)._id || (me as any).id || store.characterId,
+            characterName: (me as any).username || (me as any).nombre || store.characterName,
+            characterClass: (me as any).clase || (me as any).characterClass || store.characterClass || 'warrior',
+            level: (me as any).nivel || (me as any).level || store.level,
+            gold: (me as any).val ?? (me as any).gold ?? store.gold,
+            gems: (me as any).evo ?? (me as any).gems ?? store.gems,
+            energy: (me as any).energia ?? store.energy,
+            maxEnergy: (me as any).energiaMaxima ?? store.maxEnergy,
+          });
+        }
+
+        if (resources) {
+          const r = resources as any;
+          if (r.val !== undefined) store.addGold(r.val - store.gold);
+          if (r.evo !== undefined) store.addGems(r.evo - store.gems);
+          if (r.energia !== undefined) {
+            // Set energy directly
+            const diff = r.energia - store.energy;
+            if (diff > 0) store.addEnergy(diff);
+          }
+        }
+
+        if (energyStatus) {
+          const e = energyStatus as any;
+          if (e.energia !== undefined) {
+            const diff2 = e.energia - usePlayerStore.getState().energy;
+            if (diff2 > 0) usePlayerStore.getState().addEnergy(diff2);
+          }
+        }
+
+        // Fetch characters and teams
+        const [characters, teams] = await Promise.all([
+          characterService.getMyCharacters().catch(() => []),
+          teamService.getMyTeams().catch(() => []),
+        ]);
+
+        if (cancelled) return;
+
+        const teamStore = useTeamStore.getState();
+
+        // Populate owned characters
+        if (Array.isArray(characters) && characters.length > 0) {
+          const mapped = (characters as any[]).map((c: any) => ({
+            id: c._id || c.id,
+            name: c.nombre || c.name,
+            level: c.nivel || c.level || 1,
+            class: c.clase || c.class || 'warrior',
+            rarity: c.rareza || c.rarity || 'common',
+            stats: c.stats || { attack: 10, defense: 10, health: 100, speed: 10 },
+          }));
+          teamStore.setOwnedCharacters(mapped);
+        }
+
+        // Populate active team
+        if (Array.isArray(teams) && teams.length > 0) {
+          const active = (teams as any[]).find((t: any) => t.activo || t.isActive);
+          if (active && active.personajes) {
+            const teamMembers = active.personajes.map((p: any) => ({
+              id: p._id || p.id,
+              name: p.nombre || p.name,
+              level: p.nivel || p.level || 1,
+              class: p.clase || p.class || 'warrior',
+              rarity: p.rareza || p.rarity || 'common',
+              stats: p.stats || { attack: 10, defense: 10, health: 100, speed: 10 },
+            }));
+            teamStore.setTeam(teamMembers);
+          }
+        }
+
+        // Fetch dashboard summary (recent activity)
+        try {
+          const dashboard = await userService.getDashboard();
+          if (!cancelled && dashboard) {
+            const d = dashboard as any;
+            if (d.actividadReciente && Array.isArray(d.actividadReciente)) {
+              setRecentActivity(d.actividadReciente.map((a: any, i: number) => ({
+                id: i + 1,
+                text: a.texto || a.text || a.descripcion || 'Actividad',
+                time: a.tiempo || a.time || a.fecha || '',
+                icon: <CombatIcon size={16} />,
+              })));
+            }
+          }
+        } catch {
+          // Dashboard endpoint may not have activity data, use defaults
+        }
+
+      } catch (err) {
+        console.error('[Dashboard] Error fetching data:', err);
+      } finally {
+        if (!cancelled) setDashboardLoading(false);
+      }
+    };
+
+    fetchDashboardData();
+    return () => { cancelled = true; };
+  }, [isGuest]);
+
+  // Fallback activity if nothing from backend
+  const displayActivity = recentActivity.length > 0 ? recentActivity : [
+    { id: 1, text: 'Bienvenido a Valnor', time: 'Ahora', icon: <CombatIcon size={16} /> },
+    { id: 2, text: 'Explora mazmorras y combate', time: '', icon: <LevelUpIcon size={16} /> },
+    { id: 3, text: 'Visita la tienda para equiparte', time: '', icon: <LootIcon size={16} /> },
+  ];
+
   // Cambiar modo de juego
   const handleChangeMode = () => {
     clearGameMode();
@@ -679,13 +810,6 @@ const Dashboard = () => {
   // Equipo activo desde store
   const activeTeam = useActiveTeam();
   const teamPower = useTeamPower();
-
-  // Actividad reciente
-  const recentActivity = [
-    { id: 1, text: 'Completaste el tutorial', time: 'Hace 5 min', icon: <CombatIcon size={16} /> },
-    { id: 2, text: 'Subiste a nivel 5', time: 'Hace 10 min', icon: <LevelUpIcon size={16} /> },
-    { id: 3, text: 'Obtuviste 50 VAL', time: 'Hace 15 min', icon: <LootIcon size={16} /> },
-  ];
 
   useEffect(() => {
     if (isGuest && !characterId) {
@@ -1011,7 +1135,7 @@ const Dashboard = () => {
               Actividad Reciente
             </h4>
             <div className="activity-feed">
-              {recentActivity.map((item) => (
+              {displayActivity.map((item) => (
                 <div key={item.id} className="activity-item">
                   <span className="activity-icon">{item.icon}</span>
                   <span className="activity-text">{item.text}</span>

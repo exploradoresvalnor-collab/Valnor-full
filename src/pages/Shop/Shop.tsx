@@ -2,8 +2,10 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
 import { useIsGuest } from '../../stores/sessionStore';
+import { usePlayerStore } from '../../stores/playerStore';
 import { GuestBanner } from '../../components/ui';
 import { Item, ItemRarity, RARITY_COLORS, RARITY_NAMES } from '../../types/item.types';
+import { inventoryService, shopService, userService } from '../../services';
 import './Shop.css';
 
 interface ShopItem extends Item {
@@ -12,224 +14,31 @@ interface ShopItem extends Item {
   destacado?: boolean;
 }
 
-// Mock shop items
-const shopItems: ShopItem[] = [
-  {
-    id: 's1',
-    nombre: 'Espada de Hierro',
-    descripcion: 'Una espada básica pero confiable para principiantes',
-    tipo: 'weapon',
-    rareza: 'common',
-    nivel: 1,
-    stats: { ataque: 10 },
-    precio: 100,
-    stock: 99,
-  },
-  {
-    id: 's2',
-    nombre: 'Espada de Acero',
-    descripcion: 'Mejor filo y durabilidad que el hierro',
-    tipo: 'weapon',
-    rareza: 'uncommon',
-    nivel: 5,
-    stats: { ataque: 25, critico: 5 },
-    precio: 500,
-    stock: 50,
-  },
-  {
-    id: 's3',
-    nombre: 'Katana del Viento',
-    descripcion: 'Ligera y mortal, perfecta para ataques rápidos',
-    tipo: 'weapon',
-    rareza: 'rare',
-    nivel: 10,
-    stats: { ataque: 40, velocidad: 15, critico: 10 },
-    precio: 2500,
-    stock: 10,
-    destacado: true,
-  },
-  {
-    id: 's4',
-    nombre: 'Armadura de Cuero',
-    descripcion: 'Protección básica sin sacrificar movilidad',
-    tipo: 'armor',
-    rareza: 'common',
-    nivel: 1,
-    stats: { defensa: 8, evasion: 2 },
-    precio: 80,
-    stock: 99,
-  },
-  {
-    id: 's5',
-    nombre: 'Armadura de Malla',
-    descripcion: 'Balance perfecto entre defensa y peso',
-    tipo: 'armor',
-    rareza: 'uncommon',
-    nivel: 5,
-    stats: { defensa: 20, hp: 50 },
-    precio: 450,
-    stock: 30,
-  },
-  {
-    id: 's6',
-    nombre: 'Peto del Guardián',
-    descripcion: 'Forjado por los mejores herreros del reino',
-    tipo: 'armor',
-    rareza: 'rare',
-    nivel: 12,
-    stats: { defensa: 45, hp: 150 },
-    precio: 3000,
-    stock: 5,
-  },
-  {
-    id: 's7',
-    nombre: 'Casco de Bronce',
-    descripcion: 'Protege tu cabeza de golpes críticos',
-    tipo: 'helmet',
-    rareza: 'common',
-    nivel: 1,
-    stats: { defensa: 5 },
-    precio: 60,
-    stock: 99,
-  },
-  {
-    id: 's8',
-    nombre: 'Botas de Viajero',
-    descripcion: 'Cómodas para largas travesías',
-    tipo: 'boots',
-    rareza: 'common',
-    nivel: 1,
-    stats: { velocidad: 5 },
-    precio: 50,
-    stock: 99,
-  },
-  {
-    id: 's9',
-    nombre: 'Botas de Viento',
-    descripcion: 'Encantadas para aumentar tu velocidad',
-    tipo: 'boots',
-    rareza: 'rare',
-    nivel: 8,
-    stats: { velocidad: 25, evasion: 10 },
-    precio: 1800,
-    stock: 8,
-    descuento: 20,
-  },
-  {
-    id: 's10',
-    nombre: 'Anillo de Poder',
-    descripcion: 'Aumenta el daño de todas tus habilidades',
-    tipo: 'accessory',
-    rareza: 'epic',
-    nivel: 15,
-    stats: { ataque: 30, critico: 15 },
-    precio: 8000,
-    stock: 2,
-    destacado: true,
-  },
-  {
-    id: 's11',
-    nombre: 'Amuleto de Vida',
-    descripcion: 'Incrementa tu vitalidad máxima',
-    tipo: 'accessory',
-    rareza: 'rare',
-    nivel: 10,
-    stats: { hp: 200, defensa: 10 },
-    precio: 2200,
-    stock: 6,
-  },
-  {
-    id: 's12',
-    nombre: 'Collar del Dragón',
-    descripcion: 'Contiene la esencia de un dragón ancestral',
-    tipo: 'accessory',
-    rareza: 'legendary',
-    nivel: 25,
-    stats: { ataque: 50, hp: 300, critico: 20 },
-    precio: 25000,
-    stock: 1,
-    destacado: true,
-  },
-];
+/** Maps a backend item to ShopItem */
+function mapToShopItem(raw: any): ShopItem {
+  return {
+    id: raw._id || raw.id || `item_${Math.random()}`,
+    nombre: raw.nombre || raw.name || 'Item desconocido',
+    descripcion: raw.descripcion || raw.description || '',
+    tipo: raw.tipo || raw.type || 'weapon',
+    rareza: raw.rareza || raw.rarity || 'common',
+    nivel: raw.nivel || raw.level || 1,
+    stats: raw.stats || raw.estadisticas || {},
+    precio: raw.precio || raw.price || raw.costoVal || 0,
+    stock: raw.stock ?? raw.cantidad ?? 99,
+    descuento: raw.descuento || raw.discount,
+    destacado: raw.destacado || raw.featured || false,
+  };
+}
 
-// Consumables
-const consumableItems: ShopItem[] = [
-  {
-    id: 'c1',
-    nombre: 'Poción de Vida (S)',
-    descripcion: 'Restaura 50 HP',
-    tipo: 'consumable',
-    rareza: 'common',
-    nivel: 1,
-    stats: {},
-    precio: 25,
-    stock: 999,
-  },
-  {
-    id: 'c2',
-    nombre: 'Poción de Vida (M)',
-    descripcion: 'Restaura 150 HP',
-    tipo: 'consumable',
-    rareza: 'uncommon',
-    nivel: 5,
-    stats: {},
-    precio: 75,
-    stock: 500,
-  },
-  {
-    id: 'c3',
-    nombre: 'Poción de Vida (L)',
-    descripcion: 'Restaura 400 HP',
-    tipo: 'consumable',
-    rareza: 'rare',
-    nivel: 10,
-    stats: {},
-    precio: 200,
-    stock: 100,
-  },
-  {
-    id: 'c4',
-    nombre: 'Elixir de Fuerza',
-    descripcion: '+20% ATK por 5 min',
-    tipo: 'consumable',
-    rareza: 'uncommon',
-    nivel: 5,
-    stats: {},
-    precio: 150,
-    stock: 200,
-  },
-  {
-    id: 'c5',
-    nombre: 'Elixir de Defensa',
-    descripcion: '+20% DEF por 5 min',
-    tipo: 'consumable',
-    rareza: 'uncommon',
-    nivel: 5,
-    stats: {},
-    precio: 150,
-    stock: 200,
-  },
-  {
-    id: 'c6',
-    nombre: 'Piedra de Mejora',
-    descripcion: 'Mejora equipamiento (+1)',
-    tipo: 'consumable',
-    rareza: 'rare',
-    nivel: 1,
-    stats: {},
-    precio: 500,
-    stock: 50,
-    destacado: true,
-  },
-];
-
-type ShopCategory = 'all' | 'weapons' | 'armor' | 'accessories' | 'consumables';
+type ShopCategory = 'all' | 'weapons' | 'armor' | 'accessories' | 'consumables' | 'packages';
 type SortOption = 'price-asc' | 'price-desc' | 'level' | 'rarity';
 
 const Shop: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const isGuest = useIsGuest();
+  const gold = usePlayerStore((s) => s.gold);
   const [category, setCategory] = useState<ShopCategory>('all');
   const [sortBy, setSortBy] = useState<SortOption>('price-asc');
   const [selectedItem, setSelectedItem] = useState<ShopItem | null>(null);
@@ -237,13 +46,75 @@ const Shop: React.FC = () => {
   const [showPurchaseModal, setShowPurchaseModal] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
 
+  // Real data state
+  const [equipmentItems, setEquipmentItems] = useState<ShopItem[]>([]);
+  const [consumableItemsList, setConsumableItemsList] = useState<ShopItem[]>([]);
+  const [packages, setPackages] = useState<any[]>([]);
+  const [shopLoading, setShopLoading] = useState(true);
+  const [shopError, setShopError] = useState<string | null>(null);
+  const [purchasing, setPurchasing] = useState(false);
+  const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
+  const [walletVal, setWalletVal] = useState(0);
+
   useEffect(() => {
     if (!loading && !user) {
       navigate('/auth/login');
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  // Fetch real shop data
+  useEffect(() => {
+    if (isGuest || loading) return;
+    let cancelled = false;
+
+    const fetchShop = async () => {
+      setShopLoading(true);
+      setShopError(null);
+      try {
+        const [equipment, consumables, shopPkgs, resources] = await Promise.all([
+          inventoryService.getEquipmentCatalog().catch(() => []),
+          inventoryService.getConsumablesCatalog().catch(() => []),
+          shopService.getShopPackages().catch(() => []),
+          userService.getResources().catch(() => null),
+        ]);
+
+        if (cancelled) return;
+
+        // Map equipment
+        const eqItems = Array.isArray(equipment)
+          ? (equipment as any[]).map(mapToShopItem)
+          : [];
+        setEquipmentItems(eqItems);
+
+        // Map consumables
+        const conItems = Array.isArray(consumables)
+          ? (consumables as any[]).map((c: any) => mapToShopItem({ ...c, tipo: 'consumable' }))
+          : [];
+        setConsumableItemsList(conItems);
+
+        // Packages
+        setPackages(Array.isArray(shopPkgs) ? shopPkgs : []);
+
+        // Wallet
+        if (resources) {
+          const r = resources as any;
+          setWalletVal(r.val ?? r.gold ?? 0);
+          const store = usePlayerStore.getState();
+          if (r.val !== undefined) store.addGold(r.val - store.gold);
+        }
+      } catch (err: any) {
+        console.error('[Shop] Error loading:', err);
+        if (!cancelled) setShopError(err.message || 'Error cargando la tienda');
+      } finally {
+        if (!cancelled) setShopLoading(false);
+      }
+    };
+
+    fetchShop();
+    return () => { cancelled = true; };
+  }, [isGuest, loading]);
+
+  if (loading || shopLoading) {
     return (
       <div className="shop-loading">
         <div className="loading-spinner" />
@@ -252,28 +123,28 @@ const Shop: React.FC = () => {
     );
   }
 
-  const allItems = [...shopItems, ...consumableItems];
+  const allItems = [...equipmentItems, ...consumableItemsList];
 
   const getFilteredItems = () => {
-    let items = allItems;
+    let items = [...allItems];
 
-    // Filter by category
     switch (category) {
       case 'weapons':
-        items = shopItems.filter(i => i.tipo === 'weapon');
+        items = equipmentItems.filter(i => i.tipo === 'weapon' || i.tipo === 'arma');
         break;
       case 'armor':
-        items = shopItems.filter(i => ['armor', 'helmet', 'boots'].includes(i.tipo));
+        items = equipmentItems.filter(i => ['armor', 'armadura', 'helmet', 'casco', 'boots', 'botas'].includes(i.tipo));
         break;
       case 'accessories':
-        items = shopItems.filter(i => i.tipo === 'accessory');
+        items = equipmentItems.filter(i => i.tipo === 'accessory' || i.tipo === 'accesorio');
         break;
       case 'consumables':
-        items = consumableItems;
+        items = [...consumableItemsList];
         break;
+      case 'packages':
+        return []; // Packages rendered separately
     }
 
-    // Filter by search
     if (searchTerm) {
       items = items.filter(i => 
         i.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
@@ -281,7 +152,6 @@ const Shop: React.FC = () => {
       );
     }
 
-    // Sort
     const rarityOrder: ItemRarity[] = ['common', 'uncommon', 'rare', 'epic', 'legendary'];
     switch (sortBy) {
       case 'price-asc':
@@ -309,16 +179,33 @@ const Shop: React.FC = () => {
   };
 
   const canAfford = (item: ShopItem, qty: number = 1) => {
-    return (user?.val || 0) >= getFinalPrice(item) * qty;
+    const balance = walletVal || gold || (user?.val || 0);
+    return balance >= getFinalPrice(item) * qty;
   };
 
-  const handlePurchase = () => {
-    if (!selectedItem) return;
-    // Aquí iría la lógica real de compra
-    console.log(`Comprando ${purchaseQuantity}x ${selectedItem.nombre}`);
-    setShowPurchaseModal(false);
-    setPurchaseQuantity(1);
-    setSelectedItem(null);
+  const handlePurchase = async () => {
+    if (!selectedItem || purchasing) return;
+    setPurchasing(true);
+    setPurchaseMessage(null);
+    try {
+      await shopService.purchase(selectedItem.id, selectedItem.tipo === 'consumable' ? purchaseQuantity : 1);
+      setPurchaseMessage(`¡Compraste ${selectedItem.nombre}!`);
+      // Refresh resources
+      const resources = await userService.getResources().catch(() => null);
+      if (resources) {
+        const r = resources as any;
+        setWalletVal(r.val ?? r.gold ?? walletVal);
+        const store = usePlayerStore.getState();
+        if (r.val !== undefined) store.addGold(r.val - store.gold);
+      }
+    } catch (err: any) {
+      setPurchaseMessage(err.message || 'Error al comprar');
+    } finally {
+      setPurchasing(false);
+      setShowPurchaseModal(false);
+      setPurchaseQuantity(1);
+      setTimeout(() => setPurchaseMessage(null), 3000);
+    }
   };
 
   const filteredItems = getFilteredItems();
@@ -334,7 +221,7 @@ const Shop: React.FC = () => {
         <h1>🏪 Tienda</h1>
         <div className="wallet-display">
           <span className="wallet-icon">💰</span>
-          <span className="wallet-amount">{user?.val?.toLocaleString() || 0}</span>
+          <span className="wallet-amount">{(walletVal || gold || 0).toLocaleString()}</span>
           <span className="wallet-label">VAL</span>
         </div>
       </header>
@@ -361,6 +248,7 @@ const Shop: React.FC = () => {
                 { id: 'armor', icon: '🛡️', label: 'Armaduras' },
                 { id: 'accessories', icon: '💍', label: 'Accesorios' },
                 { id: 'consumables', icon: '🧪', label: 'Consumibles' },
+                { id: 'packages', icon: '📦', label: `Paquetes (${packages.length})` },
               ].map(cat => (
                 <button
                   key={cat.id}
@@ -417,8 +305,54 @@ const Shop: React.FC = () => {
           </div>
 
           {/* Items Grid */}
+          {shopError && (
+            <div className="shop-error">
+              <p>⚠️ {shopError}</p>
+            </div>
+          )}
+          {purchaseMessage && (
+            <div className="shop-message">
+              <p>{purchaseMessage}</p>
+            </div>
+          )}
+          {category === 'packages' ? (
+            <div className="shop-grid">
+              {packages.length === 0 ? (
+                <div className="no-items"><p>No hay paquetes disponibles</p></div>
+              ) : packages.map((pkg: any) => (
+                <div
+                  key={pkg._id || pkg.id}
+                  className={`shop-card featured`}
+                  style={{ borderColor: '#ffd700' }}
+                  onClick={() => setSelectedItem({
+                    id: pkg._id || pkg.id,
+                    nombre: pkg.nombre || pkg.name,
+                    descripcion: pkg.descripcion || pkg.description || '',
+                    tipo: 'package' as any,
+                    rareza: pkg.rareza || 'rare',
+                    nivel: 1,
+                    stats: {},
+                    precio: pkg.precio || pkg.costoVal || 0,
+                    stock: 99,
+                    destacado: true,
+                  })}
+                >
+                  <span className="featured-badge">📦</span>
+                  <div className="card-icon">📦</div>
+                  <h4 className="card-name">{pkg.nombre || pkg.name}</h4>
+                  <span className="card-rarity" style={{ color: '#ffd700' }}>PAQUETE</span>
+                  <div className="card-price">
+                    <span className="final-price">{(pkg.precio || pkg.costoVal || 0).toLocaleString()}</span>
+                    <span className="price-label">VAL</span>
+                  </div>
+                </div>
+              ))}
+            </div>
+          ) : (
           <div className="shop-grid">
-            {filteredItems.map(item => (
+            {filteredItems.length === 0 ? (
+              <div className="no-items"><p>No hay items en esta categoría</p></div>
+            ) : filteredItems.map(item => (
               <div
                 key={item.id}
                 className={`shop-card ${selectedItem?.id === item.id ? 'selected' : ''} ${item.destacado ? 'featured' : ''}`}
@@ -462,6 +396,7 @@ const Shop: React.FC = () => {
               </div>
             ))}
           </div>
+          )}
         </main>
 
         {/* Item Details Panel */}
@@ -585,7 +520,7 @@ const Shop: React.FC = () => {
             <div className="modal-balance">
               <span>Tu balance después:</span>
               <span className="balance-after">
-                {((user?.val || 0) - getFinalPrice(selectedItem) * (selectedItem.tipo === 'consumable' ? purchaseQuantity : 1)).toLocaleString()} VAL
+                {((walletVal || gold || 0) - getFinalPrice(selectedItem) * (selectedItem.tipo === 'consumable' ? purchaseQuantity : 1)).toLocaleString()} VAL
               </span>
             </div>
             <div className="modal-actions">

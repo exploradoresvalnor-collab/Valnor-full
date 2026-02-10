@@ -79,7 +79,15 @@ const Verify: React.FC = () => {
       }, 1000);
 
     } catch (err: any) {
-      setError(err.message || 'No se pudo reenviar el correo. Intenta más tarde.');
+      if (err.status === 0 || err.message === 'Failed to fetch') {
+        setError('🔌 No se pudo conectar con el servidor. ¿Está encendido?');
+      } else if (err.status === 429) {
+        setError('⏳ Demasiados intentos. Espera unos minutos.');
+      } else if (err.status >= 500) {
+        setError('💥 Error del servidor. Intenta más tarde.');
+      } else {
+        setError(err.error || err.message || 'No se pudo reenviar el correo. Intenta más tarde.');
+      }
     } finally {
       setLoading(false);
     }

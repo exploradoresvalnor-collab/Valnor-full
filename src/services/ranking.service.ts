@@ -1,5 +1,28 @@
 /**
- * Ranking Service - Gestión de rankings y logros
+ * Ranking Service - Gestión de rankings, logros y estadísticas de jugador
+ * 
+ * Endpoints del backend:
+ * 
+ * Rankings (montados en /api/rankings):
+ * - GET /api/rankings                          → Ranking global
+ * - GET /api/rankings/leaderboard/:category    → Leaderboard por categoría
+ * - GET /api/rankings/period/:periodo          → Ranking por período
+ * - GET /api/rankings/stats                    → Estadísticas generales
+ * - GET /api/rankings/me                       → Mi posición (auth)
+ * 
+ * Achievements (montados en /api/achievements):
+ * - GET /api/achievements                      → Todos los logros (público)
+ * - GET /api/achievements/:userId              → Logros de un usuario (público)
+ * - POST /api/achievements/:userId/unlock      → Desbloquear logro (admin/auth)
+ * 
+ * Player Stats (montados en /api/player-stats):
+ * - POST /api/player-stats                     → Registrar/actualizar stats
+ * - GET /api/player-stats/usuario/:userId      → Stats por userId
+ * - GET /api/player-stats/personaje/:personajeId → Stats por personaje
+ * 
+ * Perfiles (montados en /api/users):
+ * - GET /api/users/profile/:userId             → Perfil público
+ * - GET /api/users/me                          → Mi perfil
  */
 
 import apiService from './api.service';
@@ -9,138 +32,110 @@ import type {
   RankingPeriod,
   RankingResponse,
   Achievement,
-  UserAchievement,
   AchievementsResponse,
   PublicProfile,
   ProfileResponse,
-  GetRankingDTO,
 } from '../types';
 
 class RankingService {
-  private basePath = '/rankings';
-  private achievementsPath = '/achievements';
-  private profilesPath = '/profiles';
+  private basePath = '/api/rankings';
+  private achievementsPath = '/api/achievements';
+  private profilesPath = '/api/users/profile';
 
   // =====================================
   // RANKINGS
   // =====================================
 
   /**
-   * Obtener ranking por categoría
+   * Obtener ranking general
+   * GET /api/rankings
    */
-  async getRanking(params: GetRankingDTO): Promise<Ranking | null> {
-    const { category, period = 'all_time', page = 1, limit = 100 } = params;
+  async getGeneralRanking(params?: { limit?: number; periodo?: string }): Promise<Ranking | null> {
+    const query: Record<string, string> = {};
+    if (params?.limit) query.limit = String(params.limit);
+    if (params?.periodo) query.periodo = params.periodo;
+    const response = await apiService.get<RankingResponse>(this.basePath, query);
+    return response.ranking || null;
+  }
+
+  /**
+   * Obtener leaderboard por categoría
+   * GET /api/rankings/leaderboard/:category
+   */
+  async getLeaderboard(category: RankingCategory, params?: { page?: number; limit?: number }): Promise<Ranking | null> {
+    const query: Record<string, string> = {};
+    if (params?.page !== undefined) query.page = String(params.page);
+    if (params?.limit) query.limit = String(params.limit);
     const response = await apiService.get<RankingResponse>(
-      `${this.basePath}/${category}`,
-      { period, page: String(page), limit: String(limit) }
+      `${this.basePath}/leaderboard/${category}`, query
     );
     return response.ranking || null;
   }
 
   /**
-   * Obtener posición del usuario en un ranking
+   * Obtener ranking por período
+   * GET /api/rankings/period/:periodo
    */
-  async getMyRank(category: RankingCategory, period: RankingPeriod = 'all_time'): Promise<{
-    rank: number;
-    value: number;
-    totalEntries: number;
-  } | null> {
-    return apiService.get(`${this.basePath}/${category}/me`, { period });
+  async getRankingByPeriod(period: RankingPeriod): Promise<Ranking | null> {
+    const response = await apiService.get<RankingResponse>(
+      `${this.basePath}/period/${period}`
+    );
+    return response.ranking || null;
   }
 
   /**
-   * Obtener todos los rankings del usuario
+   * Obtener estadísticas generales de ranking
+   * GET /api/rankings/stats
    */
-  async getMyRankings(): Promise<{
-    category: RankingCategory;
-    rank: number;
-    value: number;
-  }[]> {
-    return apiService.get(`${this.basePath}/me/all`);
+  async getRankingStats(params?: { periodo?: string }): Promise<unknown> {
+    const query: Record<string, string> = {};
+    if (params?.periodo) query.periodo = params.periodo;
+    return apiService.get(`${this.basePath}/stats`, query);
   }
 
   /**
-   * Obtener categorías de ranking disponibles
+   * Obtener mi posición en el ranking
+   * GET /api/rankings/me
    */
-  async getCategories(): Promise<{
-    category: RankingCategory;
-    displayName: string;
-    description: string;
-  }[]> {
-    return apiService.get(`${this.basePath}/categories`);
+  async getMyRanking(): Promise<unknown> {
+    return apiService.get(`${this.basePath}/me`);
   }
 
   // =====================================
-  // LOGROS
+  // LOGROS (Achievements)
   // =====================================
 
   /**
    * Obtener todos los logros disponibles
+   * GET /api/achievements
    */
-  async getAllAchievements(): Promise<Achievement[]> {
-    const response = await apiService.get<AchievementsResponse>(this.achievementsPath);
+  async getAllAchievements(params?: { categoria?: string; limit?: number; page?: number }): Promise<Achievement[]> {
+    const query: Record<string, string> = {};
+    if (params?.categoria) query.categoria = params.categoria;
+    if (params?.limit) query.limit = String(params.limit);
+    if (params?.page !== undefined) query.page = String(params.page);
+    const response = await apiService.get<AchievementsResponse>(this.achievementsPath, query);
     return response.achievements || [];
   }
 
   /**
-   * Obtener logros del usuario
+   * Obtener logros de un usuario por su ID
+   * GET /api/achievements/:userId
    */
-  async getMyAchievements(): Promise<UserAchievement[]> {
+  async getUserAchievements(userId: string): Promise<Achievement[]> {
     const response = await apiService.get<AchievementsResponse>(
-      `${this.achievementsPath}/me`
-    );
-    return response.userAchievements || [];
-  }
-
-  /**
-   * Obtener logro específico
-   */
-  async getAchievement(achievementId: string): Promise<Achievement | null> {
-    const response = await apiService.get<{ achievement: Achievement }>(
-      `${this.achievementsPath}/${achievementId}`
-    );
-    return response.achievement || null;
-  }
-
-  /**
-   * Obtener progreso de logro del usuario
-   */
-  async getAchievementProgress(achievementId: string): Promise<UserAchievement | null> {
-    const response = await apiService.get<{ userAchievement: UserAchievement }>(
-      `${this.achievementsPath}/${achievementId}/progress`
-    );
-    return response.userAchievement || null;
-  }
-
-  /**
-   * Reclamar recompensa de logro completado
-   */
-  async claimAchievementReward(achievementId: string): Promise<{
-    success: boolean;
-    rewards: unknown[];
-  }> {
-    return apiService.post(`${this.achievementsPath}/${achievementId}/claim`, {});
-  }
-
-  /**
-   * Obtener logros por categoría
-   */
-  async getAchievementsByCategory(category: string): Promise<Achievement[]> {
-    const response = await apiService.get<AchievementsResponse>(
-      `${this.achievementsPath}/category/${category}`
+      `${this.achievementsPath}/${userId}`
     );
     return response.achievements || [];
   }
 
   /**
-   * Obtener puntos de logros del usuario
+   * Desbloquear un logro para un usuario (admin)
+   * POST /api/achievements/:userId/unlock
+   * Body: { achievementId }
    */
-  async getAchievementPoints(): Promise<{
-    totalPoints: number;
-    completedCount: number;
-    totalCount: number;
-  }> {
-    return apiService.get(`${this.achievementsPath}/me/points`);
+  async unlockAchievement(userId: string, achievementId: string): Promise<{ success: boolean; message?: string }> {
+    return apiService.post(`${this.achievementsPath}/${userId}/unlock`, { achievementId });
   }
 
   // =====================================
@@ -149,6 +144,7 @@ class RankingService {
 
   /**
    * Obtener perfil público de un usuario
+   * GET /api/users/profile/:userId
    */
   async getPublicProfile(userId: string): Promise<PublicProfile | null> {
     const response = await apiService.get<ProfileResponse>(
@@ -158,47 +154,40 @@ class RankingService {
   }
 
   /**
-   * Buscar usuarios
-   */
-  async searchUsers(query: string, limit: number = 20): Promise<{
-    users: {
-      id: string;
-      username: string;
-      avatarUrl?: string;
-      level: number;
-    }[];
-  }> {
-    return apiService.get(`${this.profilesPath}/search`, { q: query, limit: String(limit) });
-  }
-
-  /**
-   * Obtener mi perfil público
+   * Obtener mi perfil
+   * GET /api/users/me
    */
   async getMyPublicProfile(): Promise<PublicProfile | null> {
-    const response = await apiService.get<ProfileResponse>(
-      `${this.profilesPath}/me`
-    );
-    return response.profile || null;
+    const response = await apiService.get<ProfileResponse>('/api/users/me');
+    return (response as any) || null;
+  }
+
+  // =====================================
+  // PLAYER STATS
+  // =====================================
+
+  /**
+   * Obtener stats de jugador por userId
+   * GET /api/player-stats/usuario/:userId
+   */
+  async getPlayerStatsByUser(userId: string): Promise<unknown> {
+    return apiService.get(`/api/player-stats/usuario/${userId}`);
   }
 
   /**
-   * Actualizar título activo
+   * Obtener stats de personaje
+   * GET /api/player-stats/personaje/:personajeId
    */
-  async setActiveTitle(titleId: string): Promise<{ success: boolean }> {
-    return apiService.put(`${this.profilesPath}/me/title`, { titleId });
+  async getPlayerStatsByCharacter(personajeId: string): Promise<unknown> {
+    return apiService.get(`/api/player-stats/personaje/${personajeId}`);
   }
 
   /**
-   * Obtener títulos disponibles
+   * Registrar/actualizar stats
+   * POST /api/player-stats
    */
-  async getMyTitles(): Promise<{
-    titles: {
-      id: string;
-      name: string;
-      isActive: boolean;
-    }[];
-  }> {
-    return apiService.get(`${this.profilesPath}/me/titles`);
+  async postPlayerStats(data: Record<string, unknown>): Promise<unknown> {
+    return apiService.post('/api/player-stats', data);
   }
 }
 

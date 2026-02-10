@@ -6,8 +6,9 @@
  */
 
 import { create } from 'zustand';
+import type { DungeonDifficulty } from '../types/dungeon.types';
 
-// Tipos
+// Tipos locales del store (alineados con DungeonDifficulty del backend)
 export interface DungeonReward {
   gold: { min: number; max: number };
   exp: { min: number; max: number };
@@ -19,7 +20,7 @@ export interface Dungeon {
   id: string;
   name: string;
   description: string;
-  difficulty: 'easy' | 'normal' | 'hard' | 'expert' | 'legendary';
+  difficulty: DungeonDifficulty;
   requiredLevel: number;
   energyCost: number;
   ticketCost: number;
@@ -126,7 +127,7 @@ const DUNGEONS_DATA: Dungeon[] = [
     id: 'void-dimension',
     name: 'Dimensión del Vacío',
     description: 'Un plano de existencia donde las leyes de la realidad no aplican. El desafío definitivo.',
-    difficulty: 'legendary',
+    difficulty: 'nightmare',
     requiredLevel: 35,
     energyCost: 0,
     ticketCost: 5,

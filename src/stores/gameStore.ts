@@ -21,11 +21,7 @@ export interface GameState {
   vsync: boolean;
   showFps: boolean;
   
-  // Volumen
-  masterVolume: number;
-  musicVolume: number;
-  sfxVolume: number;
-  volume: number;
+  // Audio (volumen real vive en settingsStore)
   isMuted: boolean;
   
   // Debug
@@ -48,11 +44,7 @@ export interface GameActions {
   setVsync: (enabled: boolean) => void;
   setShowFps: (enabled: boolean) => void;
   
-  // Volumen
-  setMasterVolume: (volume: number) => void;
-  setMusicVolume: (volume: number) => void;
-  setSfxVolume: (volume: number) => void;
-  setVolume: (volume: number) => void;
+  // Audio
   setMuted: (muted: boolean) => void;
   toggleMute: () => void;
   
@@ -74,10 +66,6 @@ const initialState: GameState = {
   vsync: true,
   showFps: false,
   
-  masterVolume: 0.8,
-  musicVolume: 0.6,
-  sfxVolume: 0.8,
-  volume: 0.8,
   isMuted: false,
   
   debugMode: false,
@@ -116,11 +104,7 @@ export const useGameStore = create<GameState & GameActions>()(
         setVsync: (vsync) => set({ vsync }),
         setShowFps: (showFps) => set({ showFps }),
         
-        // Volumen
-        setMasterVolume: (masterVolume) => set({ masterVolume }),
-        setMusicVolume: (musicVolume) => set({ musicVolume }),
-        setSfxVolume: (sfxVolume) => set({ sfxVolume }),
-        setVolume: (volume) => set({ volume }),
+        // Audio
         setMuted: (isMuted) => set({ isMuted }),
         toggleMute: () => set((state) => ({ isMuted: !state.isMuted })),
         
@@ -137,10 +121,6 @@ export const useGameStore = create<GameState & GameActions>()(
           shadows: state.shadows,
           vsync: state.vsync,
           showFps: state.showFps,
-          masterVolume: state.masterVolume,
-          musicVolume: state.musicVolume,
-          sfxVolume: state.sfxVolume,
-          volume: state.volume,
           isMuted: state.isMuted,
         }),
       }

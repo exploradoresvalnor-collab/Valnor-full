@@ -4,6 +4,7 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useActiveTeam } from '../../stores/teamStore';
 import { SurvivalBattle } from '../../components/survival';
+import { survivalService } from '../../services';
 import './Survival.css';
 
 interface SurvivalStats {
@@ -29,14 +30,6 @@ interface LeaderboardEntry {
   tiempo: number;
 }
 
-const mockStats: SurvivalStats = {
-  mejorOleada: 47,
-  partidasJugadas: 156,
-  totalEnemigosEliminados: 12847,
-  tiempoTotalJugado: 89400, // segundos
-  mejorRacha: 234,
-};
-
 const powerUps: PowerUp[] = [
   { id: 'p1', nombre: 'Furia Berserker', descripcion: '+50% ATK por 30s', icono: '🔥', tipo: 'ataque' },
   { id: 'p2', nombre: 'Escudo Divino', descripcion: 'Invulnerable por 5s', icono: '🛡️', tipo: 'defensa' },
@@ -46,25 +39,20 @@ const powerUps: PowerUp[] = [
   { id: 'p6', nombre: 'Magnetismo', descripcion: 'Atrae loot cercano', icono: '🧲', tipo: 'utilidad' },
 ];
 
-const weeklyLeaderboard: LeaderboardEntry[] = [
-  { posicion: 1, username: 'ShadowNinja', oleada: 158, tiempo: 7840 },
-  { posicion: 2, username: 'CryptoKing', oleada: 145, tiempo: 7120 },
-  { posicion: 3, username: 'SwiftBlade', oleada: 142, tiempo: 6980 },
-  { posicion: 4, username: 'IronTank', oleada: 138, tiempo: 6750 },
-  { posicion: 5, username: 'DragonSlayer99', oleada: 135, tiempo: 6520 },
-];
-
 const Survival: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   
-  // Conectamos con los stores
   const { energy, maxEnergy, useEnergy, addGold, addExperience } = usePlayerStore();
   const team = useActiveTeam();
   
-  const [stats] = useState<SurvivalStats>(mockStats);
+  const [stats, setStats] = useState<SurvivalStats>({
+    mejorOleada: 0, partidasJugadas: 0, totalEnemigosEliminados: 0, tiempoTotalJugado: 0, mejorRacha: 0,
+  });
+  const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
   const [showRulesModal, setShowRulesModal] = useState(false);
   const [showBattle, setShowBattle] = useState(false);
+  const [survivalLoading, setSurvivalLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -72,7 +60,56 @@ const Survival: React.FC = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  // Fetch real survival data
+  useEffect(() => {
+    if (loading) return;
+    let cancelled = false;
+
+    const fetchSurvival = async () => {
+      setSurvivalLoading(true);
+      try {
+        const [myStats, lb] = await Promise.all([
+          survivalService.getMyStats().catch(() => null),
+          survivalService.getLeaderboard({ limit: '5' }).catch(() => null),
+        ]);
+
+        if (cancelled) return;
+
+        if (myStats) {
+          const s = myStats as any;
+          setStats({
+            mejorOleada: s.mejorOleada || s.bestWave || s.maxWave || 0,
+            partidasJugadas: s.partidasJugadas || s.gamesPlayed || s.totalGames || 0,
+            totalEnemigosEliminados: s.totalEnemigosEliminados || s.totalKills || s.enemiesKilled || 0,
+            tiempoTotalJugado: s.tiempoTotalJugado || s.totalTimePlayed || s.totalTime || 0,
+            mejorRacha: s.mejorRacha || s.bestStreak || s.killStreak || 0,
+          });
+        }
+
+        if (lb) {
+          const lbData = lb as any;
+          const entries = lbData.leaderboard || lbData.data || (Array.isArray(lbData) ? lbData : []);
+          if (Array.isArray(entries)) {
+            setLeaderboard(entries.map((e: any, i: number) => ({
+              posicion: e.posicion || e.position || e.rank || i + 1,
+              username: e.username || e.nombre || e.name || 'Jugador',
+              oleada: e.oleada || e.wave || e.bestWave || e.mejorOleada || 0,
+              tiempo: e.tiempo || e.time || e.totalTime || 0,
+            })));
+          }
+        }
+      } catch (err) {
+        console.error('[Survival] Error:', err);
+      } finally {
+        if (!cancelled) setSurvivalLoading(false);
+      }
+    };
+
+    fetchSurvival();
+    return () => { cancelled = true; };
+  }, [loading]);
+
+  if (loading || survivalLoading) {
     return (
       <div className="survival-loading">
         <div className="loading-spinner" />
@@ -248,7 +285,7 @@ const Survival: React.FC = () => {
             </button>
           </div>
           <div className="leaderboard-list">
-            {weeklyLeaderboard.map((entry) => (
+            {leaderboard.map((entry) => (
               <div 
                 key={entry.posicion} 
                 className={`leaderboard-item ${entry.posicion <= 3 ? `top-${entry.posicion}` : ''}`}

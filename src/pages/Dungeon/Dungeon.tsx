@@ -5,6 +5,7 @@ import { usePlayerStore } from '../../stores/playerStore';
 import { useActiveTeam } from '../../stores/teamStore';
 import { useDungeonStore, type Dungeon as DungeonType } from '../../stores/dungeonStore';
 import { DungeonBattle } from '../../components/dungeons';
+import { dungeonService } from '../../services';
 import './Dungeon.css';
 
 interface DungeonInfo {
@@ -29,165 +30,58 @@ interface DungeonInfo {
   mejorTiempo?: number;
 }
 
-const dungeons: DungeonInfo[] = [
-  {
-    id: 'd1',
-    nombre: 'Caverna del Inicio',
-    descripcion: 'Una cueva oscura habitada por slimes y murciélagos. Perfecta para principiantes.',
-    nivelMinimo: 1,
-    nivelMaximo: 5,
-    dificultad: 'facil',
-    costoEnergia: 5,
-    recompensas: {
-      valMin: 50,
-      valMax: 150,
-      evoMin: 10,
-      evoMax: 30,
-      items: ['Poción de Vida (S)', 'Hierro', 'Cuero'],
-    },
-    enemigos: ['Slime', 'Murciélago', 'Rata Gigante'],
-    boss: 'Rey Slime',
-    pisos: 3,
-    completado: true,
-    mejorTiempo: 245,
-  },
-  {
-    id: 'd2',
-    nombre: 'Bosque Maldito',
-    descripcion: 'Un bosque corrompido por magia oscura. Los árboles cobran vida.',
-    nivelMinimo: 5,
-    nivelMaximo: 10,
-    dificultad: 'facil',
-    costoEnergia: 8,
-    recompensas: {
-      valMin: 100,
-      valMax: 300,
-      evoMin: 25,
-      evoMax: 60,
-      items: ['Poción de Vida (M)', 'Madera Encantada', 'Esencia Oscura'],
-    },
-    enemigos: ['Treant', 'Lobo Sombrío', 'Duende Corrupto'],
-    boss: 'Árbol Ancestral Corrupto',
-    pisos: 5,
-    completado: true,
-    mejorTiempo: 380,
-  },
-  {
-    id: 'd3',
-    nombre: 'Minas Abandonadas',
-    descripcion: 'Antiguas minas de enanos infestadas de golems y goblins mineros.',
-    nivelMinimo: 10,
-    nivelMaximo: 15,
-    dificultad: 'normal',
-    costoEnergia: 12,
-    recompensas: {
-      valMin: 200,
-      valMax: 500,
-      evoMin: 50,
-      evoMax: 100,
-      items: ['Piedra de Mejora', 'Mineral Raro', 'Gema de Poder'],
-    },
-    enemigos: ['Golem de Piedra', 'Goblin Minero', 'Espíritu de las Minas'],
-    boss: 'Golem de Mithril',
-    pisos: 7,
-  },
-  {
-    id: 'd4',
-    nombre: 'Torre del Hechicero',
-    descripcion: 'La torre de un mago loco llena de experimentos mágicos fallidos.',
-    nivelMinimo: 15,
-    nivelMaximo: 20,
-    dificultad: 'normal',
-    costoEnergia: 15,
-    recompensas: {
-      valMin: 350,
-      valMax: 800,
-      evoMin: 80,
-      evoMax: 150,
-      items: ['Libro de Hechizos', 'Cristal Arcano', 'Túnica Encantada'],
-    },
-    enemigos: ['Quimera', 'Elemental', 'Homúnculo'],
-    boss: 'El Hechicero Loco',
-    pisos: 10,
-  },
-  {
-    id: 'd5',
-    nombre: 'Cripta del Rey Caído',
-    descripcion: 'La tumba de un rey antiguo, protegida por sus leales sirvientes no-muertos.',
-    nivelMinimo: 20,
-    nivelMaximo: 25,
-    dificultad: 'dificil',
-    costoEnergia: 20,
-    recompensas: {
-      valMin: 500,
-      valMax: 1200,
-      evoMin: 120,
-      evoMax: 250,
-      items: ['Corona Maldita', 'Hueso Ancestral', 'Armadura Real'],
-    },
-    enemigos: ['Esqueleto Guerrero', 'Espectro', 'Liche Menor'],
-    boss: 'Rey No-Muerto',
-    pisos: 12,
-  },
-  {
-    id: 'd6',
-    nombre: 'Volcán Infernal',
-    descripcion: 'Un volcán activo habitado por demonios de fuego y dragones menores.',
-    nivelMinimo: 25,
-    nivelMaximo: 30,
-    dificultad: 'dificil',
-    costoEnergia: 25,
-    recompensas: {
-      valMin: 800,
-      valMax: 2000,
-      evoMin: 200,
-      evoMax: 400,
-      items: ['Escama de Dragón', 'Corazón de Fuego', 'Arma Volcánica'],
-    },
-    enemigos: ['Diablo de Fuego', 'Dragón Menor', 'Salamandra'],
-    boss: 'Dragón de Magma',
-    pisos: 15,
-  },
-  {
-    id: 'd7',
-    nombre: 'Abismo Eterno',
-    descripcion: 'El lugar más peligroso conocido. Solo los más fuertes sobreviven.',
-    nivelMinimo: 30,
-    nivelMaximo: 99,
-    dificultad: 'extremo',
-    costoEnergia: 35,
-    recompensas: {
-      valMin: 1500,
-      valMax: 5000,
-      evoMin: 400,
-      evoMax: 1000,
-      items: ['Item Legendario', 'Esencia Divina', 'Fragmento del Abismo'],
-    },
-    enemigos: ['Demonio Mayor', 'Ángel Caído', 'Horror Cósmico'],
-    boss: 'Señor del Abismo',
-    pisos: 20,
-  },
-];
 
-const difficultyColors = {
+const difficultyColors: Record<string, string> = {
   facil: '#22c55e',
   normal: '#f59e0b',
   dificil: '#ef4444',
   extremo: '#a855f7',
+  easy: '#22c55e',
+  medium: '#f59e0b',
+  hard: '#ef4444',
+  legendary: '#a855f7',
 };
 
-const difficultyNames = {
+const difficultyNames: Record<string, string> = {
   facil: 'Fácil',
   normal: 'Normal',
   dificil: 'Difícil',
   extremo: 'Extremo',
+  easy: 'Fácil',
+  medium: 'Normal',
+  hard: 'Difícil',
+  legendary: 'Extremo',
 };
+
+/** Map backend dungeon to DungeonInfo */
+function mapDungeon(raw: any): DungeonInfo {
+  return {
+    id: raw._id || raw.id,
+    nombre: raw.nombre || raw.name || 'Dungeon',
+    descripcion: raw.descripcion || raw.description || '',
+    nivelMinimo: raw.nivelMinimo || raw.levelRequired || raw.nivel || 1,
+    nivelMaximo: raw.nivelMaximo || raw.maxLevel || (raw.nivelMinimo || 1) + 10,
+    dificultad: raw.dificultad || raw.difficulty || 'normal',
+    costoEnergia: raw.costoEnergia || raw.energyCost || 10,
+    recompensas: {
+      valMin: raw.recompensas?.valMin || raw.rewards?.gold?.min || 50,
+      valMax: raw.recompensas?.valMax || raw.rewards?.gold?.max || 200,
+      evoMin: raw.recompensas?.evoMin || raw.rewards?.exp?.min || 20,
+      evoMax: raw.recompensas?.evoMax || raw.rewards?.exp?.max || 100,
+      items: raw.recompensas?.items || raw.rewards?.items || [],
+    },
+    enemigos: raw.enemigos || raw.enemies || [],
+    boss: raw.boss || raw.bossName || 'Boss',
+    pisos: raw.pisos || raw.waves || raw.floors || 5,
+    completado: raw.completado || raw.completed || false,
+    mejorTiempo: raw.mejorTiempo || raw.bestTime,
+  };
+}
 
 const Dungeon: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   
-  // Conectamos con los stores
   const { level: playerLevel, tickets, energy, maxEnergy, addGold, addExperience, useTickets, useEnergy } = usePlayerStore();
   const team = useActiveTeam();
   const { dungeons: storeDungeons, selectDungeon, selectedDungeon: storeDungeon } = useDungeonStore();
@@ -196,6 +90,8 @@ const Dungeon: React.FC = () => {
   const [showEnterModal, setShowEnterModal] = useState(false);
   const [showBattle, setShowBattle] = useState(false);
   const [battleDungeon, setBattleDungeon] = useState<DungeonType | null>(null);
+  const [dungeons, setDungeons] = useState<DungeonInfo[]>([]);
+  const [dungeonLoading, setDungeonLoading] = useState(true);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -203,7 +99,32 @@ const Dungeon: React.FC = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  // Fetch real dungeons from backend
+  useEffect(() => {
+    if (loading) return;
+    let cancelled = false;
+
+    const fetchDungeons = async () => {
+      setDungeonLoading(true);
+      try {
+        const result = await dungeonService.getDungeons();
+        if (cancelled) return;
+
+        if (Array.isArray(result) && result.length > 0) {
+          setDungeons((result as any[]).map(mapDungeon));
+        }
+      } catch (err) {
+        console.error('[Dungeon] Error fetching dungeons:', err);
+      } finally {
+        if (!cancelled) setDungeonLoading(false);
+      }
+    };
+
+    fetchDungeons();
+    return () => { cancelled = true; };
+  }, [loading]);
+
+  if (loading || dungeonLoading) {
     return (
       <div className="dungeon-loading">
         <div className="loading-spinner" />
@@ -289,7 +210,7 @@ const Dungeon: React.FC = () => {
         <div className="energy-display">
           <span className="energy-icon">⚡</span>
           <span className="energy-amount">{userEnergy}</span>
-          <span className="energy-max">/{user?.energiaMaxima || 100}</span>
+          <span className="energy-max">/{maxEnergy || 100}</span>
         </div>
       </header>
 

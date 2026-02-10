@@ -24,13 +24,14 @@
 
 | Categoría | Cantidad | Estado |
 |-----------|----------|--------|
-| **Pages creadas** | 13 | ✅ UI básica |
-| **Services** | 2 | 🔶 Básicos |
-| **Hooks** | 1 | 🔶 useAuth |
-| **Types** | 3 | 🔶 Básicos |
-| **Motor 3D** | 0 | ❌ No iniciado |
-| **Niveles** | 0 | ❌ No iniciado |
-| **Sistemas** | 0 | ❌ No iniciado |
+| **Pages creadas** | 13 | ✅ Completas |
+| **Services** | 5 | ✅ Completos (api, auth, dungeon, ranking, socket) |
+| **Hooks** | 4 | ✅ useAuth, useNotifications, useSettings, usePlatform |
+| **Types** | 9 | ✅ Alineados con backend |
+| **Stores** | 9 | ✅ Zustand completos |
+| **Motor 3D** | 54+ archivos | ✅ 14 sistemas, 9 niveles, RPG, entities |
+| **Shaders** | 0 | ❌ No iniciado (Fase 6) |
+| **Página Demo** | 0 | ❌ Placeholder (usa Landing) |
 
 ---
 
@@ -99,15 +100,15 @@ features/demo/engine/
 ```
 GUÍA (Angular)              →  ACTUAL (React)           ESTADO
 ─────────────────────────────────────────────────────────────
-auth.service.ts             →  auth.service.ts          🔶 Parcial
-api.service.ts              →  api.service.ts           ✅ OK
-socket.service.ts           →  ❌ No existe             ❌ FALTA
-dungeon.service.ts          →  ❌ No existe             ❌ FALTA
-ranking.service.ts          →  ❌ No existe             ❌ FALTA
-pwa.service.ts              →  ❌ No existe             ❌ FALTA
-loading.service.ts          →  ❌ (usar Zustand)        ❌ FALTA
-network.service.ts          →  ❌ No existe             ❌ FALTA
-notification.service.ts     →  ❌ No existe             ❌ FALTA
+auth.service.ts             →  auth.service.ts          ✅ Alineado con backend (/auth/*)
+api.service.ts              →  api.service.ts           ✅ OK (STORAGE_KEYS)
+socket.service.ts           →  socket.service.ts        ✅ Socket.IO (alineado con backend)
+dungeon.service.ts          →  dungeon.service.ts       ✅ OK
+ranking.service.ts          →  ranking.service.ts       ✅ OK
+pwa.service.ts              →  (VitePWA plugin)         ✅ Integrado en Vite
+loading.service.ts          →  uiStore (Zustand)        ✅ Integrado
+network.service.ts          →  ❌ No existe              ⚠️ Opcional (offline indicator)
+notification.service.ts     →  useNotifications hook     ✅ API + store
 ```
 
 ### 🔶 PARCIAL - Types/Models que necesitan expansión
@@ -115,14 +116,14 @@ notification.service.ts     →  ❌ No existe             ❌ FALTA
 ```
 GUÍA (Angular)              →  ACTUAL (React)           ESTADO
 ─────────────────────────────────────────────────────────────
-auth.model.ts               →  auth.types.ts            🔶 Parcial
-user.model.ts               →  user.types.ts            🔶 Parcial
-item.model.ts               →  item.types.ts            🔶 Parcial
-character.model.ts          →  ❌ No existe             ❌ FALTA
-dungeon.model.ts            →  ❌ No existe             ❌ FALTA
-survival.model.ts           →  ❌ No existe             ❌ FALTA
-ranking.model.ts            →  ❌ No existe             ❌ FALTA
-shop.model.ts               →  ❌ No existe             ❌ FALTA
+auth.model.ts               →  auth.types.ts            ✅ Completo
+user.model.ts               →  user.types.ts            ✅ Completo
+item.model.ts               →  item.types.ts            ✅ Completo (+mythic)
+character.model.ts          →  character.types.ts       ✅ Completo (9 clases)
+dungeon.model.ts            →  dungeon.types.ts         ✅ Alineado con backend
+survival.model.ts           →  survival.types.ts        ✅ Alineado con backend
+ranking.model.ts            →  ranking.types.ts         ✅ Alineado con backend
+shop.model.ts               →  shop.types.ts            ✅ Alineado con backend
 ```
 
 ### ❌ FALTA - Shared Components
@@ -130,14 +131,14 @@ shop.model.ts               →  ❌ No existe             ❌ FALTA
 ```
 GUÍA                        ACTUAL     PRIORIDAD
 ─────────────────────────────────────────────────
-global-navbar/              ❌         ALTA
-loading-screen/             ❌         ALTA
+global-navbar/              ✅         LISTO
+loading-screen/             ✅         LISTO
 rpg-toast/                  ❌         MEDIA
-settings-modal/             ❌         MEDIA
-character-card/             ❌         MEDIA
+settings-modal/             ✅         LISTO (migrado a página Settings)
+character-card/             ✅         LISTO
 progress-bar/               ❌         BAJA
 offline-indicator/          ❌         BAJA
-install-prompt/             ❌         BAJA
+install-prompt/             ✅         LISTO (PWA)
 ```
 
 ### ❌ FALTA - Guards equivalentes (React Router)
@@ -145,9 +146,10 @@ install-prompt/             ❌         BAJA
 ```
 GUÍA                    →  REACT EQUIVALENTE
 ─────────────────────────────────────────────────
-auth.guard.ts           →  RequireAuth.tsx (wrapper)
-no-auth.guard.ts        →  RequireNoAuth.tsx (wrapper)
-verified.guard.ts       →  RequireVerified.tsx (wrapper)
+auth.guard.ts           →  RequireAuth.tsx ✅
+no-auth.guard.ts        →  RequireNoAuth.tsx ✅
+verified.guard.ts       →  RequireVerified (inline en App.tsx) ✅
+```
 ```
 
 ---

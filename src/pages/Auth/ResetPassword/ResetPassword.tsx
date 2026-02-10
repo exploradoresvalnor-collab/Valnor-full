@@ -47,6 +47,19 @@ const ResetPassword: React.FC = () => {
     }
   }, [resetSuccess, navigate]);
 
+  // Password policy (must match backend Zod schema)
+  const PASSWORD_REGEX = /(?=^.{10,}$)(?=.*[A-Z])(?=.*[a-z])(?=.*\d)(?=.*[^A-Za-z0-9]).*/;
+
+  const passwordChecklist = [
+    { label: 'Mínimo 10 caracteres', ok: formData.password.length >= 10 },
+    { label: 'Una letra mayúscula', ok: /[A-Z]/.test(formData.password) },
+    { label: 'Una letra minúscula', ok: /[a-z]/.test(formData.password) },
+    { label: 'Un número', ok: /\d/.test(formData.password) },
+    { label: 'Un carácter especial', ok: /\W/.test(formData.password) },
+  ];
+
+  const allPasswordRequirementsMet = passwordChecklist.every(i => i.ok);
+
   // Validation
   const getFieldError = (field: string): string | null => {
     if (!touched[field]) return null;
@@ -54,7 +67,7 @@ const ResetPassword: React.FC = () => {
     switch (field) {
       case 'password':
         if (!formData.password) return 'La contraseña es requerida';
-        if (formData.password.length < 6) return 'Mínimo 6 caracteres';
+        if (!allPasswordRequirementsMet) return 'No cumple los requisitos de seguridad';
         break;
       case 'confirmPassword':
         if (!formData.confirmPassword) return 'Confirma tu contraseña';
@@ -67,7 +80,7 @@ const ResetPassword: React.FC = () => {
   const hasFieldError = (field: string): boolean => getFieldError(field) !== null;
 
   const isFormValid = 
-    formData.password.length >= 6 && 
+    PASSWORD_REGEX.test(formData.password) && 
     formData.password === formData.confirmPassword;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -95,8 +108,14 @@ const ResetPassword: React.FC = () => {
     } catch (err: any) {
       if (err.status === 400 || err.status === 404) {
         setInvalidToken(true);
+      } else if (err.status === 0 || err.message === 'Failed to fetch') {
+        setError('🔌 No se pudo conectar con el servidor');
+      } else if (err.status === 429) {
+        setError('⏳ Demasiados intentos. Espera unos minutos.');
+      } else if (err.status >= 500) {
+        setError('💥 Error interno del servidor. Intenta más tarde.');
       } else {
-        setError(err.message || 'Error al restablecer la contraseña');
+        setError(err.error || err.message || 'Error al restablecer la contraseña');
       }
     } finally {
       setLoading(false);
@@ -211,7 +230,7 @@ const ResetPassword: React.FC = () => {
                   value={formData.password}
                   onChange={handleChange}
                   onBlur={() => handleBlur('password')}
-                  placeholder="Mínimo 6 caracteres"
+                  placeholder="Mínimo 10 caracteres"
                   autoFocus
                   className={`form-input ${hasFieldError('password') ? 'input-error' : ''}`}
                 />
@@ -234,6 +253,16 @@ const ResetPassword: React.FC = () => {
               </div>
               {hasFieldError('password') && (
                 <p className="error-text">⚠️ {getFieldError('password')}</p>
+              )}
+              {/* Password requirements checklist */}
+              {touched.password && !allPasswordRequirementsMet && (
+                <ul className="password-checklist">
+                  {passwordChecklist.map((item, i) => (
+                    <li key={i} className={item.ok ? 'check-ok' : 'check-fail'}>
+                      {item.ok ? '✅' : '❌'} {item.label}
+                    </li>
+                  ))}
+                </ul>
               )}
             </div>
 

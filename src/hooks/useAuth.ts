@@ -5,6 +5,7 @@
 import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
+import { useSessionStore } from '../stores/sessionStore';
 import { User, LoginRequest, RegisterRequest } from '../types';
 
 export function useAuth() {
@@ -25,21 +26,33 @@ export function useAuth() {
     setError(null);
     try {
       await authService.login(data);
+      // Cambiar sesión a modo AUTH (sale de modo invitado)
+      useSessionStore.getState().startAsAuth();
       navigate(returnUrl);
       return true;
     } catch (err: any) {
+      // Usar el mensaje del backend si viene, sino usar genérico por status
+      const backendMsg = err.error || err.message;
       let message = 'Error desconocido';
-      if (err.status === 0 || err.status === 404) {
-        message = '🔌 Backend no conectado';
+
+      if (err.status === 0 || err.message === 'Failed to fetch') {
+        message = '🔌 No se pudo conectar con el servidor. ¿Está el backend encendido?';
       } else if (err.status === 401) {
-        message = '❌ Email o contraseña incorrectos';
+        message = backendMsg || '❌ Email o contraseña incorrectos';
       } else if (err.status === 403) {
-        message = '⚠️ Tu cuenta aún no ha sido verificada';
+        message = backendMsg || '⚠️ Tu cuenta aún no ha sido verificada. Revisa tu correo.';
+      } else if (err.status === 404) {
+        message = '🔌 Ruta no encontrada. Verifica la configuración del servidor.';
+      } else if (err.status === 409) {
+        message = backendMsg || 'Conflicto con los datos enviados';
+      } else if (err.status === 429) {
+        message = '⏳ Demasiados intentos. Espera unos minutos antes de volver a intentar.';
       } else if (err.status >= 500) {
-        message = '💥 Error del servidor';
-      } else if (err.message) {
-        message = err.message;
+        message = '💥 Error interno del servidor. Intenta de nuevo más tarde.';
+      } else if (backendMsg) {
+        message = backendMsg;
       }
+
       setError(message);
       return false;
     } finally {
@@ -73,7 +86,9 @@ export function useAuth() {
     setLoading(true);
     try {
       await authService.logout();
-      navigate('/landing');
+      // Limpiar sesión (sale de modo auth/guest)
+      useSessionStore.getState().endSession();
+      navigate('/splash');
     } finally {
       setLoading(false);
     }

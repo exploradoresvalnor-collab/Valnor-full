@@ -2,7 +2,7 @@
  * Tipos de Items - Valnor Juego
  */
 
-export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
+export type ItemRarity = 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary' | 'mythic';
 export type ItemType = 'weapon' | 'armor' | 'helmet' | 'boots' | 'accessory' | 'consumable';
 export type EquipmentSlot = 'weapon' | 'armor' | 'helmet' | 'boots' | 'accessory1' | 'accessory2';
 
@@ -50,13 +50,14 @@ export interface EquippedItems {
   accessory2: EquipmentItem | null;
 }
 
-// Colores por rareza
+// Colores por rareza (fuente única de verdad)
 export const RARITY_COLORS: Record<ItemRarity, string> = {
-  common: '#9ca3af',
-  uncommon: '#22c55e',
-  rare: '#3b82f6',
-  epic: '#a855f7',
-  legendary: '#f59e0b',
+  common: '#9d9d9d',
+  uncommon: '#1eff00',
+  rare: '#0070dd',
+  epic: '#a335ee',
+  legendary: '#ff8000',
+  mythic: '#e6cc80',
 };
 
 export const RARITY_NAMES: Record<ItemRarity, string> = {
@@ -65,4 +66,5 @@ export const RARITY_NAMES: Record<ItemRarity, string> = {
   rare: 'Raro',
   epic: 'Épico',
   legendary: 'Legendario',
+  mythic: 'Mítico',
 };

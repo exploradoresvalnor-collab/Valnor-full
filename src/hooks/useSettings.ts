@@ -9,8 +9,7 @@
 
 import { useCallback, useState } from 'react';
 import { useSettingsStore, type UserSettings } from '../stores/settingsStore';
-
-const API_BASE = import.meta.env.VITE_API_URL || '';
+import api from '../services/api.service';
 
 interface UseSettingsReturn {
   // Estado del store
@@ -59,20 +58,8 @@ export function useSettings(): UseSettingsReturn {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE}/api/user/settings`, {
-        method: 'GET',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener configuración');
-      }
-      
-      const data = await response.json();
-      store.syncFromServer(data);
+      const data = await api.get<{ settings?: UserSettings; [key: string]: unknown }>('/api/user/settings');
+      store.syncFromServer(data.settings || data);
       
     } catch (err) {
       const message = err instanceof Error ? err.message : 'Error desconocido';
@@ -104,20 +91,7 @@ export function useSettings(): UseSettingsReturn {
     };
     
     try {
-      const response = await fetch(`${API_BASE}/api/user/settings`, {
-        method: 'PUT',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify(settingsToSave),
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al guardar configuración');
-      }
-      
-      const data = await response.json();
+      const data = await api.put<{ settings?: UserSettings }>('/api/user/settings', settingsToSave);
       if (data.settings) {
         store.syncFromServer(data.settings);
       } else {
@@ -145,19 +119,7 @@ export function useSettings(): UseSettingsReturn {
     setError(null);
     
     try {
-      const response = await fetch(`${API_BASE}/api/user/settings/reset`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-      });
-      
-      if (!response.ok) {
-        throw new Error('Error al restaurar configuración');
-      }
-      
-      const data = await response.json();
+      const data = await api.post<{ settings?: UserSettings }>('/api/user/settings/reset', {});
       if (data.settings) {
         store.syncFromServer(data.settings);
       } else {

@@ -6,6 +6,7 @@ import { useEffect, useCallback, useMemo } from 'react';
 import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
 import { useGameStore } from '../../stores/gameStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 
 // Categorías de audio
 export type AudioCategory = 'master' | 'music' | 'sfx' | 'voice' | 'ambient';
@@ -342,7 +343,8 @@ const audioManager = new AudioSystemManager();
  */
 export function useAudioSystem() {
   const { camera } = useThree();
-  const { volume, isMuted } = useGameStore();
+  const { isMuted } = useGameStore();
+  const { masterVolume, musicVolume, sfxVolume } = useSettingsStore();
   
   // Crear listener
   const listener = useMemo(() => {
@@ -352,11 +354,13 @@ export function useAudioSystem() {
     return l;
   }, [camera]);
 
-  // Sincronizar volumen con store
+  // Sincronizar volumen con settingsStore (fuente única de verdad)
   useEffect(() => {
-    const masterVolume = isMuted ? 0 : volume;
-    audioManager.setVolume('master', masterVolume);
-  }, [volume, isMuted]);
+    const vol = isMuted ? 0 : masterVolume / 100;
+    audioManager.setVolume('master', vol);
+    audioManager.setVolume('music', (musicVolume / 100) * vol);
+    audioManager.setVolume('sfx', (sfxVolume / 100) * vol);
+  }, [masterVolume, musicVolume, sfxVolume, isMuted]);
 
   // Cleanup
   useEffect(() => {

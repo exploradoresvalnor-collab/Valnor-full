@@ -54,5 +54,6 @@ coverage/
 *.temp
 .cache/
 
-# Guía de ejemplo (referencia, no código del proyecto)
-gui a de ejempli/
+# Guía de ejemplo — solo subir documentación (.md), ignorar proyectos de referencia
+gui a de ejempli/Lee completo/
+gui a de ejempli/valgame-backend/

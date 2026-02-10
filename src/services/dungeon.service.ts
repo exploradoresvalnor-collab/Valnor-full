@@ -1,23 +1,27 @@
 /**
  * Dungeon Service - Gestión de mazmorras
+ * 
+ * Endpoints reales del backend:
+ * - GET  /api/dungeons                              (listar mazmorras)
+ * - GET  /api/dungeons/:id                           (detalle de mazmorra)
+ * - POST /api/dungeons/:dungeonId/start              (iniciar combate en mazmorra)
+ * - GET  /api/dungeons/:dungeonId/progress           (obtener progreso)
+ * - GET  /api/dungeons/:dungeonId/session/:sessionId (alias de progress)
+ * - POST /api/dungeons/enter/:dungeonId              (alias de start)
  */
 
 import apiService from './api.service';
 import type { 
   Dungeon, 
-  DungeonRun, 
   DungeonResponse, 
-  DungeonRunResponse,
-  CreateDungeonRunDTO,
-  CombatAction,
-  CombatResult 
 } from '../types';
 
 class DungeonService {
-  private basePath = '/dungeons';
+  private basePath = '/api/dungeons';
 
   /**
    * Obtener lista de mazmorras disponibles
+   * GET /api/dungeons
    */
   async getDungeons(): Promise<Dungeon[]> {
     const response = await apiService.get<DungeonResponse>(this.basePath);
@@ -26,6 +30,7 @@ class DungeonService {
 
   /**
    * Obtener mazmorra por ID
+   * GET /api/dungeons/:id
    */
   async getDungeon(dungeonId: string): Promise<Dungeon | null> {
     const response = await apiService.get<DungeonResponse>(`${this.basePath}/${dungeonId}`);
@@ -33,94 +38,32 @@ class DungeonService {
   }
 
   /**
-   * Iniciar una run de mazmorra
+   * Iniciar combate en mazmorra
+   * POST /api/dungeons/:dungeonId/start
+   * Body: { team: ["charId1", "charId2", ...] }
    */
-  async startRun(data: CreateDungeonRunDTO): Promise<DungeonRun | null> {
-    const response = await apiService.post<DungeonRunResponse>(`${this.basePath}/runs`, data);
-    return response.run || null;
+  async startDungeon(dungeonId: string, team: string[]): Promise<unknown> {
+    return apiService.post(`${this.basePath}/${dungeonId}/start`, { team });
   }
 
   /**
-   * Obtener run actual
+   * Obtener progreso de mazmorra
+   * GET /api/dungeons/:dungeonId/progress
    */
-  async getCurrentRun(): Promise<DungeonRun | null> {
-    const response = await apiService.get<DungeonRunResponse>(`${this.basePath}/runs/current`);
-    return response.run || null;
+  async getProgress(dungeonId: string): Promise<unknown> {
+    return apiService.get(`${this.basePath}/${dungeonId}/progress`);
   }
 
   /**
-   * Obtener run por ID
+   * Obtener sesión específica (alias)
+   * GET /api/dungeons/:dungeonId/session/:sessionId
    */
-  async getRun(runId: string): Promise<DungeonRun | null> {
-    const response = await apiService.get<DungeonRunResponse>(`${this.basePath}/runs/${runId}`);
-    return response.run || null;
+  async getSession(dungeonId: string, sessionId: string): Promise<unknown> {
+    return apiService.get(`${this.basePath}/${dungeonId}/session/${sessionId}`);
   }
+}
 
-  /**
-   * Ejecutar acción de combate
-   */
-  async executeAction(runId: string, action: CombatAction): Promise<CombatResult> {
-    return apiService.post<CombatResult>(`${this.basePath}/runs/${runId}/action`, action);
-  }
-
-  /**
-   * Avanzar al siguiente piso
-   */
-  async advanceFloor(runId: string): Promise<DungeonRun | null> {
-    const response = await apiService.post<DungeonRunResponse>(
-      `${this.basePath}/runs/${runId}/advance`,
-      {}
-    );
-    return response.run || null;
-  }
-
-  /**
-   * Abandonar run
-   */
-  async abandonRun(runId: string): Promise<void> {
-    await apiService.post(`${this.basePath}/runs/${runId}/abandon`, {});
-  }
-
-  /**
-   * Obtener historial de runs
-   */
-  async getRunHistory(page: number = 1, limit: number = 10): Promise<{
-    runs: DungeonRun[];
-    total: number;
-    page: number;
-  }> {
-    return apiService.get(`${this.basePath}/runs/history`, { page: String(page), limit: String(limit) });
-  }
-
-  /**
-   * Reclamar recompensas de run completada
-   */
-  async claimRewards(runId: string): Promise<{
-    success: boolean;
-    rewards: unknown[];
-  }> {
-    return apiService.post(`${this.basePath}/runs/${runId}/claim`, {});
-  }
-
-  /**
-   * Obtener mazmorras completadas por el usuario
-   */
-  async getCompletedDungeons(): Promise<string[]> {
-    const response = await apiService.get<{ dungeonIds: string[] }>(
-      `${this.basePath}/completed`
-    );
-    return response.dungeonIds || [];
-  }
-
-  /**
-   * Verificar si puede entrar a una mazmorra
-   */
-  async canEnterDungeon(dungeonId: string): Promise<{
-    canEnter: boolean;
-    reasons?: string[];
-  }> {
-    return apiService.get(`${this.basePath}/${dungeonId}/can-enter`);
-  }
+export const dungeonService = new DungeonService();
 }
 
 export const dungeonService = new DungeonService();

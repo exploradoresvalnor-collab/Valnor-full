@@ -4,6 +4,7 @@
  */
 
 import { API_CONFIG, DEFAULT_HEADERS } from '../config/api.config';
+import { STORAGE_KEYS } from '../utils/constants';
 
 interface RequestOptions {
   headers?: Record<string, string>;
@@ -42,7 +43,7 @@ class ApiService {
     };
 
     // Añadir token si existe en localStorage
-    const token = localStorage.getItem('token');
+    const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
     }
@@ -55,12 +56,14 @@ class ApiService {
    */
   private async handleResponse<T>(response: Response): Promise<T> {
     if (!response.ok) {
-      const error = await response.json().catch(() => ({ message: 'Error desconocido' }));
+      const errorBody = await response.json().catch(() => ({ message: 'Error desconocido' }));
       throw {
         status: response.status,
-        message: error.message || error.error || 'Error del servidor',
+        // El backend usa "error" en unos endpoints y "message" en otros
+        message: errorBody.error || errorBody.message || 'Error del servidor',
+        error: errorBody.error || errorBody.message || 'Error del servidor',
         url: response.url,
-        ...error,
+        ...errorBody,
       };
     }
     

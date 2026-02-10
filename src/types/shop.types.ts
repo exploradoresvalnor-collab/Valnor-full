@@ -133,7 +133,7 @@ export interface GachaPullResult {
 // Historial de compras
 export interface PurchaseHistory {
   id: string;
-  oduserId: string;
+  userId: string;
   
   // Producto
   shopItemId: string;

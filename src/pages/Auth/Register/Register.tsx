@@ -149,7 +149,7 @@ const Register: React.FC = () => {
     setTouched(prev => ({ ...prev, [field]: true }));
   };
 
-  // Check availability on blur
+  // Check availability on blur (endpoint may not exist, fail silently)
   const checkEmailAvailability = async () => {
     if (!formData.email || !isValidEmail(formData.email)) return;
     try {
@@ -158,7 +158,8 @@ const Register: React.FC = () => {
         setEmailDuplicate(true);
       }
     } catch {
-      // Ignore errors
+      // Endpoint may not exist in backend — skip silently
+      // Duplicates will be caught on submit (409)
     }
   };
 
@@ -170,7 +171,8 @@ const Register: React.FC = () => {
         setUsernameDuplicate(true);
       }
     } catch {
-      // Ignore errors
+      // Endpoint may not exist in backend — skip silently
+      // Duplicates will be caught on submit (409)
     }
   };
 
@@ -221,22 +223,32 @@ const Register: React.FC = () => {
       
       let message = 'Error al registrar';
       
-      if (err.status === 0 || err.status === 404) {
-        message = '🔌 Backend no conectado';
+      if (err.status === 0 || err.message === 'Failed to fetch') {
+        message = '🔌 No se pudo conectar con el servidor. ¿Está encendido?';
       } else if (err.status === 400) {
-        message = err.message || '❌ Datos inválidos';
+        message = err.error || err.message || '❌ Datos inválidos. Revisa los campos.';
       } else if (err.status === 409) {
         message = '⚠️ Email o usuario ya existe';
-        setEmailDuplicate(true);
-        setUsernameDuplicate(true);
+        // Intentar detectar cuál es el duplicado
+        const errMsg = (err.error || err.message || '').toLowerCase();
+        if (errMsg.includes('email')) {
+          setEmailDuplicate(true);
+        } else if (errMsg.includes('username') || errMsg.includes('usuario')) {
+          setUsernameDuplicate(true);
+        } else {
+          setEmailDuplicate(true);
+          setUsernameDuplicate(true);
+        }
         // Navigate to verify page
         setTimeout(() => {
           navigate(`/auth/verify?email=${encodeURIComponent(formData.email)}&from=duplicate`);
         }, 1500);
       } else if (err.status === 429) {
-        message = '⏸️ Demasiados intentos';
+        message = '⏳ Demasiados intentos. Espera unos minutos.';
       } else if (err.status >= 500) {
-        message = '💥 Error del servidor';
+        message = '💥 Error del servidor. Intenta más tarde.';
+      } else if (err.error || err.message) {
+        message = err.error || err.message;
       }
 
       setServerError(message);

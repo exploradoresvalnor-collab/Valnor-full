@@ -5,14 +5,23 @@
 import type { ItemRarity } from './item.types';
 import type { CharacterClass } from './character.types';
 
-// Dificultad de mazmorra
-export type DungeonDifficulty = 'easy' | 'normal' | 'hard' | 'nightmare' | 'hell';
+// Dificultad de mazmorra (alineado con backend)
+export type DungeonDifficulty = 'easy' | 'normal' | 'hard' | 'expert' | 'nightmare';
 
 // Estado de la mazmorra
 export type DungeonStatus = 'available' | 'locked' | 'completed' | 'in_progress';
 
 // Tipo de enemigo
 export type EnemyType = 'normal' | 'elite' | 'boss' | 'miniboss';
+
+// Requisitos de mazmorra
+export interface DungeonRequirements {
+  minLevel: number;
+  requiredItems?: string[];
+  requiredTitles?: string[];
+  maxPartySize: number;
+  recommendedPartySize: number;
+}
 
 // Mazmorra
 export interface Dungeon {
@@ -131,8 +140,8 @@ export interface RewardItem {
 // Sesión de mazmorra (run actual)
 export interface DungeonRun {
   id: string;
-  odungeonId: string;
-  odungeonName: string;
+  dungeonId: string;
+  dungeonName: string;
   
   // Jugadores
   players: DungeonPlayer[];
@@ -157,8 +166,8 @@ export interface DungeonRun {
 }
 
 export interface DungeonPlayer {
-  oduserId: string;
-  oduserName: string;
+  userId: string;
+  userName: string;
   characterId: string;
   class: CharacterClass;
   level: number;
@@ -195,6 +204,32 @@ export interface CombatEffect {
   stackable?: boolean;
 }
 
+// Log de combate
+export interface CombatLogEntry {
+  turn: number;
+  action: string;
+  damage?: number;
+  healing?: number;
+  statusEffect?: string;
+  timestamp: string;
+}
+
+// Miembro del grupo
+export interface PartyMember {
+  characterId: string;
+  characterName: string;
+  level: number;
+  class: string;
+  health: number;
+  maxHealth: number;
+  isLeader: boolean;
+  equipment: {
+    weapon?: string;
+    armor?: string;
+    accessory?: string;
+  };
+}
+
 // Resultado del combate
 export interface CombatResult {
   won: boolean;
@@ -223,4 +258,41 @@ export interface DungeonRunResponse {
   success: boolean;
   run?: DungeonRun;
   message?: string;
+}
+
+// Request/Response para iniciar mazmorra
+export interface StartDungeonRequest {
+  dungeonId: string;
+  partyMemberIds: string[];
+}
+
+export interface StartDungeonResponse {
+  runId: string;
+  dungeon: Dungeon;
+  party: PartyMember[];
+  estimatedDuration: number;
+}
+
+// Request/Response para acciones de combate
+export interface CombatActionRequest {
+  runId: string;
+  action: 'attack' | 'defend' | 'use_item' | 'flee';
+  targetId?: string;
+  itemId?: string;
+}
+
+export interface CombatActionResponse {
+  success: boolean;
+  damage?: number;
+  healing?: number;
+  message: string;
+  combatState: {
+    playerHealth: number;
+    enemyHealth: number;
+    statusEffects: string[];
+    availableActions: string[];
+  };
+  isCombatFinished: boolean;
+  result?: CombatResult;
+  logEntries?: CombatLogEntry[];
 }

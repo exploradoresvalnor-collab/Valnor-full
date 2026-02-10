@@ -259,18 +259,67 @@
   position: relative;
   z-index: 10;
   display: flex;
-  align-items: center;
-  justify-content: center;
+  align-items: flex-start;
   gap: 8px;
   background: rgba(220, 38, 38, 0.8);
   border: 1px solid rgba(248, 113, 113, 0.6);
   color: white;
-  padding: 8px 12px;
+  padding: 10px 14px;
   border-radius: 8px;
   font-size: 0.875rem;
   font-weight: 600;
   backdrop-filter: blur(4px);
   box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+  animation: errorShake 0.4s ease-in-out;
+}
+
+.error-message svg {
+  flex-shrink: 0;
+  margin-top: 2px;
+}
+
+.error-text-container {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.error-action-link {
+  font-size: 0.75rem;
+  color: #fde68a;
+  text-decoration: underline;
+  cursor: pointer;
+  transition: color 0.2s;
+}
+
+.error-action-link:hover {
+  color: #fef08a;
+}
+
+/* Error tipo warning (verificación) */
+.error-message.error-warning {
+  background: rgba(180, 120, 20, 0.85);
+  border-color: rgba(250, 204, 21, 0.6);
+}
+
+/* Error tipo servidor/conexión */
+.error-message.error-server {
+  background: rgba(100, 50, 150, 0.85);
+  border-color: rgba(168, 85, 247, 0.6);
+}
+
+/* Error tipo auth (credenciales) */
+.error-message.error-auth {
+  background: rgba(220, 38, 38, 0.8);
+  border-color: rgba(248, 113, 113, 0.6);
+}
+
+@keyframes errorShake {
+  0%, 100% { transform: translateX(0); }
+  20% { transform: translateX(-6px); }
+  40% { transform: translateX(6px); }
+  60% { transform: translateX(-4px); }
+  80% { transform: translateX(4px); }
 }
 
 /* Form Group */

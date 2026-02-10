@@ -18,7 +18,7 @@ import {
   IconBow,
   IconDagger,
   IconHeal,
-} from '../../components/ui/GameIcons';
+} from '../../components/icons/GameIcons';
 import './Wiki.css';
 
 interface WikiSection {

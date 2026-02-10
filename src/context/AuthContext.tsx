@@ -4,6 +4,7 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/auth.service';
+import { STORAGE_KEYS } from '../utils/constants';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -23,7 +24,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const unsubscribe = authService.subscribe(setUser);
 
     const checkAuth = async () => {
-      const token = localStorage.getItem('token');
+      const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
       if (token) {
         try {
           await authService.checkSession();

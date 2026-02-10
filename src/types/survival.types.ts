@@ -14,7 +14,7 @@ export type WaveType = 'normal' | 'elite' | 'boss' | 'rest';
 // Sesión de survival
 export interface SurvivalSession {
   id: string;
-  oduserId: string;
+  userId: string;
   
   // Personaje
   characterId: string;
@@ -93,9 +93,9 @@ export interface ModifierEffect {
 
 // Leaderboard de survival
 export interface SurvivalLeaderboardEntry {
-  odrank: number;
-  oduserId: string;
-  oduserName: string;
+  rank: number;
+  userId: string;
+  userName: string;
   characterClass: CharacterClass;
   characterLevel: number;
   
@@ -153,6 +153,58 @@ export interface SurvivalLeaderboardResponse {
   success: boolean;
   leaderboard?: SurvivalLeaderboard;
   message?: string;
+}
+
+// Resultado de oleada
+export interface SurvivalWaveResult {
+  waveNumber: number;
+  enemiesDefeated: number;
+  pointsEarned: number;
+  dropsReceived: string[];
+  characterHealthRemaining: number;
+}
+
+// Fin de partida
+export interface SurvivalGameOver {
+  sessionId: string;
+  characterId: string;
+  finalWave: number;
+  totalPoints: number;
+  totalEnemiesDefeated: number;
+  survivalTime: number; // en segundos
+  reward: {
+    exp: number;
+    val: number;
+    items: string[];
+  };
+}
+
+// Estadísticas de survival del usuario
+export interface SurvivalStats {
+  totalSessions: number;
+  totalPoints: number;
+  averageWave: number;
+  personalBest: number;
+  bestSession: {
+    points: number;
+    wave: number;
+    date: string;
+  };
+  leaderboardPosition: number;
+}
+
+// Canje de puntos
+export interface ExchangePointsRequest {
+  pointsToExchange: number;
+  exchangeType: 'exp' | 'val' | 'items';
+  itemId?: string;
+}
+
+export interface ExchangePointsResponse {
+  success: boolean;
+  pointsExchanged: number;
+  rewardReceived: number | string;
+  remainingPoints: number;
 }
 
 // Datos para completar oleada

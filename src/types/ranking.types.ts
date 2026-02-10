@@ -19,9 +19,9 @@ export type RankingPeriod = 'all_time' | 'season' | 'monthly' | 'weekly' | 'dail
 
 // Entrada del ranking
 export interface RankingEntry {
-  odrank: number;
-  oduserId: string;
-  oduserName: string;
+  rank: number;
+  userId: string;
+  userName: string;
   
   // Personaje
   characterId?: string;
@@ -114,8 +114,8 @@ export interface AchievementReward {
 
 // Logro del usuario
 export interface UserAchievement {
-  odachievementId: string;
-  oduserId: string;
+  achievementId: string;
+  userId: string;
   
   // Progreso
   progress: number;
@@ -153,8 +153,8 @@ export interface UserTitle {
 
 // Perfil público del usuario
 export interface PublicProfile {
-  oduserId: string;
-  oduserName: string;
+  userId: string;
+  userName: string;
   avatarUrl?: string;
   
   // Título activo
@@ -217,4 +217,108 @@ export interface GetRankingDTO {
   period?: RankingPeriod;
   page?: number;
   limit?: number;
+}
+
+// Filtro de ranking (alineado con Angular ranking.model)
+export interface RankingFilter {
+  category?: string;
+  timeframe?: 'all_time' | 'monthly' | 'weekly' | 'daily';
+  region?: string;
+  class?: string;
+  page?: number;
+  limit?: number;
+}
+
+// Stats detallados del jugador
+export interface PlayerStats {
+  totalExperience: number;
+  dungeonsCompleted: number;
+  itemsCollected: number;
+  goldEarned: number;
+  winRate: number;
+  bestStreak: number;
+  totalPlayTime: number;
+  favoriteClass?: string;
+  joinDate: string;
+}
+
+// Stats detallados extendidos
+export interface DetailedStats {
+  totalPlayTime: number;
+  joinDate: string;
+  lastActive: string;
+  dungeonsAttempted: number;
+  dungeonsCompleted: number;
+  totalWins: number;
+  totalLosses: number;
+  winRate: number;
+  bestStreak: number;
+  currentStreak: number;
+  averageCombatTime: number;
+  totalGoldEarned: number;
+  totalGoldSpent: number;
+  currentGold: number;
+  itemsPurchased: number;
+  itemsSold: number;
+  uniqueItemsCollected: number;
+  totalItemsCollected: number;
+  rareItemsCollected: number;
+  epicItemsCollected: number;
+  legendaryItemsCollected: number;
+  friendsCount: number;
+  marketplaceTransactions: number;
+  itemsTraded: number;
+  classStats: Record<string, {
+    dungeonsCompleted: number;
+    winRate: number;
+    favoriteWeapon?: string;
+    totalExperience: number;
+  }>;
+}
+
+// Entrada de actividad reciente
+export interface ActivityEntry {
+  id: string;
+  type: 'dungeon_completed' | 'item_obtained' | 'level_up' | 'achievement_unlocked' | 'ranking_change';
+  description: string;
+  timestamp: string;
+  data?: unknown;
+}
+
+// Perfil completo del usuario (respuesta extendida)
+export interface UserProfileFull {
+  user: RankingEntry;
+  achievements: Achievement[];
+  recentActivity: ActivityEntry[];
+  statistics: DetailedStats;
+}
+
+// Request/Response tipados
+export interface GetRankingRequest extends RankingFilter {}
+
+export interface GetRankingResponse {
+  entries: RankingEntry[];
+  totalEntries: number;
+  userRank?: number;
+  userEntry?: RankingEntry;
+  lastUpdated: string;
+  nextUpdate?: string;
+}
+
+export interface GetUserProfileRequest {
+  userId: string;
+}
+
+export interface GetUserProfileResponse extends UserProfileFull {}
+
+export interface GetAchievementsRequest {
+  userId?: string;
+  category?: string;
+  unlocked?: boolean;
+}
+
+export interface GetAchievementsResponse {
+  achievements?: Achievement[];
+  totalCount?: number;
+  unlockedCount?: number;
 }

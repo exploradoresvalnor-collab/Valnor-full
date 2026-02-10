@@ -27,43 +27,36 @@ export const ROUTES = {
   SURVIVAL: '/survival',
 } as const;
 
-// Raridades de items
-export const RARITY_COLORS = {
-  common: '#9d9d9d',
-  uncommon: '#1eff00',
-  rare: '#0070dd',
-  epic: '#a335ee',
-  legendary: '#ff8000',
-  mythic: '#e6cc80',
-} as const;
-
-export const RARITY_NAMES = {
-  common: 'Común',
-  uncommon: 'Poco Común',
-  rare: 'Raro',
-  epic: 'Épico',
-  legendary: 'Legendario',
-  mythic: 'Mítico',
-} as const;
+// Raridades de items - re-exportar de item.types (fuente única de verdad)
+// Importar desde '@/types/item.types' o desde '@/types'
+// RARITY_COLORS y RARITY_NAMES están definidos en src/types/item.types.ts
 
 // Clases de personaje
-export const CLASS_NAMES = {
+import type { CharacterClass } from '../types/character.types';
+
+export const CLASS_NAMES: Record<CharacterClass, string> = {
   warrior: 'Guerrero',
   mage: 'Mago',
   rogue: 'Pícaro',
   archer: 'Arquero',
   paladin: 'Paladín',
   necromancer: 'Nigromante',
-} as const;
+  berserker: 'Berserker',
+  monk: 'Monje',
+  healer: 'Sanador',
+};
 
-export const CLASS_COLORS = {
+export const CLASS_COLORS: Record<CharacterClass, string> = {
   warrior: '#c79c6e',
   mage: '#69ccf0',
   rogue: '#fff569',
   archer: '#abd473',
   paladin: '#f58cba',
   necromancer: '#9482c9',
-} as const;
+  berserker: '#e2231a',
+  monk: '#00ff96',
+  healer: '#ffffc0',
+};
 
 // Elementos
 export const ELEMENT_COLORS = {

@@ -19,3 +19,12 @@ export * from './systems';
 
 // Scenes/Levels
 export * from './scenes';
+
+// RPG
+export * from './rpg';
+
+// Entities
+export * from './entities';
+
+// Character
+export * from './character';

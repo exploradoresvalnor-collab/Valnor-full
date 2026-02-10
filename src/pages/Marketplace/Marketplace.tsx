@@ -4,6 +4,8 @@ import { useAuth } from '../../hooks/useAuth';
 import { useIsGuest } from '../../stores/sessionStore';
 import { GuestBanner } from '../../components/ui';
 import { ItemRarity, RARITY_COLORS, RARITY_NAMES } from '../../types/item.types';
+import { marketplaceService } from '../../services';
+import type { MarketplaceListing as BackendListing, MarketplaceTransaction } from '../../services/marketplace.service';
 import './Marketplace.css';
 
 interface MarketListing {
@@ -24,121 +26,46 @@ interface MarketListing {
   expira: Date;
 }
 
-// Mock marketplace listings
-const mockListings: MarketListing[] = [
-  {
-    id: 'ml1',
-    itemId: 'i1',
-    nombre: 'Hacha del Berserker',
-    descripcion: 'Un hacha masiva que otorga fuerza descomunal',
-    tipo: 'weapon',
-    rareza: 'epic',
-    nivel: 18,
-    stats: { ataque: 65, critico: 18 },
-    precio: 12000,
-    vendedor: { id: 'u1', username: 'DragonSlayer99' },
-    fechaPublicacion: new Date(Date.now() - 86400000),
-    expira: new Date(Date.now() + 518400000),
-  },
-  {
-    id: 'ml2',
-    itemId: 'i2',
-    nombre: 'Cetro del Archimagus',
-    descripcion: 'Canaliza poder arcano ancestral',
-    tipo: 'weapon',
-    rareza: 'legendary',
-    nivel: 25,
-    stats: { ataque: 80, critico: 25 },
-    precio: 35000,
-    vendedor: { id: 'u2', username: 'MysticWizard' },
-    fechaPublicacion: new Date(Date.now() - 3600000),
-    expira: new Date(Date.now() + 604800000),
-  },
-  {
-    id: 'ml3',
-    itemId: 'i3',
-    nombre: 'Armadura del Fénix',
-    descripcion: 'Renace de las cenizas con HP completo una vez por batalla',
-    tipo: 'armor',
-    rareza: 'legendary',
-    nivel: 22,
-    stats: { defensa: 70, hp: 400 },
-    precio: 45000,
-    vendedor: { id: 'u3', username: 'PhoenixKnight' },
-    fechaPublicacion: new Date(Date.now() - 172800000),
-    expira: new Date(Date.now() + 432000000),
-  },
-  {
-    id: 'ml4',
-    itemId: 'i4',
-    nombre: 'Capa de Sombras',
-    descripcion: 'Te vuelve invisible por 3 segundos al recibir daño crítico',
-    tipo: 'armor',
-    rareza: 'epic',
-    nivel: 15,
-    stats: { defensa: 35, evasion: 25 },
-    precio: 8500,
-    vendedor: { id: 'u4', username: 'ShadowNinja' },
-    fechaPublicacion: new Date(Date.now() - 43200000),
-    expira: new Date(Date.now() + 561600000),
-  },
-  {
-    id: 'ml5',
-    itemId: 'i5',
-    nombre: 'Botas de Mercurio',
-    descripcion: 'Velocidad del mensajero de los dioses',
-    tipo: 'boots',
-    rareza: 'rare',
-    nivel: 12,
-    stats: { velocidad: 40, evasion: 15 },
-    precio: 4200,
-    vendedor: { id: 'u5', username: 'SpeedRunner' },
-    fechaPublicacion: new Date(Date.now() - 7200000),
-    expira: new Date(Date.now() + 597600000),
-  },
-  {
-    id: 'ml6',
-    itemId: 'i6',
-    nombre: 'Anillo del Vampiro',
-    descripcion: 'Roba vida con cada ataque',
-    tipo: 'accessory',
-    rareza: 'epic',
-    nivel: 16,
-    stats: { ataque: 20, hp: 100 },
-    precio: 9800,
-    vendedor: { id: 'u6', username: 'BloodHunter' },
-    fechaPublicacion: new Date(Date.now() - 259200000),
-    expira: new Date(Date.now() + 345600000),
-  },
-  {
-    id: 'ml7',
-    itemId: 'i7',
-    nombre: 'Escudo de Thorns',
-    descripcion: 'Refleja 20% del daño recibido',
-    tipo: 'armor',
-    rareza: 'rare',
-    nivel: 10,
-    stats: { defensa: 45, hp: 80 },
-    precio: 3500,
-    vendedor: { id: 'u7', username: 'TankMaster' },
-    fechaPublicacion: new Date(Date.now() - 14400000),
-    expira: new Date(Date.now() + 590400000),
-  },
-  {
-    id: 'ml8',
-    itemId: 'i8',
-    nombre: 'Daga del Asesino',
-    descripcion: 'Daño crítico aumentado en 50%',
-    tipo: 'weapon',
-    rareza: 'rare',
-    nivel: 11,
-    stats: { ataque: 30, critico: 35 },
-    precio: 5500,
-    vendedor: { id: 'u8', username: 'SilentKiller' },
-    fechaPublicacion: new Date(Date.now() - 28800000),
-    expira: new Date(Date.now() + 576000000),
-  },
-];
+/** Mapea un listing del backend al formato del frontend */
+function mapListing(l: any): MarketListing {
+  return {
+    id: l._id || l.id || '',
+    itemId: l.itemId || '',
+    nombre: l.itemName || l.nombre || 'Item desconocido',
+    descripcion: l.itemDescription || l.descripcion || '',
+    tipo: l.itemType || l.tipo || 'weapon',
+    rareza: (l.itemRareza || l.rareza || 'common') as ItemRarity,
+    nivel: l.itemLevel || l.nivel || 1,
+    stats: l.itemStats || l.stats || {},
+    precio: l.priceVal || l.precio || 0,
+    vendedor: {
+      id: l.sellerId || l.vendedor?.id || '',
+      username: l.sellerUsername || l.vendedor?.username || 'Vendedor',
+    },
+    fechaPublicacion: new Date(l.createdAt || l.fechaPublicacion || Date.now()),
+    expira: new Date(l.expiresAt || l.expira || Date.now() + 604800000),
+  };
+}
+
+interface TransactionEntry {
+  id: string;
+  itemName: string;
+  priceVal: number;
+  type: 'sale' | 'purchase';
+  date: Date;
+  otherUser: string;
+}
+
+function mapTransaction(t: any): TransactionEntry {
+  return {
+    id: t._id || t.id || '',
+    itemName: t.itemName || t.nombre || 'Item',
+    priceVal: t.priceVal || t.precio || 0,
+    type: t.type || 'purchase',
+    date: new Date(t.createdAt || Date.now()),
+    otherUser: t.type === 'sale' ? (t.buyerUsername || 'Comprador') : (t.sellerUsername || 'Vendedor'),
+  };
+}
 
 type MarketTab = 'buy' | 'sell' | 'history';
 type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'level' | 'rarity';
@@ -148,13 +75,17 @@ const Marketplace: React.FC = () => {
   const { user, loading } = useAuth();
   const isGuest = useIsGuest();
   const [activeTab, setActiveTab] = useState<MarketTab>('buy');
-  const [listings] = useState<MarketListing[]>(mockListings);
+  const [listings, setListings] = useState<MarketListing[]>([]);
+  const [transactions, setTransactions] = useState<TransactionEntry[]>([]);
   const [selectedListing, setSelectedListing] = useState<MarketListing | null>(null);
   const [sortBy, setSortBy] = useState<SortOption>('recent');
   const [filterRarity, setFilterRarity] = useState<ItemRarity | 'all'>('all');
   const [filterType, setFilterType] = useState<string>('all');
   const [searchTerm, setSearchTerm] = useState('');
   const [showBuyModal, setShowBuyModal] = useState(false);
+  const [marketLoading, setMarketLoading] = useState(true);
+  const [purchasing, setPurchasing] = useState(false);
+  const [userVal, setUserVal] = useState(user?.val || 0);
 
   useEffect(() => {
     if (!loading && !user) {
@@ -162,7 +93,61 @@ const Marketplace: React.FC = () => {
     }
   }, [user, loading, navigate]);
 
-  if (loading) {
+  // Fetch marketplace listings
+  useEffect(() => {
+    if (loading) return;
+    let cancelled = false;
+
+    const fetchListings = async () => {
+      setMarketLoading(true);
+      try {
+        const res = await marketplaceService.getHistory({ limit: 50 }).catch(() => null);
+        if (cancelled) return;
+        if (res) {
+          const items = res.listings || (res as any).data || (Array.isArray(res) ? res : []);
+          if (Array.isArray(items)) {
+            const active = items
+              .filter((l: any) => !l.status || l.status === 'active')
+              .map(mapListing);
+            setListings(active);
+          }
+        }
+      } catch (err) {
+        console.error('[Marketplace] Error fetching listings:', err);
+      } finally {
+        if (!cancelled) setMarketLoading(false);
+      }
+    };
+
+    fetchListings();
+    return () => { cancelled = true; };
+  }, [loading]);
+
+  // Fetch transaction history when history tab is selected
+  useEffect(() => {
+    if (activeTab !== 'history' || loading) return;
+    let cancelled = false;
+
+    const fetchHistory = async () => {
+      try {
+        const res = await marketplaceService.getMyTransactionHistory().catch(() => null);
+        if (cancelled) return;
+        if (res) {
+          const txs = res.transactions || (res as any).data || (Array.isArray(res) ? res : []);
+          if (Array.isArray(txs)) {
+            setTransactions(txs.map(mapTransaction));
+          }
+        }
+      } catch (err) {
+        console.error('[Marketplace] Error fetching history:', err);
+      }
+    };
+
+    fetchHistory();
+    return () => { cancelled = true; };
+  }, [activeTab, loading]);
+
+  if (loading || marketLoading) {
     return (
       <div className="marketplace-loading">
         <div className="loading-spinner" />
@@ -230,13 +215,25 @@ const Marketplace: React.FC = () => {
     return `${Math.floor(seconds / 86400)} días`;
   };
 
-  const canAfford = (precio: number) => (user?.val || 0) >= precio;
+  const canAfford = (precio: number) => userVal >= precio;
 
-  const handlePurchase = () => {
-    if (!selectedListing) return;
-    console.log(`Comprando ${selectedListing.nombre} de ${selectedListing.vendedor.username}`);
-    setShowBuyModal(false);
-    setSelectedListing(null);
+  const handlePurchase = async () => {
+    if (!selectedListing || purchasing) return;
+    setPurchasing(true);
+    try {
+      const res = await marketplaceService.buyItem(selectedListing.id);
+      if (res?.success) {
+        // Remove purchased listing from local state
+        setListings(prev => prev.filter(l => l.id !== selectedListing.id));
+        setUserVal(prev => prev - selectedListing.precio);
+      }
+    } catch (err) {
+      console.error('[Marketplace] Purchase error:', err);
+    } finally {
+      setPurchasing(false);
+      setShowBuyModal(false);
+      setSelectedListing(null);
+    }
   };
 
   const filteredListings = getFilteredListings();
@@ -251,7 +248,7 @@ const Marketplace: React.FC = () => {
         <h1>🏛️ Marketplace</h1>
         <div className="wallet-display">
           <span className="wallet-icon">💰</span>
-          <span className="wallet-amount">{user?.val?.toLocaleString() || 0}</span>
+          <span className="wallet-amount">{userVal.toLocaleString()}</span>
           <span className="wallet-label">VAL</span>
         </div>
       </header>
@@ -342,6 +339,13 @@ const Marketplace: React.FC = () => {
 
             {/* Listings Grid */}
             <div className="listings-container">
+              {filteredListings.length === 0 ? (
+                <div className="history-empty">
+                  <span className="empty-icon">🏛️</span>
+                  <h3>Sin listings activos</h3>
+                  <p>No hay items a la venta en el marketplace en este momento.</p>
+                </div>
+              ) : (
               <div className="listings-grid">
                 {filteredListings.map(listing => (
                   <div
@@ -395,6 +399,7 @@ const Marketplace: React.FC = () => {
                   </div>
                 ))}
               </div>
+              )}
 
               {/* Details Panel */}
               {selectedListing && (
@@ -478,11 +483,29 @@ const Marketplace: React.FC = () => {
 
         {activeTab === 'history' && (
           <div className="history-section">
-            <div className="history-empty">
-              <span className="empty-icon">📜</span>
-              <h3>Sin historial</h3>
-              <p>Aquí aparecerán tus compras y ventas recientes.</p>
-            </div>
+            {transactions.length === 0 ? (
+              <div className="history-empty">
+                <span className="empty-icon">📜</span>
+                <h3>Sin historial</h3>
+                <p>Aquí aparecerán tus compras y ventas recientes.</p>
+              </div>
+            ) : (
+              <div className="history-list">
+                {transactions.map(tx => (
+                  <div key={tx.id} className={`history-item ${tx.type}`}>
+                    <span className="tx-icon">{tx.type === 'sale' ? '💰' : '🛒'}</span>
+                    <div className="tx-info">
+                      <span className="tx-item">{tx.itemName}</span>
+                      <span className="tx-user">{tx.type === 'sale' ? 'Vendido a' : 'Comprado de'} {tx.otherUser}</span>
+                    </div>
+                    <div className="tx-details">
+                      <span className="tx-price">{tx.type === 'sale' ? '+' : '-'}{tx.priceVal.toLocaleString()} VAL</span>
+                      <span className="tx-date">{formatTimeAgo(tx.date)}</span>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
           </div>
         )}
       </div>
@@ -531,7 +554,7 @@ const Marketplace: React.FC = () => {
             <div className="modal-balance">
               <span>Tu balance después:</span>
               <span className="balance-after">
-                {((user?.val || 0) - Math.floor(selectedListing.precio * 1.05)).toLocaleString()} VAL
+                {(userVal - Math.floor(selectedListing.precio * 1.05)).toLocaleString()} VAL
               </span>
             </div>
 

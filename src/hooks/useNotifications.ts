@@ -4,6 +4,7 @@
  * Endpoints:
  * - GET /api/notifications
  * - GET /api/notifications/unread/count
+ * - GET /api/notifications/:id
  * - PUT /api/notifications/:id/read
  * - PUT /api/notifications/read-all
  * - DELETE /api/notifications/:id
@@ -14,8 +15,7 @@ import {
   useNotificationsStore, 
   type GameNotification 
 } from '../stores/notificationsStore';
-
-const API_BASE = import.meta.env.VITE_API_URL || '';
+import api from '../services/api.service';
 
 interface FetchNotificationsParams {
   limit?: number;
@@ -35,6 +35,7 @@ interface UseNotificationsReturn {
   // Fetch
   fetchNotifications: (params?: FetchNotificationsParams) => Promise<void>;
   fetchUnreadCount: () => Promise<number>;
+  fetchNotification: (id: string) => Promise<GameNotification | null>;
   loadMore: () => Promise<void>;
   
   // Acciones
@@ -64,20 +65,14 @@ export function useNotifications(): UseNotificationsReturn {
     });
     
     try {
-      const response = await fetch(
-        `${API_BASE}/api/notifications?${queryParams}`,
+      const data = await api.get<{ notifications: GameNotification[]; total: number }>(
+        '/api/notifications',
         {
-          method: 'GET',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          limit: String(limit),
+          skip: String(skip),
+          unreadOnly: String(unreadOnly),
         }
       );
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener notificaciones');
-      }
-      
-      const data = await response.json();
       store.setNotifications(data.notifications || [], data.total || 0);
       store.setPage(skip);
       
@@ -95,20 +90,7 @@ export function useNotifications(): UseNotificationsReturn {
    */
   const fetchUnreadCount = useCallback(async (): Promise<number> => {
     try {
-      const response = await fetch(
-        `${API_BASE}/api/notifications/unread/count`,
-        {
-          method: 'GET',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Error al obtener contador');
-      }
-      
-      const data = await response.json();
+      const data = await api.get<{ count: number }>('/api/notifications/unread/count');
       const count = data.count || 0;
       store.setUnreadCount(count);
       return count;
@@ -119,6 +101,21 @@ export function useNotifications(): UseNotificationsReturn {
     }
   }, [store]);
   
+  /**
+   * GET /api/notifications/:id
+   */
+  const fetchNotification = useCallback(async (id: string): Promise<GameNotification | null> => {
+    try {
+      const data = await api.get<{ notification: GameNotification }>(
+        `/api/notifications/${id}`
+      );
+      return data.notification || null;
+    } catch (err) {
+      console.error('Error fetching notification:', err);
+      return null;
+    }
+  }, []);
+
   /**
    * Cargar más notificaciones (paginación)
    */
@@ -134,20 +131,13 @@ export function useNotifications(): UseNotificationsReturn {
     });
     
     try {
-      const response = await fetch(
-        `${API_BASE}/api/notifications?${queryParams}`,
+      const data = await api.get<{ notifications: GameNotification[] }>(
+        '/api/notifications',
         {
-          method: 'GET',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
+          limit: String(store.limit),
+          skip: String(newSkip),
         }
       );
-      
-      if (!response.ok) {
-        throw new Error('Error al cargar más notificaciones');
-      }
-      
-      const data = await response.json();
       store.appendNotifications(data.notifications || []);
       
     } catch (err) {
@@ -162,19 +152,7 @@ export function useNotifications(): UseNotificationsReturn {
    */
   const markAsRead = useCallback(async (id: string): Promise<boolean> => {
     try {
-      const response = await fetch(
-        `${API_BASE}/api/notifications/${id}/read`,
-        {
-          method: 'PUT',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Error al marcar como leída');
-      }
-      
+      await api.put(`/api/notifications/${id}/read`, {});
       store.markAsRead(id);
       return true;
       
@@ -189,19 +167,7 @@ export function useNotifications(): UseNotificationsReturn {
    */
   const markAllAsRead = useCallback(async (): Promise<boolean> => {
     try {
-      const response = await fetch(
-        `${API_BASE}/api/notifications/read-all`,
-        {
-          method: 'PUT',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Error al marcar todas como leídas');
-      }
-      
+      await api.put('/api/notifications/read-all', {});
       store.markAllAsRead();
       return true;
       
@@ -216,19 +182,7 @@ export function useNotifications(): UseNotificationsReturn {
    */
   const deleteNotification = useCallback(async (id: string): Promise<boolean> => {
     try {
-      const response = await fetch(
-        `${API_BASE}/api/notifications/${id}`,
-        {
-          method: 'DELETE',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-        }
-      );
-      
-      if (!response.ok) {
-        throw new Error('Error al eliminar notificación');
-      }
-      
+      await api.delete(`/api/notifications/${id}`);
       store.removeNotification(id);
       return true;
       
@@ -254,6 +208,7 @@ export function useNotifications(): UseNotificationsReturn {
     error: store.error,
     fetchNotifications,
     fetchUnreadCount,
+    fetchNotification,
     loadMore,
     markAsRead,
     markAllAsRead,

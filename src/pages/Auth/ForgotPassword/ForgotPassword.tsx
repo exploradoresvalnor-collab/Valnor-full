@@ -77,11 +77,26 @@ const ForgotPassword: React.FC = () => {
       setEmailSent(true);
       startCountdown();
       startResendCooldown();
-    } catch (error) {
-      // Backend always responds the same for security
-      setEmailSent(true);
-      startCountdown();
-      startResendCooldown();
+    } catch (err: any) {
+      // Errores de conexión sí se muestran
+      if (err.status === 0 || err.message === 'Failed to fetch') {
+        setEmailSent(false);
+        setTouched(true);
+        // Mostrar error de conexión con un state extra
+        setEmail(email); // mantener email
+        alert('🔌 No se pudo conectar con el servidor. Verifica que el backend esté encendido.');
+      } else if (err.status === 429) {
+        setEmailSent(false);
+        alert('⏳ Demasiados intentos. Espera unos minutos.');
+      } else if (err.status >= 500) {
+        setEmailSent(false);
+        alert('💥 Error del servidor. Intenta más tarde.');
+      } else {
+        // Para 404/400 el backend responde igual por seguridad → mostrar éxito
+        setEmailSent(true);
+        startCountdown();
+        startResendCooldown();
+      }
     } finally {
       setLoading(false);
     }

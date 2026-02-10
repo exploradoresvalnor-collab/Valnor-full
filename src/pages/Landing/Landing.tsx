@@ -44,9 +44,9 @@ const Landing = () => {
     closeMobileMenu();
     setHeroState('exit');
 
-    // Navigate after animation
+    // Navigate after animation - ir al splash para elegir modo
     setTimeout(() => {
-      navigate('/demo');
+      navigate('/splash');
     }, 600);
   }, [isEntering, navigate]);
 
