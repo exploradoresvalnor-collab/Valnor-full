@@ -22,15 +22,20 @@ class ApiService {
    * Construye la URL con query params
    */
   private buildUrl(endpoint: string, params?: Record<string, string>): string {
-    const url = new URL(`${this.baseUrl}${endpoint}`);
-    if (params) {
+    // Si baseUrl está vacío (proxy de Vite), usar ruta relativa
+    const fullPath = `${this.baseUrl}${endpoint}`;
+    
+    if (params && Object.keys(params).length > 0) {
+      const searchParams = new URLSearchParams();
       Object.keys(params).forEach(key => {
         if (params[key] !== null && params[key] !== undefined) {
-          url.searchParams.append(key, params[key]);
+          searchParams.append(key, params[key]);
         }
       });
+      return `${fullPath}?${searchParams.toString()}`;
     }
-    return url.toString();
+    
+    return fullPath;
   }
 
   /**

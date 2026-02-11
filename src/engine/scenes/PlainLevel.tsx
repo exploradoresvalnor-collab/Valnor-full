@@ -12,6 +12,7 @@ import { UltraSkySystem } from '../systems/UltraSkySystem';
 import { InstancedGrass } from '../systems/InstancedGrass';
 import { WildlifeSystem } from '../systems/WildlifeSystem';
 import { ForestAmbience } from '../systems/AmbientParticlesSystem';
+import { SceneEnhancer } from '../components/SceneEnhancer';
 
 // ============================================================
 // COMPONENTES DE LA LLANURA
@@ -390,6 +391,9 @@ export function PlainLevel({
 
       {/* Partículas */}
       <ForestAmbience />
+
+      {/* Mejoras visuales */}
+      <SceneEnhancer biome="plains" />
 
       {/* Sparkles en campos de trigo */}
       <Sparkles

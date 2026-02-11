@@ -117,10 +117,15 @@ class TeamService {
   /**
    * Activar equipo (desactiva los demás automáticamente)
    * PUT /api/teams/:id/activate
+   * Backend devuelve { success, message } — NO devuelve el equipo
    */
-  async activateTeam(teamId: string): Promise<Team> {
-    const response = await api.put<TeamResponse>(`${this.basePath}/${teamId}/activate`, {});
-    return response.team;
+  async activateTeam(teamId: string): Promise<Team | null> {
+    const response = await api.put<any>(`${this.basePath}/${teamId}/activate`, {});
+    // El backend solo devuelve { success, message }, no el team actualizado
+    // Si viene .team, lo usamos; si no, hacemos un fetch extra
+    if (response.team) return response.team;
+    // Fallback: obtener el equipo actualizado
+    return this.getTeam(teamId);
   }
 
   /**

@@ -6,6 +6,7 @@
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 import { useShallow } from 'zustand/shallow';
+import { calcCharacterPower } from '../utils/mappers';
 
 // Tipo de personaje del equipo
 export interface TeamMember {
@@ -58,48 +59,14 @@ export interface TeamActions {
   resetTeam: () => void;
 }
 
-// Equipo inicial por defecto (demo)
-const defaultTeam: TeamMember[] = [
-  { 
-    id: 'hero_warrior_1', 
-    name: 'Guerrero', 
-    level: 5, 
-    class: 'warrior',
-    rarity: 'rare',
-    stats: { attack: 45, defense: 35, health: 120, speed: 10 },
-    isLeader: true
-  },
-  { 
-    id: 'hero_mage_1', 
-    name: 'Mago', 
-    level: 5, 
-    class: 'mage',
-    rarity: 'uncommon',
-    stats: { attack: 55, defense: 15, health: 80, speed: 12 }
-  },
-  { 
-    id: 'hero_archer_1', 
-    name: 'Arquero', 
-    level: 5, 
-    class: 'archer',
-    rarity: 'uncommon',
-    stats: { attack: 50, defense: 20, health: 90, speed: 18 }
-  },
-  { 
-    id: 'hero_paladin_1', 
-    name: 'Paladín', 
-    level: 4, 
-    class: 'paladin',
-    rarity: 'rare',
-    stats: { attack: 35, defense: 50, health: 150, speed: 8 }
-  },
-];
+// Equipo inicial vacío (se rellenará con datos del backend)
+const defaultTeam: TeamMember[] = [];
 
 const initialState: TeamState = {
   activeTeam: defaultTeam,
   maxTeamSize: 4,
-  ownedCharacters: [...defaultTeam],
-  leaderId: 'hero_warrior_1',
+  ownedCharacters: [],
+  leaderId: null,
 };
 
 export const useTeamStore = create<TeamState & TeamActions>()(
@@ -191,11 +158,14 @@ export const useTeamStore = create<TeamState & TeamActions>()(
         getTeamPower: () => {
           const state = get();
           return state.activeTeam.reduce((total, char) => {
-            if (char.stats) {
-              return total + char.stats.attack + char.stats.defense + 
-                     Math.floor(char.stats.health / 10) + char.stats.speed;
-            }
-            return total + (char.level * 20);
+            return total + calcCharacterPower({
+              stats: char.stats ? {
+                atk: char.stats.attack,
+                defensa: char.stats.defense,
+                vida: char.stats.health,
+              } : undefined,
+              equipamiento: [],
+            });
           }, 0);
         },
         
@@ -230,9 +200,9 @@ export const useTeamStore = create<TeamState & TeamActions>()(
           
           return {
             ...currentState,
-            activeTeam: validTeam.length > 0 ? validTeam : defaultTeam,
-            ownedCharacters: persisted.ownedCharacters || [...defaultTeam],
-            leaderId: persisted.leaderId || 'hero_warrior_1',
+            activeTeam: validTeam,
+            ownedCharacters: persisted.ownedCharacters || [],
+            leaderId: persisted.leaderId || null,
           };
         },
       }
@@ -252,10 +222,10 @@ export const useOwnedCharacters = () => useTeamStore(
 );
 
 export const useTeamLeader = () => useTeamStore(
-  useShallow((state) => {
+  (state) => {
     const leader = state.activeTeam.find(c => c.id === state.leaderId);
     return leader || state.activeTeam[0] || null;
-  })
+  }
 );
 
 // Calcula el poder del equipo directamente desde el estado
@@ -263,16 +233,14 @@ export const useTeamPower = () => useTeamStore((state) => {
   return state.activeTeam.reduce((total, char) => {
     if (char.stats) {
       return total + char.stats.attack + char.stats.defense + 
-             Math.floor(char.stats.health / 10) + char.stats.speed;
+             Math.floor(char.stats.health / 10);
     }
     return total + (char.level * 20);
   }, 0);
 });
 
 // Alias para useActiveTeam (para compatibilidad con Profile page)
+// No crear objetos nuevos dentro del selector para evitar loops infinitos
 export const useTeamMembers = () => useTeamStore(
-  useShallow((state) => state.activeTeam.map((member) => ({
-    ...member,
-    imageUrl: null as string | null, // Para mostrar avatar
-  })))
+  useShallow((state) => state.activeTeam)
 );

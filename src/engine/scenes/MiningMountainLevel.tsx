@@ -9,6 +9,7 @@ import * as THREE from 'three';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Float, Sparkles } from '@react-three/drei';
 import { CaveAmbience } from '../systems/AmbientParticlesSystem';
+import { SceneEnhancer } from '../components/SceneEnhancer';
 
 // ============================================================
 // COMPONENTES DE LA MINA
@@ -402,6 +403,9 @@ export function MiningMountainLevel({
 
       {/* Partículas ambientales */}
       {showEffects && <CaveAmbience />}
+
+      {/* Mejoras visuales (bloom alto para cristales emisivos) */}
+      <SceneEnhancer biome="mine" />
 
       {/* Sparkles de minerales */}
       {showEffects && (

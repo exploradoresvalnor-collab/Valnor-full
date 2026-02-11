@@ -114,7 +114,7 @@ export const CLASS_CONFIGS: Record<CharacterClass, ClassConfig> = {
     },
     primaryStat: 'strength',
     abilities: ['slash', 'shield_bash', 'battle_cry'],
-    modelPath: '/models/characters/warrior.glb',
+    modelPath: '/assets/models/characters/Character Soldier.glb',
     iconPath: '/icons/classes/warrior.svg',
   },
   mage: {
@@ -128,7 +128,7 @@ export const CLASS_CONFIGS: Record<CharacterClass, ClassConfig> = {
     },
     primaryStat: 'intelligence',
     abilities: ['fireball', 'ice_spike', 'arcane_shield'],
-    modelPath: '/models/characters/mage.glb',
+    modelPath: '/assets/models/characters/Characters_Sam.gltf',
     iconPath: '/icons/classes/mage.svg',
   },
   rogue: {
@@ -142,7 +142,7 @@ export const CLASS_CONFIGS: Record<CharacterClass, ClassConfig> = {
     },
     primaryStat: 'dexterity',
     abilities: ['backstab', 'smoke_bomb', 'poison_blade'],
-    modelPath: '/models/characters/rogue.glb',
+    modelPath: '/assets/models/characters/Characters_Shaun.gltf',
     iconPath: '/icons/classes/rogue.svg',
   },
   archer: {
@@ -156,7 +156,7 @@ export const CLASS_CONFIGS: Record<CharacterClass, ClassConfig> = {
     },
     primaryStat: 'dexterity',
     abilities: ['aimed_shot', 'multishot', 'evasion'],
-    modelPath: '/models/characters/archer.glb',
+    modelPath: '/assets/models/characters/Characters_Lis.gltf',
     iconPath: '/icons/classes/archer.svg',
   },
   paladin: {
@@ -170,7 +170,7 @@ export const CLASS_CONFIGS: Record<CharacterClass, ClassConfig> = {
     },
     primaryStat: 'vitality',
     abilities: ['holy_strike', 'divine_shield', 'heal'],
-    modelPath: '/models/characters/paladin.glb',
+    modelPath: '/assets/models/characters/Caballero root.gltf',
     iconPath: '/icons/classes/paladin.svg',
   },
   necromancer: {
@@ -184,7 +184,7 @@ export const CLASS_CONFIGS: Record<CharacterClass, ClassConfig> = {
     },
     primaryStat: 'intelligence',
     abilities: ['life_drain', 'summon_skeleton', 'curse'],
-    modelPath: '/models/characters/necromancer.glb',
+    modelPath: '/assets/models/characters/BlueSoldier_Male.gltf',
     iconPath: '/icons/classes/necromancer.svg',
   },
   berserker: {
@@ -198,7 +198,7 @@ export const CLASS_CONFIGS: Record<CharacterClass, ClassConfig> = {
     },
     primaryStat: 'strength',
     abilities: ['rage', 'whirlwind', 'bloodlust'],
-    modelPath: '/models/characters/berserker.glb',
+    modelPath: '/assets/models/characters/Character Soldier.glb',
     iconPath: '/icons/classes/berserker.svg',
   },
   monk: {
@@ -212,7 +212,7 @@ export const CLASS_CONFIGS: Record<CharacterClass, ClassConfig> = {
     },
     primaryStat: 'dexterity',
     abilities: ['flurry_of_blows', 'inner_peace', 'chi_blast'],
-    modelPath: '/models/characters/monk.glb',
+    modelPath: '/assets/models/characters/Characters_Matt.gltf',
     iconPath: '/icons/classes/monk.svg',
   },
   healer: {
@@ -226,7 +226,7 @@ export const CLASS_CONFIGS: Record<CharacterClass, ClassConfig> = {
     },
     primaryStat: 'intelligence',
     abilities: ['heal', 'regeneration', 'purify'],
-    modelPath: '/models/characters/healer.glb',
+    modelPath: '/assets/models/characters/Characters_Lis.gltf',
     iconPath: '/icons/classes/healer.svg',
   },
 };

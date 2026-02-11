@@ -63,12 +63,6 @@ const Inventory: React.FC = () => {
   const [invError, setInvError] = useState<string | null>(null);
   const [invCapacity, setInvCapacity] = useState({ current: 0, max: 50 });
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth/login');
-    }
-  }, [user, loading, navigate]);
-
   // Fetch real inventory data
   useEffect(() => {
     if (loading || !user) return;

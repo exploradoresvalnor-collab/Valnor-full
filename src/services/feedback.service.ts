@@ -46,9 +46,11 @@ class FeedbackService {
   /**
    * Listar últimos 50 feedbacks
    * GET /api/feedback
+   * Backend devuelve { total, feedback: [...] }
    */
   async list(): Promise<{ feedbacks: FeedbackEntry[] }> {
-    return api.get(this.basePath);
+    const response = await api.get<any>(this.basePath);
+    return { feedbacks: response.feedback || response.feedbacks || [] };
   }
 }
 

@@ -135,8 +135,10 @@ export function GameCanvas({
           {enablePhysics ? (
             <Physics 
               debug={useEngineStore.getState().showColliders}
-              gravity={[0, -9.81, 0]}
-              timeStep="vary"
+              gravity={[0, -20, 0]}
+              timeStep={1 / 60}
+              numSolverIterations={8}
+              numAdditionalFrictionIterations={4}
             >
               {children}
             </Physics>

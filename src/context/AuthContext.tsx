@@ -4,7 +4,9 @@
 
 import { createContext, useContext, useState, useEffect, ReactNode } from 'react';
 import { authService } from '../services/auth.service';
+import { socketService } from '../services/socket.service';
 import { STORAGE_KEYS } from '../utils/constants';
+import { useSessionStore } from '../stores/sessionStore';
 import { User } from '../types';
 
 interface AuthContextType {
@@ -25,18 +27,50 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
     const checkAuth = async () => {
       const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
-      if (token) {
+      const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+      
+      // Si hay token o usuario guardado, verificar sesión
+      if (token || storedUser) {
         try {
-          await authService.checkSession();
+          const isValid = await authService.checkSession();
+          if (isValid) {
+            const session = useSessionStore.getState();
+            if (session.mode !== 'auth') {
+              session.startAsAuth();
+            }
+            // Conectar WebSocket cuando la sesión es válida
+            if (!socketService.isConnected()) {
+              socketService.connect();
+            }
+          }
         } catch {
-          // Silenciar error
+          // checkSession ya maneja la limpieza solo para 401/403
+          // Para otros errores, mantener sesión con datos locales
+          if (storedUser) {
+            try {
+              const parsed = JSON.parse(storedUser);
+              setUser(parsed);
+              const session = useSessionStore.getState();
+              if (session.mode !== 'auth') {
+                session.startAsAuth();
+              }
+              // Conectar WebSocket con datos locales también
+              if (!socketService.isConnected()) {
+                socketService.connect();
+              }
+            } catch { /* parse failed */ }
+          }
         }
       }
       setLoading(false);
     };
 
     checkAuth();
-    return unsubscribe;
+    return () => {
+      unsubscribe();
+      // Desconectar socket al desmontar AuthProvider
+      socketService.disconnect();
+    };
   }, []);
 
   const refreshUser = async () => {

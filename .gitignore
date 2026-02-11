@@ -55,5 +55,8 @@ coverage/
 .cache/
 
 # Guía de ejemplo — solo subir documentación (.md), ignorar proyectos de referencia
+# Ignorar carpeta completa de guías de ejemplo (archivos de referencia y demos)
+gui a de ejempli/
+# Ignorar entradas específicas (siempre se pueden añadir excepciones)
 gui a de ejempli/Lee completo/
 gui a de ejempli/valgame-backend/

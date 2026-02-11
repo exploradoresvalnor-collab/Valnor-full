@@ -17,9 +17,8 @@ import api from './api.service';
 // ============================================================
 
 export interface CheckoutDTO {
-  packageId: string;
-  quantity?: number;
-  currency?: string;
+  paqueteId: string;
+  valorUSDT: number;
 }
 
 export interface CheckoutResponse {
@@ -31,7 +30,8 @@ export interface CheckoutResponse {
 export interface BlockchainPaymentDTO {
   packageId: string;
   walletAddress: string;
-  network?: string;
+  chain?: string;
+  amountUSDT: number;
 }
 
 export interface BlockchainPaymentResponse {
@@ -74,6 +74,7 @@ class PaymentService {
   /**
    * Iniciar checkout con Stripe
    * POST /api/payments/checkout
+   * Backend espera { userId, paqueteId, valorUSDT }
    */
   async checkout(data: CheckoutDTO): Promise<CheckoutResponse> {
     return api.post<CheckoutResponse>(`${this.basePath}/checkout`, data);
@@ -82,6 +83,7 @@ class PaymentService {
   /**
    * Iniciar pago blockchain
    * POST /api/payments/blockchain/initiate
+   * Backend espera { packageId, chain, amountUSDT, walletAddress }
    */
   async initiateBlockchain(data: BlockchainPaymentDTO): Promise<BlockchainPaymentResponse> {
     return api.post<BlockchainPaymentResponse>(`${this.basePath}/blockchain/initiate`, data);

@@ -1,12 +1,17 @@
 /**
  * Game Config Service - Configuración estática / datos maestros del juego
  * 
- * Endpoints del backend (todos GET públicos):
- * - GET /api/game-settings        → Configuración global del juego
- * - GET /api/base-characters      → Personajes / clases base disponibles
- * - GET /api/categories           → Categorías de ítems u objetos
- * - GET /api/level-requirements   → Requisitos por nivel (XP, stats, etc.)
- * - GET /api/events               → Eventos activos / programados
+ * Endpoints del backend:
+ * - GET /api/game-settings        → Configuración global del juego (público)
+ * - GET /api/base-characters      → Personajes / clases base disponibles (público)
+ * - GET /api/categories           → Categorías de ítems (⚠️ PROTEGIDO — requiere auth)
+ * - GET /api/level-requirements   → Requisitos por nivel (⚠️ PROTEGIDO — requiere auth)
+ * - GET /api/events               → Eventos activos (⚠️ PROTEGIDO — requiere auth)
+ * - GET /api/version              → Versión del servidor (público)
+ * 
+ * NOTA: categories, level-requirements y events están montados DESPUÉS de
+ * checkAuth en el backend app.ts, por lo que requieren un token/cookie válido.
+ * Llamar estos endpoints sin autenticación dará 401 Unauthorized.
  */
 
 import api from './api.service';

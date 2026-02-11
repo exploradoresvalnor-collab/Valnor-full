@@ -200,31 +200,10 @@ class SocketService {
   // =====================================
   // MÉTODOS DE CONVENIENCIA
   // =====================================
-
-  /** Unirse a una sala */
-  joinRoom(roomId: string): void {
-    this.emit('join_room', { roomId });
-  }
-
-  /** Salir de una sala */
-  leaveRoom(roomId: string): void {
-    this.emit('leave_room', { roomId });
-  }
-
-  /** Enviar mensaje de chat */
-  sendChatMessage(roomId: string, message: string): void {
-    this.emit('chat_message', { roomId, message });
-  }
-
-  /** Notificar posición del jugador (multijugador) */
-  sendPlayerPosition(position: { x: number; y: number; z: number }, rotation: { y: number }): void {
-    this.emit('player_position', { position, rotation });
-  }
-
-  /** Notificar acción de combate */
-  sendCombatAction(action: unknown): void {
-    this.emit('combat_action', action);
-  }
+  // NOTA: El backend RealtimeService SOLO escucha 'auth' y 'disconnect'.
+  // Todas las acciones de juego (chat, combate, etc.) se hacen vía REST API.
+  // Los sockets son solo para recibir notificaciones push del servidor.
+  // No emitir eventos custom porque el backend no los maneja.
 
   // =====================================
   // LISTENERS TIPADOS DE CONVENIENCIA

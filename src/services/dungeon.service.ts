@@ -22,19 +22,23 @@ class DungeonService {
   /**
    * Obtener lista de mazmorras disponibles
    * GET /api/dungeons
+   * Backend devuelve array plano
    */
   async getDungeons(): Promise<Dungeon[]> {
-    const response = await apiService.get<DungeonResponse>(this.basePath);
+    const response = await apiService.get<Dungeon[] | DungeonResponse>(this.basePath);
+    if (Array.isArray(response)) return response;
     return response.dungeons || [];
   }
 
   /**
    * Obtener mazmorra por ID
    * GET /api/dungeons/:id
+   * Backend puede devolver objeto directo o { dungeon: ... }
    */
   async getDungeon(dungeonId: string): Promise<Dungeon | null> {
-    const response = await apiService.get<DungeonResponse>(`${this.basePath}/${dungeonId}`);
-    return response.dungeon || null;
+    const response = await apiService.get<any>(`${this.basePath}/${dungeonId}`);
+    if (response && response._id) return response as Dungeon; // Objeto directo
+    return response?.dungeon || null;
   }
 
   /**
@@ -61,9 +65,6 @@ class DungeonService {
   async getSession(dungeonId: string, sessionId: string): Promise<unknown> {
     return apiService.get(`${this.basePath}/${dungeonId}/session/${sessionId}`);
   }
-}
-
-export const dungeonService = new DungeonService();
 }
 
 export const dungeonService = new DungeonService();

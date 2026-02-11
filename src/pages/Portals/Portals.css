@@ -6,7 +6,7 @@
   position: relative;
   width: 100vw;
   height: 100vh;
-  background: #0a0a1a;
+  background: #050510;
   overflow: hidden;
 }
 
@@ -47,12 +47,19 @@
 .portals-header h1 {
   font-size: 3rem;
   font-weight: 800;
-  color: #ffffff;
-  text-shadow: 
-    0 0 20px rgba(255, 255, 255, 0.3),
-    0 4px 30px rgba(0, 0, 0, 0.5);
+  background: linear-gradient(135deg, #fff 0%, rgba(255,215,0,.85) 50%, #fff 100%);
+  background-size: 200% 200%;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  animation: portalTitleShimmer 4s ease-in-out infinite;
+  text-shadow: none;
   margin: 0 0 0.5rem 0;
   letter-spacing: 2px;
+}
+
+@keyframes portalTitleShimmer {
+  0%, 100% { background-position: 0% 50%; }
+  50%      { background-position: 100% 50%; }
 }
 
 .portals-header p {
@@ -74,13 +81,14 @@
   position: relative;
   width: 320px;
   padding: 2rem;
-  background: rgba(15, 15, 35, 0.85);
+  background: rgba(12, 12, 30, 0.8);
   border-radius: 24px;
-  border: 2px solid rgba(255, 255, 255, 0.1);
+  border: 2px solid rgba(255, 255, 255, 0.08);
   cursor: pointer;
   transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
   overflow: hidden;
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(14px);
+  -webkit-backdrop-filter: blur(14px);
 }
 
 .portal-card::before {
@@ -101,10 +109,22 @@
 
 .portal-card.rpg {
   --portal-color: #ffd700;
+  animation: breatheRPG 3s ease-in-out infinite;
 }
 
 .portal-card.survival {
   --portal-color: #e74c3c;
+  animation: breatheSurvival 3s ease-in-out infinite;
+}
+
+@keyframes breatheRPG {
+  0%, 100% { box-shadow: 0 0 15px rgba(255,215,0,0.08), inset 0 0 30px rgba(255,215,0,0.02); }
+  50%      { box-shadow: 0 0 30px rgba(255,215,0,0.18), inset 0 0 50px rgba(255,215,0,0.04); }
+}
+
+@keyframes breatheSurvival {
+  0%, 100% { box-shadow: 0 0 15px rgba(231,76,60,0.08), inset 0 0 30px rgba(231,76,60,0.02); }
+  50%      { box-shadow: 0 0 30px rgba(231,76,60,0.18), inset 0 0 50px rgba(231,76,60,0.04); }
 }
 
 .portal-card:hover {
@@ -177,9 +197,25 @@
   align-items: center;
   justify-content: center;
   background: rgba(255, 255, 255, 0.05);
-  border-radius: 20px;
+  border-radius: 50%;
   margin-bottom: 1rem;
   transition: all 0.3s ease;
+  border: 2px solid rgba(255,255,255,0.06);
+  position: relative;
+}
+
+.portal-icon::after {
+  content: '';
+  position: absolute;
+  inset: -4px;
+  border-radius: 50%;
+  border: 2px dashed var(--portal-color);
+  opacity: 0.25;
+  animation: portalRingSpin 12s linear infinite;
+}
+
+@keyframes portalRingSpin {
+  to { transform: rotate(360deg); }
 }
 
 .portal-card:hover .portal-icon {
@@ -245,7 +281,14 @@
   font-size: 1.1rem;
   font-weight: 700;
   color: #ffffff;
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
 }
+
+.cost-icon { font-size: 1.15rem; }
+.cost-icon.rpg { color: #ffd700; }
+.cost-icon.survival { color: #e74c3c; }
 
 /* Enter Portal Button */
 .enter-portal-btn {
@@ -396,4 +439,38 @@
 
 .portals-footer {
   animation: fade-in-up 0.6s ease-out 0.6s backwards;
+}
+
+/* ── Rune particles overlay ──────────────────────── */
+.portals-rune-particles {
+  position: fixed;
+  inset: 0;
+  z-index: 2;
+  pointer-events: none;
+  overflow: hidden;
+}
+
+.portals-rune-particles span {
+  position: absolute;
+  font-size: 0.65rem;
+  opacity: 0;
+  animation: runeFloat linear infinite;
+}
+
+.portals-rune-particles span:nth-child(1)  { left:  5%; animation-duration: 20s; animation-delay: 0s;  color: rgba(255,215,0,.25); }
+.portals-rune-particles span:nth-child(2)  { left: 15%; animation-duration: 24s; animation-delay: 4s;  color: rgba(231,76,60,.2); }
+.portals-rune-particles span:nth-child(3)  { left: 28%; animation-duration: 18s; animation-delay: 2s;  color: rgba(255,215,0,.2); }
+.portals-rune-particles span:nth-child(4)  { left: 42%; animation-duration: 22s; animation-delay: 7s;  color: rgba(231,76,60,.25); }
+.portals-rune-particles span:nth-child(5)  { left: 55%; animation-duration: 26s; animation-delay: 1s;  color: rgba(255,215,0,.18); }
+.portals-rune-particles span:nth-child(6)  { left: 65%; animation-duration: 19s; animation-delay: 5s;  color: rgba(231,76,60,.2); }
+.portals-rune-particles span:nth-child(7)  { left: 78%; animation-duration: 23s; animation-delay: 3s;  color: rgba(255,215,0,.22); }
+.portals-rune-particles span:nth-child(8)  { left: 85%; animation-duration: 21s; animation-delay: 9s;  color: rgba(231,76,60,.18); }
+.portals-rune-particles span:nth-child(9)  { left: 92%; animation-duration: 25s; animation-delay: 6s;  color: rgba(255,215,0,.2); }
+.portals-rune-particles span:nth-child(10) { left: 50%; animation-duration: 28s; animation-delay: 11s; color: rgba(231,76,60,.22); }
+
+@keyframes runeFloat {
+  0%   { transform: translateY(105vh) rotate(0deg);   opacity: 0; }
+  8%   { opacity: 1; }
+  92%  { opacity: 1; }
+  100% { transform: translateY(-10vh)  rotate(360deg); opacity: 0; }
 }

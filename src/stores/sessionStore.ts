@@ -1,14 +1,40 @@
 /**
- * Session Store - Manejo de sesión (Guest vs Auth)
+ * Session Store - Manejo de sesión (None / Guest / Auth)
  * 
+ * Modo NONE: Estado inicial, no ha elegido (redirige a landing)
  * Modo GUEST: Sin registro, guardado local, sin llamadas API
  * Modo AUTH: Login con backend, sincronización completa
+ * 
+ * Al cambiar de sesión (endSession) se limpian los stores dependientes.
  */
 
 import { create } from 'zustand';
 import { devtools, persist } from 'zustand/middleware';
 
-export type SessionMode = 'guest' | 'auth';
+export type SessionMode = 'none' | 'guest' | 'auth';
+
+/**
+ * Limpia todos los stores de juego al cambiar de sesión.
+ * Se importa dinámicamente para evitar circular dependencies.
+ */
+async function resetGameStores(): Promise<void> {
+  try {
+    // Importar dinámicamente para evitar ciclos (ESM-compatible)
+    const [{ usePlayerStore }, { useTeamStore }, { useGameModeStore }] = await Promise.all([
+      import('./playerStore'),
+      import('./teamStore'),
+      import('./gameModeStore'),
+    ]);
+    
+    usePlayerStore.getState().resetPlayer();
+    useTeamStore.getState().resetTeam();
+    useGameModeStore.getState().clearMode();
+    
+    console.log('🧹 Stores de juego limpiados');
+  } catch (e) {
+    console.warn('⚠️ Error al limpiar stores:', e);
+  }
+}
 
 export interface GuestProfile {
   name: string;
@@ -60,7 +86,7 @@ const generateGuestName = (): string => {
 };
 
 const initialState: SessionState = {
-  mode: 'guest',
+  mode: 'none',
   guestProfile: null,
   isFirstTime: true,
   isInitialized: false,
@@ -98,8 +124,9 @@ export const useSessionStore = create<SessionState & SessionActions>()(
         },
         
         endSession: () => {
+          resetGameStores();
           set({
-            mode: 'guest',
+            mode: 'none',
             guestProfile: null,
             isInitialized: false,
           });

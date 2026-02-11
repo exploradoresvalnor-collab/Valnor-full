@@ -239,6 +239,10 @@ export function useCombatSystem() {
       message: `${damage.source} dealt ${damage.amount} ${damage.element} damage to ${damage.target}${damage.isCritical ? ' (CRITICAL!)' : ''}`,
     };
     state.current.combatLog.push(logEntry);
+    // Limitar tamaño del log para evitar memory leak en combates largos
+    if (state.current.combatLog.length > 200) {
+      state.current.combatLog.splice(0, state.current.combatLog.length - 200);
+    }
     
     // Verificar muerte
     if (target.health <= 0) {

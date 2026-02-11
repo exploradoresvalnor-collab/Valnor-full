@@ -3,7 +3,9 @@
  */
 
 // URL base del backend
-export const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+// En desarrollo, Vite hace proxy de /auth y /api → localhost:8080
+// Así las cookies HTTP-only funcionan correctamente (mismo origen)
+export const API_URL = import.meta.env.VITE_API_URL || '';
 
 // Configuración de la API
 export const API_CONFIG = {

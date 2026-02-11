@@ -25,7 +25,8 @@ import type { SurvivalSession, SurvivalLeaderboardEntry } from '../types';
 
 export interface SurvivalStartDTO {
   characterId: string;
-  consumables?: string[]; // IDs de consumibles equipados
+  equipmentIds?: string[];   // 4 slots opcionales
+  consumableIds?: string[];  // Hasta 5, opcional
 }
 
 export interface SurvivalSessionResponse {
@@ -109,13 +110,15 @@ class SurvivalService {
   /**
    * Completar oleada
    * POST /api/survival/:sessionId/complete-wave
+   * Backend requiere { waveNumber, enemiesDefeated, damageDealt }
    */
-  async completeWave(sessionId: string, data?: {
-    enemiesKilled?: number;
-    damageDealt?: number;
-    damageTaken?: number;
+  async completeWave(sessionId: string, data: {
+    waveNumber: number;
+    enemiesDefeated: number;
+    damageDealt: number;
+    consumablesUsed?: string[];
   }): Promise<WaveCompleteResponse> {
-    return api.post(`${this.basePath}/${sessionId}/complete-wave`, data || {});
+    return api.post(`${this.basePath}/${sessionId}/complete-wave`, data);
   }
 
   /**
@@ -133,20 +136,27 @@ class SurvivalService {
   /**
    * Recoger drop de enemigo
    * POST /api/survival/:sessionId/pickup-drop
+   * Backend requiere { itemId, itemType, itemValue? }
    */
-  async pickupDrop(sessionId: string, dropId: string): Promise<{
+  async pickupDrop(sessionId: string, itemId: string, itemType: 'equipment' | 'consumable' | 'points', itemValue?: number): Promise<{
     success: boolean;
     item: unknown;
   }> {
-    return api.post(`${this.basePath}/${sessionId}/pickup-drop`, { dropId });
+    return api.post(`${this.basePath}/${sessionId}/pickup-drop`, { itemId, itemType, itemValue });
   }
 
   /**
    * Terminar sesión (victoria/retirarse bien)
    * POST /api/survival/:sessionId/end
+   * Backend requiere { finalWave, totalEnemiesDefeated, totalPoints, duration }
    */
-  async endSession(sessionId: string): Promise<SurvivalEndResponse> {
-    return api.post(`${this.basePath}/${sessionId}/end`, {});
+  async endSession(sessionId: string, data: {
+    finalWave: number;
+    totalEnemiesDefeated: number;
+    totalPoints: number;
+    duration: number;
+  }): Promise<SurvivalEndResponse> {
+    return api.post(`${this.basePath}/${sessionId}/end`, data);
   }
 
   /**
@@ -184,9 +194,10 @@ class SurvivalService {
   /**
    * Canjear puntos por item garantizado
    * POST /api/survival/exchange-points/guaranteed-item
+   * Backend requiere { points, itemType }
    */
-  async exchangeForItem(points: number): Promise<ExchangeResponse> {
-    return api.post(`${this.basePath}/exchange-points/guaranteed-item`, { points });
+  async exchangeForItem(points: number, itemType: 'helmet' | 'armor' | 'gloves' | 'boots' | 'consumable'): Promise<ExchangeResponse> {
+    return api.post(`${this.basePath}/exchange-points/guaranteed-item`, { points, itemType });
   }
 
   /**

@@ -93,12 +93,6 @@ const Dungeon: React.FC = () => {
   const [dungeons, setDungeons] = useState<DungeonInfo[]>([]);
   const [dungeonLoading, setDungeonLoading] = useState(true);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth/login');
-    }
-  }, [user, loading, navigate]);
-
   // Fetch real dungeons from backend
   useEffect(() => {
     if (loading) return;

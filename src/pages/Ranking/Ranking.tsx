@@ -55,12 +55,6 @@ const Ranking: React.FC = () => {
   const [rankings, setRankings] = useState<RankingPlayer[]>([]);
   const [rankLoading, setRankLoading] = useState(true);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth/login');
-    }
-  }, [user, loading, navigate]);
-
   // Fetch rankings from backend
   useEffect(() => {
     if (loading) return;

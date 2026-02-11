@@ -1,24 +1,24 @@
 import React, { useState } from 'react';
 import { useNavigate, Link } from 'react-router-dom';
 import {
-  IconPlay,
-  IconKey,
-  IconUser,
-  IconShield,
-  IconSword,
-  IconDungeon,
-  IconSkull,
-  IconTrophy,
-  IconGold,
-  IconGem,
-  IconHeart,
-  IconBook,
-  IconBackpack,
-  IconStaff,
-  IconBow,
-  IconDagger,
-  IconHeal,
-} from '../../components/icons/GameIcons';
+  GiPlayButton,
+  GiPadlock,
+  GiShield,
+  GiBroadsword,
+  GiCrossedSwords,
+  GiSkullCrossedBones,
+  GiTrophy,
+  GiTwoCoins,
+  GiCrystalGrowth,
+  GiHealthNormal,
+  GiSpellBook,
+  GiKnapsack,
+  GiWizardStaff,
+  GiHighShot,
+  GiStiletto,
+  GiHealthPotion,
+} from 'react-icons/gi';
+import { FiUser } from 'react-icons/fi';
 import './Wiki.css';
 
 interface WikiSection {
@@ -32,14 +32,14 @@ const Wiki: React.FC = () => {
   const [activeSection, setActiveSection] = useState<string>('intro');
 
   const wikiSections: WikiSection[] = [
-    { id: 'intro', icon: <IconBook size={18} />, title: 'Introducción' },
-    { id: 'how-to-play', icon: <IconPlay size={18} />, title: 'Cómo Jugar' },
-    { id: 'valnor-explorer', icon: <IconDungeon size={18} />, title: 'Valnor Explorer' },
-    { id: 'survival-valnor', icon: <IconSkull size={18} />, title: 'Survival Valnor' },
-    { id: 'pvp-arena', icon: <IconSword size={18} />, title: 'PvP Arena' },
-    { id: 'economy', icon: <IconGold size={18} />, title: 'Economía' },
-    { id: 'classes', icon: <IconUser size={18} />, title: 'Clases' },
-    { id: 'items', icon: <IconBackpack size={18} />, title: 'Items' },
+    { id: 'intro', icon: <GiSpellBook size={18} />, title: 'Introducción' },
+    { id: 'how-to-play', icon: <GiPlayButton size={18} />, title: 'Cómo Jugar' },
+    { id: 'valnor-explorer', icon: <GiCrossedSwords size={18} />, title: 'Valnor Explorer' },
+    { id: 'survival-valnor', icon: <GiSkullCrossedBones size={18} />, title: 'Survival Valnor' },
+    { id: 'pvp-arena', icon: <GiBroadsword size={18} />, title: 'PvP Arena' },
+    { id: 'economy', icon: <GiTwoCoins size={18} />, title: 'Economía' },
+    { id: 'classes', icon: <FiUser size={18} />, title: 'Clases' },
+    { id: 'items', icon: <GiKnapsack size={18} />, title: 'Items' },
   ];
 
   const scrollToSection = (sectionId: string) => {
@@ -71,7 +71,7 @@ const Wiki: React.FC = () => {
         {/* Sidebar */}
         <aside className="wiki-sidebar">
           <div className="sidebar-content">
-            <h3 className="sidebar-title"><IconBook size={18} /> Contenido</h3>
+            <h3 className="sidebar-title"><GiSpellBook size={18} /> Contenido</h3>
             <nav className="sidebar-nav">
               {wikiSections.map((section) => (
                 <button
@@ -92,7 +92,7 @@ const Wiki: React.FC = () => {
           {/* Hero Section */}
           <section id="intro" className="wiki-section hero-section">
             <div className="hero-card">
-              <h1 className="hero-title"><IconBook size={32} /> Wiki Oficial</h1>
+              <h1 className="hero-title"><GiSpellBook size={32} /> Wiki Oficial</h1>
               <p className="hero-description">
                 Bienvenido a la wiki oficial de <strong className="text-cyan">Valnor</strong>,
                 el RPG multiplataforma donde tu <strong className="text-purple">skill</strong> tiene
@@ -110,7 +110,7 @@ const Wiki: React.FC = () => {
           {/* ============================================ */}
           <section id="how-to-play" className="wiki-section">
             <div className="section-header gold">
-              <div className="section-icon"><IconPlay size={28} color="#ffd700" /></div>
+              <div className="section-icon"><GiPlayButton size={28} color="#ffd700" /></div>
               <h2 className="section-title gold">Cómo Jugar</h2>
             </div>
             <div className="section-description">
@@ -125,7 +125,7 @@ const Wiki: React.FC = () => {
               {/* Modo Invitado */}
               <div className="access-card guest">
                 <div className="access-header">
-                  <div className="access-icon"><IconPlay size={32} color="#27ae60" /></div>
+                  <div className="access-icon"><GiPlayButton size={32} color="#27ae60" /></div>
                   <h3>Modo Invitado</h3>
                   <span className="access-badge free">Gratis • Inmediato</span>
                 </div>
@@ -135,10 +135,10 @@ const Wiki: React.FC = () => {
                     probar el juego y decidir si quieres continuar.
                   </p>
                   <ul className="access-features">
-                    <li><IconHeart size={14} /> Acceso completo al modo historia</li>
-                    <li><IconSkull size={14} /> Survival mode disponible</li>
-                    <li><IconDungeon size={14} /> Explora todas las dungeons</li>
-                    <li><IconBackpack size={14} /> Guarda tu progreso localmente</li>
+                    <li><GiHealthNormal size={14} /> Acceso completo al modo historia</li>
+                    <li><GiSkullCrossedBones size={14} /> Survival mode disponible</li>
+                    <li><GiCrossedSwords size={14} /> Explora todas las dungeons</li>
+                    <li><GiKnapsack size={14} /> Guarda tu progreso localmente</li>
                   </ul>
                   <div className="access-limitations">
                     <h4>Limitaciones:</h4>
@@ -151,14 +151,14 @@ const Wiki: React.FC = () => {
                   </div>
                 </div>
                 <button className="access-action-btn guest" onClick={() => navigate('/splash')}>
-                  <IconPlay size={18} /> Jugar como Invitado
+                  <GiPlayButton size={18} /> Jugar como Invitado
                 </button>
               </div>
 
               {/* Registro */}
               <div className="access-card register">
                 <div className="access-header">
-                  <div className="access-icon"><IconUser size={32} color="#9b59b6" /></div>
+                  <div className="access-icon"><FiUser size={32} color="#9b59b6" /></div>
                   <h3>Crear Cuenta</h3>
                   <span className="access-badge premium">Recomendado</span>
                 </div>
@@ -168,11 +168,11 @@ const Wiki: React.FC = () => {
                     ¡Tu progreso se sincroniza en todos tus dispositivos!
                   </p>
                   <ul className="access-features">
-                    <li><IconShield size={14} /> Todo el contenido del modo invitado</li>
-                    <li><IconGold size={14} /> Acceso al Marketplace</li>
-                    <li><IconTrophy size={14} /> Rankings y competiciones</li>
-                    <li><IconGem size={14} /> Sincronización cloud</li>
-                    <li><IconSword size={14} /> PvP Arena competitivo</li>
+                    <li><GiShield size={14} /> Todo el contenido del modo invitado</li>
+                    <li><GiTwoCoins size={14} /> Acceso al Marketplace</li>
+                    <li><GiTrophy size={14} /> Rankings y competiciones</li>
+                    <li><GiCrystalGrowth size={14} /> Sincronización cloud</li>
+                    <li><GiBroadsword size={14} /> PvP Arena competitivo</li>
                   </ul>
                   <div className="access-benefits">
                     <h4>Beneficios exclusivos:</h4>
@@ -185,14 +185,14 @@ const Wiki: React.FC = () => {
                   </div>
                 </div>
                 <button className="access-action-btn register" onClick={() => navigate('/auth/register')}>
-                  <IconUser size={18} /> Crear Cuenta Gratis
+                  <FiUser size={18} /> Crear Cuenta Gratis
                 </button>
               </div>
 
               {/* Iniciar Sesión */}
               <div className="access-card login">
                 <div className="access-header">
-                  <div className="access-icon"><IconKey size={32} color="#3498db" /></div>
+                  <div className="access-icon"><GiPadlock size={32} color="#3498db" /></div>
                   <h3>Iniciar Sesión</h3>
                   <span className="access-badge returning">Usuarios existentes</span>
                 </div>
@@ -202,10 +202,10 @@ const Wiki: React.FC = () => {
                     la dejaste. Todo tu progreso te está esperando.
                   </p>
                   <ul className="access-features">
-                    <li><IconHeart size={14} /> Recupera todos tus personajes</li>
-                    <li><IconBackpack size={14} /> Accede a tu inventario</li>
-                    <li><IconGold size={14} /> Revisa tu balance de VAL</li>
-                    <li><IconTrophy size={14} /> Consulta tu ranking</li>
+                    <li><GiHealthNormal size={14} /> Recupera todos tus personajes</li>
+                    <li><GiKnapsack size={14} /> Accede a tu inventario</li>
+                    <li><GiTwoCoins size={14} /> Revisa tu balance de VAL</li>
+                    <li><GiTrophy size={14} /> Consulta tu ranking</li>
                   </ul>
                   <div className="access-info">
                     <p>
@@ -215,7 +215,7 @@ const Wiki: React.FC = () => {
                   </div>
                 </div>
                 <button className="access-action-btn login" onClick={() => navigate('/auth/login')}>
-                  <IconKey size={18} /> Iniciar Sesión
+                  <GiPadlock size={18} /> Iniciar Sesión
                 </button>
               </div>
             </div>

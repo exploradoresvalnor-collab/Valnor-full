@@ -5,7 +5,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
-import { RequireAuth, RequireNoAuth } from './components/guards';
+import { RequireAuth, RequireNoAuth, GuestAccessGuard } from './components/guards';
 import { InstallPrompt } from './components/pwa';
 import CookieConsent from './components/CookieConsent';
 import { useGameModeStore } from './stores/gameModeStore';
@@ -36,6 +36,7 @@ const Ranking = lazy(() => import('./pages/Ranking'));
 const Survival = lazy(() => import('./pages/Survival'));
 const Profile = lazy(() => import('./pages/Profile'));
 const Settings = lazy(() => import('./pages/Settings'));
+const Teams = lazy(() => import('./pages/Teams'));
 
 // Public Pages
 const Wiki = lazy(() => import('./pages/Wiki'));
@@ -140,57 +141,68 @@ function App() {
             <Route path="/inventory" element={
               <RequireAuth>
                 <RequireModeSelection>
-                  <Inventory />
+                  <GuestAccessGuard>
+                    <Inventory />
+                  </GuestAccessGuard>
                 </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/shop" element={
               <RequireAuth>
-                <RequireModeSelection>
+                <GuestAccessGuard>
                   <Shop />
-                </RequireModeSelection>
+                </GuestAccessGuard>
               </RequireAuth>
             } />
             <Route path="/marketplace" element={
               <RequireAuth>
                 <RequireModeSelection>
-                  <Marketplace />
+                  <GuestAccessGuard>
+                    <Marketplace />
+                  </GuestAccessGuard>
                 </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/dungeon" element={
               <RequireAuth>
                 <RequireModeSelection>
-                  <Dungeon />
+                  <GuestAccessGuard>
+                    <Dungeon />
+                  </GuestAccessGuard>
                 </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/ranking" element={
               <RequireAuth>
-                <RequireModeSelection>
+                <GuestAccessGuard>
                   <Ranking />
-                </RequireModeSelection>
+                </GuestAccessGuard>
               </RequireAuth>
             } />
             <Route path="/survival" element={
               <RequireAuth>
                 <RequireModeSelection>
-                  <Survival />
+                  <GuestAccessGuard>
+                    <Survival />
+                  </GuestAccessGuard>
                 </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/profile" element={
               <RequireAuth>
-                <RequireModeSelection>
-                  <Profile />
-                </RequireModeSelection>
+                <Profile />
               </RequireAuth>
             } />
             <Route path="/settings" element={
               <RequireAuth>
-                <RequireModeSelection>
-                  <Settings />
-                </RequireModeSelection>
+                <Settings />
+              </RequireAuth>
+            } />
+            <Route path="/teams" element={
+              <RequireAuth>
+                <GuestAccessGuard>
+                  <Teams />
+                </GuestAccessGuard>
               </RequireAuth>
             } />
 

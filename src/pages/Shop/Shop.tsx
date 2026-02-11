@@ -56,12 +56,6 @@ const Shop: React.FC = () => {
   const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
   const [walletVal, setWalletVal] = useState(0);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth/login');
-    }
-  }, [user, loading, navigate]);
-
   // Fetch real shop data
   useEffect(() => {
     if (isGuest || loading) return;

@@ -10,7 +10,7 @@ import { useNavigate } from 'react-router-dom';
 import { Canvas } from '@react-three/fiber';
 import { OrbitControls, AdaptiveDpr, Preload } from '@react-three/drei';
 import { useGameModeStore, GameMode } from '../../stores/gameModeStore';
-import { ValnorLogo } from '../../components/icons/GameIcons';
+import { GiCastle } from 'react-icons/gi';
 import { SpaceScene } from '../../components/scene/SpaceScene';
 import './PortalSelection.css';
 
@@ -152,7 +152,7 @@ export default function PortalSelection() {
         {/* Header */}
         <header className="portal-header">
           <div className="logo-container">
-            <ValnorLogo size={48} />
+            <GiCastle size={48} color="#ffd700" />
           </div>
           <div className="header-text">
             <h1 className="main-title">Elige tu Destino</h1>

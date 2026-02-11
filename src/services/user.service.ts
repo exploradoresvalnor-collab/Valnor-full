@@ -72,12 +72,15 @@ class UserService {
   /**
    * Obtener lista de usuarios
    * GET /api/users
+   * Backend devuelve array plano
    */
   async getUsers(params?: { page?: number; limit?: number }): Promise<{ users: User[]; total: number }> {
     const queryParams: Record<string, string> = {};
     if (params?.page) queryParams.page = String(params.page);
     if (params?.limit) queryParams.limit = String(params.limit);
-    return api.get(`${this.basePath}`, queryParams);
+    const response = await api.get<User[] | { users: User[]; total: number }>(`${this.basePath}`, queryParams);
+    if (Array.isArray(response)) return { users: response, total: response.length };
+    return response;
   }
 
   /**
@@ -107,9 +110,10 @@ class UserService {
   /**
    * Agregar personaje al usuario
    * POST /api/users/characters/add
+   * Backend espera { personajeId, rango }
    */
-  async addCharacter(characterId: string): Promise<{ success: boolean; message: string }> {
-    return api.post(`${this.basePath}/characters/add`, { characterId });
+  async addCharacter(personajeId: string, rango: string = 'E'): Promise<{ success: boolean; message: string }> {
+    return api.post(`${this.basePath}/characters/add`, { personajeId, rango });
   }
 
   /**

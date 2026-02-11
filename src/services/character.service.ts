@@ -68,19 +68,21 @@ class CharacterService {
   /**
    * Obtener mis personajes
    * GET /api/user-characters
+   * Backend devuelve { success, data: [...] }
    */
   async getMyCharacters(): Promise<CharacterData[]> {
-    const response = await api.get<UserCharactersResponse>(this.userCharactersPath);
-    return response.characters || [];
+    const response = await api.get<any>(this.userCharactersPath);
+    return response.data || response.characters || [];
   }
 
   /**
    * Obtener detalle de un personaje
    * GET /api/user-characters/:id
+   * Backend devuelve { success, data: character }
    */
   async getCharacter(characterId: string): Promise<CharacterData | null> {
-    const response = await api.get<{ character: CharacterData }>(`${this.userCharactersPath}/${characterId}`);
-    return response.character || null;
+    const response = await api.get<any>(`${this.userCharactersPath}/${characterId}`);
+    return response.data || response.character || null;
   }
 
   /**
@@ -94,9 +96,10 @@ class CharacterService {
   /**
    * Usar consumible en un personaje
    * POST /api/characters/:characterId/use-consumable
+   * Backend espera { itemId } (ID del consumible en el catálogo)
    */
-  async useConsumable(characterId: string, consumableId: string): Promise<UseConsumableResponse> {
-    return api.post(`${this.basePath}/${characterId}/use-consumable`, { consumableId });
+  async useConsumable(characterId: string, itemId: string): Promise<UseConsumableResponse> {
+    return api.post(`${this.basePath}/${characterId}/use-consumable`, { itemId });
   }
 
   /**
@@ -110,9 +113,10 @@ class CharacterService {
   /**
    * Aplicar daño a personaje (debug/admin)
    * POST /api/characters/:characterId/damage
+   * Backend lee req.body.damage (no amount)
    */
   async damage(characterId: string, amount: number): Promise<CharacterActionResponse> {
-    return api.post(`${this.basePath}/${characterId}/damage`, { amount });
+    return api.post(`${this.basePath}/${characterId}/damage`, { damage: amount });
   }
 
   /**
@@ -143,16 +147,17 @@ class CharacterService {
    * Equipar item en personaje
    * POST /api/characters/:characterId/equip
    */
-  async equip(characterId: string, itemId: string, slot?: string): Promise<EquipResponse> {
-    return api.post(`${this.basePath}/${characterId}/equip`, { itemId, slot });
+  async equip(characterId: string, itemId: string): Promise<EquipResponse> {
+    return api.post(`${this.basePath}/${characterId}/equip`, { itemId });
   }
 
   /**
    * Desequipar item
    * POST /api/characters/:characterId/unequip
+   * Backend espera { itemId } (ID del item equipado)
    */
-  async unequip(characterId: string, slot: string): Promise<EquipResponse> {
-    return api.post(`${this.basePath}/${characterId}/unequip`, { slot });
+  async unequip(characterId: string, itemId: string): Promise<EquipResponse> {
+    return api.post(`${this.basePath}/${characterId}/unequip`, { itemId });
   }
 
   /**

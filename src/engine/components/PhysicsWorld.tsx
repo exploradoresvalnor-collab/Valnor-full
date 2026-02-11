@@ -1,5 +1,6 @@
 /**
  * PhysicsWorld - Wrapper del mundo físico con Rapier
+ * Correcciones: raycast real, sphereCast, overlapSphere filtrado, collision data real
  */
 
 import React, { createContext, useContext, useRef, useCallback } from 'react';
@@ -24,7 +25,7 @@ export interface PhysicsBodyProps {
   angularDamping?: number;
   gravityScale?: number;
   canSleep?: boolean;
-  ccd?: boolean; // Continuous collision detection
+  ccd?: boolean;
   onCollisionEnter?: (event: CollisionEvent) => void;
   onCollisionExit?: (event: CollisionEvent) => void;
   onSleep?: () => void;
@@ -47,30 +48,25 @@ export const CollisionGroups = {
 
 // Máscaras de filtro predefinidas
 export const CollisionFilters = {
-  // El jugador colisiona con todo excepto triggers
   PLAYER: {
     groups: CollisionGroups.PLAYER,
     mask: CollisionGroups.ALL & ~CollisionGroups.TRIGGER,
   },
-  // Enemigos colisionan con terreno, jugador y otros enemigos
   ENEMY: {
     groups: CollisionGroups.ENEMY,
-    mask: CollisionGroups.TERRAIN | CollisionGroups.PLAYER | CollisionGroups.ENEMY,
+    mask: CollisionGroups.TERRAIN | CollisionGroups.PLAYER | CollisionGroups.ENEMY | CollisionGroups.NPC | CollisionGroups.PROJECTILE,
   },
-  // Terreno es estático, colisiona con todo
   TERRAIN: {
     groups: CollisionGroups.TERRAIN,
     mask: CollisionGroups.ALL,
   },
-  // Triggers solo detectan al jugador
   TRIGGER: {
     groups: CollisionGroups.TRIGGER,
     mask: CollisionGroups.PLAYER,
   },
-  // Proyectiles colisionan con terreno, jugador y enemigos
   PROJECTILE: {
     groups: CollisionGroups.PROJECTILE,
-    mask: CollisionGroups.TERRAIN | CollisionGroups.PLAYER | CollisionGroups.ENEMY,
+    mask: CollisionGroups.TERRAIN | CollisionGroups.PLAYER | CollisionGroups.ENEMY | CollisionGroups.NPC,
   },
 } as const;
 
@@ -96,7 +92,7 @@ interface PhysicsContextType {
   ) => RapierRigidBody[];
 }
 
-interface RaycastHit {
+export interface RaycastHit {
   point: THREE.Vector3;
   normal: THREE.Vector3;
   distance: number;
@@ -104,6 +100,10 @@ interface RaycastHit {
 }
 
 const PhysicsContext = createContext<PhysicsContextType | null>(null);
+
+// ── Vectores reutilizables para evitar allocaciones por frame ──
+const _hitPoint = new THREE.Vector3();
+const _hitNormal = new THREE.Vector3();
 
 /**
  * Hook para acceder a utilidades de física
@@ -117,7 +117,7 @@ export function usePhysicsWorld() {
 }
 
 /**
- * PhysicsWorldProvider - Provee contexto de física
+ * PhysicsWorldProvider - Provee contexto de física con queries reales de Rapier
  */
 export function PhysicsWorldProvider({ children }: { children: React.ReactNode }) {
   const { world, rapier } = useRapier();
@@ -127,25 +127,46 @@ export function PhysicsWorldProvider({ children }: { children: React.ReactNode }
       origin: THREE.Vector3,
       direction: THREE.Vector3,
       maxDistance: number,
-      _groups: number = CollisionGroups.ALL
+      groups: number = CollisionGroups.ALL
     ): RaycastHit | null => {
       const ray = new rapier.Ray(
         { x: origin.x, y: origin.y, z: origin.z },
         { x: direction.x, y: direction.y, z: direction.z }
       );
 
-      const hit = world.castRay(ray, maxDistance, true);
-      
+      // castRay con filtro de grupos de colisión
+      const hit = world.castRay(ray, maxDistance, true, undefined, groups);
+
       if (hit) {
-        const point = ray.pointAt(hit.timeOfImpact);
+        const hitPoint = ray.pointAt(hit.timeOfImpact);
+        _hitPoint.set(hitPoint.x, hitPoint.y, hitPoint.z);
+
+        // Extraer normal real del hit
+        const normal = hit.normal;
+        if (normal) {
+          _hitNormal.set(normal.x, normal.y, normal.z);
+        } else {
+          _hitNormal.set(0, 1, 0);
+        }
+
+        // Obtener el RigidBody del collider impactado
+        let hitBody: RapierRigidBody | null = null;
+        const collider = hit.collider;
+        if (collider) {
+          const parent = collider.parent();
+          if (parent) {
+            hitBody = parent as unknown as RapierRigidBody;
+          }
+        }
+
         return {
-          point: new THREE.Vector3(point.x, point.y, point.z),
-          normal: new THREE.Vector3(0, 1, 0), // Simplificado
+          point: _hitPoint.clone(),
+          normal: _hitNormal.clone(),
           distance: hit.timeOfImpact,
-          body: null, // Simplificado
+          body: hitBody,
         };
       }
-      
+
       return null;
     },
     [world, rapier]
@@ -154,41 +175,100 @@ export function PhysicsWorldProvider({ children }: { children: React.ReactNode }
   const sphereCast = useCallback(
     (
       origin: THREE.Vector3,
-      _radius: number,
+      radius: number,
       direction: THREE.Vector3,
       maxDistance: number,
-      _groups: number = CollisionGroups.ALL
+      groups: number = CollisionGroups.ALL
     ): RaycastHit | null => {
-      // Simplificado: usamos raycast normal
-      return raycast(origin, direction, maxDistance, _groups);
+      // Shape cast real con esfera de Rapier
+      const shape = new rapier.Ball(radius);
+      const shapePos = { x: origin.x, y: origin.y, z: origin.z };
+      const shapeRot = { x: 0, y: 0, z: 0, w: 1 };
+      const shapeVel = { x: direction.x, y: direction.y, z: direction.z };
+
+      const hit = world.castShape(
+        shapePos,
+        shapeRot,
+        shapeVel,
+        shape,
+        maxDistance,
+        true,
+        undefined,
+        groups
+      );
+
+      if (hit) {
+        // Reconstruir punto de impacto
+        const toi = hit.timeOfImpact;
+        _hitPoint.set(
+          origin.x + direction.x * toi,
+          origin.y + direction.y * toi,
+          origin.z + direction.z * toi
+        );
+
+        const normal = hit.normal1;
+        if (normal) {
+          _hitNormal.set(normal.x, normal.y, normal.z);
+        } else {
+          _hitNormal.set(0, 1, 0);
+        }
+
+        let hitBody: RapierRigidBody | null = null;
+        const collider = hit.collider;
+        if (collider) {
+          const parent = collider.parent();
+          if (parent) {
+            hitBody = parent as unknown as RapierRigidBody;
+          }
+        }
+
+        return {
+          point: _hitPoint.clone(),
+          normal: _hitNormal.clone(),
+          distance: toi,
+          body: hitBody,
+        };
+      }
+
+      return null;
     },
-    [raycast]
+    [world, rapier]
   );
 
   const overlapSphere = useCallback(
     (
       origin: THREE.Vector3,
       radius: number,
-      _groups: number = CollisionGroups.ALL
+      groups: number = CollisionGroups.ALL
     ): RapierRigidBody[] => {
       const bodies: RapierRigidBody[] = [];
-      
-      // Obtener todos los bodies dentro del radio
-      world.bodies.forEach((body) => {
-        const pos = body.translation();
-        const distance = Math.sqrt(
-          Math.pow(pos.x - origin.x, 2) +
-          Math.pow(pos.y - origin.y, 2) +
-          Math.pow(pos.z - origin.z, 2)
-        );
-        if (distance <= radius) {
-          bodies.push(body);
+      const seen = new Set<number>();
+
+      // Usar intersectionsWithShape de Rapier para eficiencia real
+      const shape = new rapier.Ball(radius);
+      const shapePos = { x: origin.x, y: origin.y, z: origin.z };
+      const shapeRot = { x: 0, y: 0, z: 0, w: 1 };
+
+      world.intersectionsWithShape(shapePos, shapeRot, shape, (collider) => {
+        const parent = collider.parent();
+        if (parent) {
+          const handle = parent.handle;
+          // Filtrar por collision groups si no es ALL
+          if (groups !== CollisionGroups.ALL) {
+            const cGroups = collider.collisionGroups();
+            if ((cGroups & groups) === 0) return true; // continuar
+          }
+          if (!seen.has(handle)) {
+            seen.add(handle);
+            bodies.push(parent as unknown as RapierRigidBody);
+          }
         }
+        return true; // continuar iterando
       });
-      
+
       return bodies;
     },
-    [world]
+    [world, rapier]
   );
 
   return (
@@ -235,10 +315,30 @@ export function PhysicsBody({
       userData={userData}
       onCollisionEnter={(payload) => {
         if (onCollisionEnter && payload.other.rigidBody) {
+          // Extraer datos de contacto reales del manifold
+          const manifold = payload.manifold;
+          let contactNormal = new THREE.Vector3(0, 1, 0);
+          let contactPoint = new THREE.Vector3(0, 0, 0);
+          
+          if (manifold) {
+            const normal = manifold.normal();
+            if (normal) {
+              contactNormal.set(normal.x, normal.y, normal.z);
+            }
+            // Intentar obtener punto de contacto del solver
+            const numPoints = manifold.numSolverContacts();
+            if (numPoints > 0) {
+              const pt = manifold.solverContactPoint(0);
+              if (pt) {
+                contactPoint.set(pt.x, pt.y, pt.z);
+              }
+            }
+          }
+          
           onCollisionEnter({
             other: payload.other.rigidBody,
-            normal: new THREE.Vector3(0, 1, 0),
-            point: new THREE.Vector3(0, 0, 0),
+            normal: contactNormal,
+            point: contactPoint,
           });
         }
       }}
@@ -251,8 +351,6 @@ export function PhysicsBody({
           });
         }
       }}
-      onSleep={() => console.log('Body sleeping')}
-      onWake={() => console.log('Body waking')}
     >
       {children}
     </RigidBody>

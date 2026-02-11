@@ -55,6 +55,9 @@ export const authService = {
     const response = await api.post<LoginResponse>('/auth/login', data);
 
     // Guardar usuario y token
+    // NOTA: El backend envía el JWT como cookie HTTP-only (Set-Cookie: token=...)
+    // Por eso response.token puede no existir en el body.
+    // Si el backend SÍ incluye token en el body, lo guardamos como fallback.
     currentUser = response.user;
     if (response.token) {
       localStorage.setItem(STORAGE_KEYS.TOKEN, response.token);
@@ -152,12 +155,35 @@ export const authService = {
 
   /**
    * Verificar sesión actual
+   * La cookie HTTP-only se envía automáticamente con credentials: 'include'
    */
   async checkSession(): Promise<boolean> {
     try {
-      await this.getCurrentUser();
-      return true;
-    } catch {
+      const user = await this.getCurrentUser();
+      return !!user;
+    } catch (err: any) {
+      const status = err?.status || err?.statusCode;
+      // Solo limpiar sesión si el error es de autenticación (401/403)
+      // Errores de servidor (500), rate limit o red NO deben cerrar sesión
+      if (status === 401 || status === 403) {
+        console.warn('[auth] Sesión inválida (', status, ') — limpiando');
+        currentUser = null;
+        localStorage.removeItem(STORAGE_KEYS.USER);
+        localStorage.removeItem(STORAGE_KEYS.TOKEN);
+        notifyListeners(null);
+        return false;
+      }
+      // Para otros errores, mantener la sesión existente
+      console.warn('[auth] checkSession error no-auth (', status, ') — manteniendo sesión');
+      // Intentar usar datos de localStorage como fallback
+      const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
+      if (storedUser) {
+        try {
+          currentUser = JSON.parse(storedUser);
+          notifyListeners(currentUser);
+          return true;
+        } catch { /* parse failed */ }
+      }
       return false;
     }
   },

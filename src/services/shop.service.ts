@@ -121,27 +121,33 @@ class ShopService {
   /**
    * Obtener paquetes disponibles en la tienda
    * GET /api/shop/packages
+   * Backend devuelve array plano
    */
   async getShopPackages(): Promise<ShopPackage[]> {
-    const response = await api.get<{ packages: ShopPackage[] }>('/api/shop/packages');
+    const response = await api.get<ShopPackage[] | { packages: ShopPackage[] }>('/api/shop/packages');
+    if (Array.isArray(response)) return response;
     return response.packages || [];
   }
 
   /**
    * Obtener catálogo general de paquetes
    * GET /api/packages
+   * Backend devuelve array plano
    */
   async getPackagesCatalog(): Promise<ShopPackage[]> {
-    const response = await api.get<{ packages: ShopPackage[] }>('/api/packages');
+    const response = await api.get<ShopPackage[] | { packages: ShopPackage[] }>('/api/packages');
+    if (Array.isArray(response)) return response;
     return response.packages || [];
   }
 
   /**
    * Obtener ofertas activas
    * GET /api/offers
+   * Backend devuelve array plano
    */
   async getOffers(): Promise<Offer[]> {
-    const response = await api.get<{ offers: Offer[] }>('/api/offers');
+    const response = await api.get<Offer[] | { offers: Offer[] }>('/api/offers');
+    if (Array.isArray(response)) return response;
     return response.offers || [];
   }
 
@@ -162,27 +168,37 @@ class ShopService {
   }
 
   /**
-   * Comprar VAL
+   * Comprar VAL (paquete con dinero real)
    * POST /api/shop/buy-val
+   * Backend espera { packageId }
    */
-  async buyVal(amount: number): Promise<PurchaseResponse> {
-    return api.post('/api/shop/buy-val', { amount });
+  async buyVal(packageId: string): Promise<PurchaseResponse> {
+    return api.post('/api/shop/buy-val', { packageId });
   }
 
   /**
-   * Compra general (paquete)
+   * Compra general (cualquier tipo)
    * POST /api/shop/purchase
+   * Backend espera { purchaseType: 'evo'|'boletos'|'val', amount? }
+   * Si se pasa packageId, se usa como purchaseType
    */
-  async purchase(packageId: string, quantity: number = 1): Promise<PurchaseResponse> {
-    return api.post('/api/shop/purchase', { packageId, quantity });
+  async purchase(purchaseTypeOrPackageId: string, amount: number = 1): Promise<PurchaseResponse> {
+    // Si es un purchaseType conocido, enviar directamente
+    const knownTypes = ['evo', 'boletos', 'val'];
+    const purchaseType = knownTypes.includes(purchaseTypeOrPackageId)
+      ? purchaseTypeOrPackageId
+      : purchaseTypeOrPackageId; // Enviar como viene, el backend decide
+    return api.post('/api/shop/purchase', { purchaseType, amount });
   }
 
   /**
    * Obtener paquetes del usuario
    * GET /api/user-packages/:userId
+   * Backend may return array or wrapped
    */
   async getUserPackages(userId: string): Promise<UserPackage[]> {
-    const response = await api.get<{ packages: UserPackage[] }>(`/api/user-packages/${userId}`);
+    const response = await api.get<UserPackage[] | { packages: UserPackage[] }>(`/api/user-packages/${userId}`);
+    if (Array.isArray(response)) return response;
     return response.packages || [];
   }
 

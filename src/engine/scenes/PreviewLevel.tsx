@@ -13,6 +13,7 @@ import {
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import * as THREE from 'three';
 import { UltraSkySystem } from '../systems/UltraSkySystem';
+import { SceneEnhancer } from '../components/SceneEnhancer';
 import { Player } from '../components/Player';
 
 interface PreviewLevelProps {
@@ -233,8 +234,10 @@ export function PreviewLevel({
         autoProgress={false}
       />
       
-      {/* Niebla */}
-      <fog attach="fog" args={['#1a5276', 50, 200]} />
+      {/* Niebla manejada por SceneEnhancer */}
+      
+      {/* Mejoras visuales */}
+      <SceneEnhancer biome="preview" />
       
       {/* Agua */}
       <WaterSurface />

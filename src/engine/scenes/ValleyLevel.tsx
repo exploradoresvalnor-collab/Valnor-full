@@ -11,6 +11,7 @@ import { UltraSkySystem } from '../systems/UltraSkySystem';
 import { InstancedGrass } from '../systems/InstancedGrass';
 import { ForestAmbience } from '../systems/AmbientParticlesSystem';
 import { WildlifeSystem } from '../systems/WildlifeSystem';
+import { SceneEnhancer } from '../components/SceneEnhancer';
 
 // ============================================================
 // COMPONENTES DEL VALLE
@@ -368,6 +369,9 @@ export function ValleyLevel({
 
       {/* Partículas ambientales */}
       <ForestAmbience />
+
+      {/* Mejoras visuales */}
+      <SceneEnhancer biome="valley" />
 
       {/* Sparkles cerca del agua */}
       <Sparkles

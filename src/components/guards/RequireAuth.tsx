@@ -31,6 +31,11 @@ export function RequireAuth({
     return <LoadingScreen message="Verificando sesión..." />;
   }
 
+  // MODO NONE: No ha elegido → ir a landing
+  if (mode === 'none' && !isAuthenticated) {
+    return <Navigate to="/landing" state={{ from: location }} replace />;
+  }
+
   // MODO INVITADO: Si hay sesión guest activa y no requiere auth completo
   if (mode === 'guest' && isGuestSession && !requireFullAuth) {
     return <>{children}</>;

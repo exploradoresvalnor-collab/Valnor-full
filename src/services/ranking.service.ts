@@ -49,38 +49,43 @@ class RankingService {
   /**
    * Obtener ranking general
    * GET /api/rankings
+   * Backend devuelve { success, rankings: [...], total, periodo }
    */
   async getGeneralRanking(params?: { limit?: number; periodo?: string }): Promise<Ranking | null> {
     const query: Record<string, string> = {};
     if (params?.limit) query.limit = String(params.limit);
     if (params?.periodo) query.periodo = params.periodo;
-    const response = await apiService.get<RankingResponse>(this.basePath, query);
-    return response.ranking || null;
+    const response = await apiService.get<any>(this.basePath, query);
+    return response.rankings || response.ranking || null;
   }
 
   /**
    * Obtener leaderboard por categoría
    * GET /api/rankings/leaderboard/:category
+   * Backend devuelve { categoria, pagina, limite, total, totalPages, usuarios: [...] }
    */
   async getLeaderboard(category: RankingCategory, params?: { page?: number; limit?: number }): Promise<Ranking | null> {
     const query: Record<string, string> = {};
     if (params?.page !== undefined) query.page = String(params.page);
     if (params?.limit) query.limit = String(params.limit);
-    const response = await apiService.get<RankingResponse>(
+    const response = await apiService.get<any>(
       `${this.basePath}/leaderboard/${category}`, query
     );
-    return response.ranking || null;
+    // Backend devuelve 'usuarios', no 'ranking'
+    return response.ranking || response.usuarios || null;
   }
 
   /**
    * Obtener ranking por período
    * GET /api/rankings/period/:periodo
+   * Backend devuelve { success, periodo, total, rankings: [...] }
    */
   async getRankingByPeriod(period: RankingPeriod): Promise<Ranking | null> {
-    const response = await apiService.get<RankingResponse>(
+    const response = await apiService.get<any>(
       `${this.basePath}/period/${period}`
     );
-    return response.ranking || null;
+    // Backend usa 'rankings' (plural)
+    return response.rankings || response.ranking || null;
   }
 
   /**
@@ -108,34 +113,43 @@ class RankingService {
   /**
    * Obtener todos los logros disponibles
    * GET /api/achievements
+   * Backend devuelve { exito, pagina, ..., logros: [...] }
    */
   async getAllAchievements(params?: { categoria?: string; limit?: number; page?: number }): Promise<Achievement[]> {
     const query: Record<string, string> = {};
     if (params?.categoria) query.categoria = params.categoria;
     if (params?.limit) query.limit = String(params.limit);
     if (params?.page !== undefined) query.page = String(params.page);
-    const response = await apiService.get<AchievementsResponse>(this.achievementsPath, query);
-    return response.achievements || [];
+    const response = await apiService.get<any>(this.achievementsPath, query);
+    // Backend usa 'logros' (ES), no 'achievements'
+    return response.logros || response.achievements || [];
   }
 
   /**
    * Obtener logros de un usuario por su ID
    * GET /api/achievements/:userId
+   * Backend devuelve { exito, ..., logrosDesbloqueados: [...] }
    */
   async getUserAchievements(userId: string): Promise<Achievement[]> {
-    const response = await apiService.get<AchievementsResponse>(
+    const response = await apiService.get<any>(
       `${this.achievementsPath}/${userId}`
     );
-    return response.achievements || [];
+    // Backend usa 'logrosDesbloqueados' (ES)
+    return response.logrosDesbloqueados || response.logros || response.achievements || [];
   }
 
   /**
    * Desbloquear un logro para un usuario (admin)
    * POST /api/achievements/:userId/unlock
    * Body: { achievementId }
+   * Backend devuelve { exito, mensaje, logro }
    */
   async unlockAchievement(userId: string, achievementId: string): Promise<{ success: boolean; message?: string }> {
-    return apiService.post(`${this.achievementsPath}/${userId}/unlock`, { achievementId });
+    const response = await apiService.post<any>(`${this.achievementsPath}/${userId}/unlock`, { achievementId });
+    return {
+      success: response.exito ?? response.success ?? false,
+      message: response.mensaje || response.message,
+    };
   }
 
   // =====================================
@@ -145,12 +159,16 @@ class RankingService {
   /**
    * Obtener perfil público de un usuario
    * GET /api/users/profile/:userId
+   * Backend devuelve { exito, usuarioId, nombre, emailMasked, estadisticas, combate, recursos, personajes, logros }
+   * — no tiene campo 'profile', el objeto raíz ES el perfil
    */
   async getPublicProfile(userId: string): Promise<PublicProfile | null> {
-    const response = await apiService.get<ProfileResponse>(
+    const response = await apiService.get<any>(
       `${this.profilesPath}/${userId}`
     );
-    return response.profile || null;
+    // El backend devuelve el perfil como objeto raíz (no wrapeado en .profile)
+    if (response.exito === false) return null;
+    return response.profile || response as PublicProfile;
   }
 
   /**

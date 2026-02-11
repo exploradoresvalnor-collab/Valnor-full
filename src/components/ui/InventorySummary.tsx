@@ -1,9 +1,9 @@
 /**
  * InventorySummary - Resumen del inventario para Dashboard
- * Muestra items destacados y totales
+ * Conectado al API real — con fallback a datos vacíos
  */
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { 
   BackpackIcon, 
@@ -13,6 +13,7 @@ import {
   GemIcon,
   ChevronRightIcon 
 } from '../icons/GameIcons';
+import { inventoryService } from '../../services';
 import './InventorySummary.css';
 
 // Tipos
@@ -23,16 +24,6 @@ interface InventoryItem {
   rareza: 'common' | 'uncommon' | 'rare' | 'epic' | 'legendary';
   cantidad?: number;
 }
-
-// Mock data - En producción vendría del store/API
-const mockInventory: InventoryItem[] = [
-  { id: '1', nombre: 'Espada del Dragón', tipo: 'weapon', rareza: 'epic' },
-  { id: '2', nombre: 'Armadura de Mithril', tipo: 'armor', rareza: 'rare' },
-  { id: '3', nombre: 'Poción de Vida', tipo: 'consumable', rareza: 'common', cantidad: 15 },
-  { id: '4', nombre: 'Elixir de Maná', tipo: 'consumable', rareza: 'uncommon', cantidad: 8 },
-  { id: '5', nombre: 'Hierro', tipo: 'material', rareza: 'common', cantidad: 45 },
-  { id: '6', nombre: 'Cristal Arcano', tipo: 'material', rareza: 'rare', cantidad: 3 },
-];
 
 const RARITY_COLORS: Record<string, string> = {
   common: '#9ca3af',
@@ -45,19 +36,127 @@ const RARITY_COLORS: Record<string, string> = {
 export function InventorySummary() {
   const navigate = useNavigate();
   const [hoveredItem, setHoveredItem] = useState<string | null>(null);
+  const [items, setItems] = useState<InventoryItem[]>([]);
+  const [loading, setLoading] = useState(true);
+
+  useEffect(() => {
+    let cancelled = false;
+    const load = async () => {
+      // En modo guest no llamar al backend
+      const sessionRaw = localStorage.getItem('valnor-session-storage');
+      if (sessionRaw) {
+        try {
+          const parsed = JSON.parse(sessionRaw);
+          if (parsed?.state?.mode === 'guest') {
+            setItems([]);
+            setLoading(false);
+            return;
+          }
+        } catch { /* ignore */ }
+      }
+      try {
+        const inv = await inventoryService.getMyInventory();
+        if (cancelled) return;
+        const mapped: InventoryItem[] = [];
+
+        // Map equipment — handle both full objects and ObjectId strings
+        if (Array.isArray(inv.equipment)) {
+          inv.equipment.forEach((eq: any) => {
+            // Si es un string (ObjectId), crear item básico con datos mínimos
+            if (typeof eq === 'string') {
+              mapped.push({
+                id: eq,
+                nombre: 'Equipo',
+                tipo: 'armor',
+                rareza: 'common',
+                cantidad: 1,
+              });
+            } else {
+              mapped.push({
+                id: eq._id || eq.id || eq.itemId || String(mapped.length),
+                nombre: eq.nombre || eq.name || 'Equipo',
+                tipo: eq.tipo === 'arma' || eq.tipo === 'weapon' ? 'weapon' : 'armor',
+                rareza: eq.rareza || eq.rarity || 'common',
+                cantidad: eq.cantidad || 1,
+              });
+            }
+          });
+        }
+
+        // Map consumables — handle both full objects and ObjectId strings
+        if (Array.isArray(inv.consumables)) {
+          inv.consumables.forEach((con: any) => {
+            if (typeof con === 'string') {
+              mapped.push({
+                id: con,
+                nombre: 'Consumible',
+                tipo: 'consumable',
+                rareza: 'common',
+                cantidad: 1,
+              });
+            } else {
+              mapped.push({
+                id: con._id || con.id || con.itemId || String(mapped.length),
+                nombre: con.nombre || con.name || 'Consumible',
+                tipo: 'consumable',
+                rareza: con.rareza || con.rarity || 'common',
+                cantidad: con.cantidad || con.quantity || con.usos_restantes || 1,
+              });
+            }
+          });
+        }
+
+        setItems(mapped);
+      } catch {
+        // API no disponible — intentar leer datos del usuario almacenado como fallback
+        try {
+          const storedUser = JSON.parse(localStorage.getItem('valnor_user') || '{}');
+          const fallbackItems: InventoryItem[] = [];
+          if (Array.isArray(storedUser.inventarioEquipamiento)) {
+            storedUser.inventarioEquipamiento.forEach((eq: any) => {
+              const id = typeof eq === 'string' ? eq : eq._id || eq.id;
+              fallbackItems.push({
+                id,
+                nombre: typeof eq === 'string' ? 'Equipo' : eq.nombre || 'Equipo',
+                tipo: 'armor',
+                rareza: typeof eq === 'string' ? 'common' : eq.rareza || 'common',
+                cantidad: 1,
+              });
+            });
+          }
+          if (Array.isArray(storedUser.inventarioConsumibles)) {
+            storedUser.inventarioConsumibles.forEach((con: any) => {
+              fallbackItems.push({
+                id: con._id || con.consumableId || String(fallbackItems.length),
+                nombre: con.nombre || 'Consumible',
+                tipo: 'consumable',
+                rareza: 'common',
+                cantidad: con.usos_restantes || 1,
+              });
+            });
+          }
+          setItems(fallbackItems);
+        } catch {
+          setItems([]);
+        }
+      } finally {
+        if (!cancelled) setLoading(false);
+      }
+    };
+    load();
+    return () => { cancelled = true; };
+  }, []);
   
-  // Calcular totales
   const totals = {
-    weapons: mockInventory.filter(i => i.tipo === 'weapon').length,
-    armor: mockInventory.filter(i => i.tipo === 'armor').length,
-    consumables: mockInventory.filter(i => i.tipo === 'consumable').reduce((acc, i) => acc + (i.cantidad || 1), 0),
-    materials: mockInventory.filter(i => i.tipo === 'material').reduce((acc, i) => acc + (i.cantidad || 1), 0),
-    total: mockInventory.length,
+    weapons: items.filter(i => i.tipo === 'weapon').length,
+    armor: items.filter(i => i.tipo === 'armor').length,
+    consumables: items.filter(i => i.tipo === 'consumable').reduce((acc, i) => acc + (i.cantidad || 1), 0),
+    materials: items.filter(i => i.tipo === 'material').reduce((acc, i) => acc + (i.cantidad || 1), 0),
+    total: items.length,
   };
   
-  // Items destacados (épicos y legendarios)
-  const featuredItems = mockInventory
-    .filter(i => i.rareza === 'epic' || i.rareza === 'legendary')
+  const featuredItems = items
+    .filter(i => i.rareza === 'epic' || i.rareza === 'legendary' || i.rareza === 'rare')
     .slice(0, 3);
   
   const getItemIcon = (tipo: string) => {
@@ -74,14 +173,13 @@ export function InventorySummary() {
       <div className="summary-header">
         <h4>
           <BackpackIcon size={16} color="#ffd700" />
-          Inventario
+          Inventario {loading && <span style={{ fontSize: '.6rem', opacity: .5 }}>...</span>}
         </h4>
         <button className="view-all-btn" onClick={() => navigate('/inventory')}>
           Ver todo <ChevronRightIcon size={14} />
         </button>
       </div>
       
-      {/* Totales por categoría */}
       <div className="inventory-totals">
         <div className="total-item">
           <SwordIcon size={16} color="#e74c3c" />
@@ -104,8 +202,15 @@ export function InventorySummary() {
           <span className="total-label">Materiales</span>
         </div>
       </div>
+
+      {items.length === 0 && !loading && (
+        <div className="inventory-empty" onClick={() => navigate('/shop')}>
+          <span style={{ fontSize: '.72rem', color: 'rgba(255,255,255,.4)' }}>
+            Sin items — visita la Tienda
+          </span>
+        </div>
+      )}
       
-      {/* Items destacados */}
       {featuredItems.length > 0 && (
         <div className="featured-items">
           <span className="featured-label">Items Destacados</span>

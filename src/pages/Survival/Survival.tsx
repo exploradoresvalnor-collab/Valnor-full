@@ -54,12 +54,6 @@ const Survival: React.FC = () => {
   const [showBattle, setShowBattle] = useState(false);
   const [survivalLoading, setSurvivalLoading] = useState(true);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth/login');
-    }
-  }, [user, loading, navigate]);
-
   // Fetch real survival data
   useEffect(() => {
     if (loading) return;

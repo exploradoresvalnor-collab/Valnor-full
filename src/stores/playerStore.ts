@@ -52,6 +52,16 @@ export interface PlayerState {
   maxEnergy: number;
   lastEnergyUpdate: number; // timestamp de última actualización
   energyRegenMinutes: number; // minutos para regenerar 1 energía
+
+  // Stats de progreso (del backend)
+  battlesWon: number;
+  battlesLost: number;
+  dungeonsCompleted: number;
+  maxSurvivalWave: number;
+  charactersOwned: number;
+
+  // Stats reales del personaje activo (backend: atk, vida, defensa)
+  realStats: { atk: number; vida: number; defensa: number };
 }
 
 export interface PlayerActions {
@@ -154,6 +164,16 @@ const initialState: PlayerState = {
   maxEnergy: 50,
   lastEnergyUpdate: Date.now(),
   energyRegenMinutes: 5, // 1 energía cada 5 minutos
+
+  // Stats de progreso
+  battlesWon: 0,
+  battlesLost: 0,
+  dungeonsCompleted: 0,
+  maxSurvivalWave: 0,
+  charactersOwned: 0,
+
+  // Stats reales del personaje activo
+  realStats: { atk: 0, vida: 0, defensa: 0 },
 };
 
 // Función para calcular XP requerido
@@ -417,14 +437,14 @@ export const usePlayerResources = () => usePlayerStore(
   }))
 );
 
-// Selectores para Profile page
+// Selectores para Profile page — lee datos reales del backend
 export const usePlayerStats = () => usePlayerStore(
   useShallow((state) => ({
-    battlesWon: 0, // TODO: agregar al state real
-    battlesLost: 0,
-    dungeonsCompleted: 0,
-    maxSurvivalWave: 0,
-    charactersOwned: 1,
+    battlesWon: state.battlesWon,
+    battlesLost: state.battlesLost,
+    dungeonsCompleted: state.dungeonsCompleted,
+    maxSurvivalWave: state.maxSurvivalWave,
+    charactersOwned: state.charactersOwned,
     level: state.level,
   }))
 );

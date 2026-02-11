@@ -8,6 +8,7 @@ import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { MeshReflectorMaterial } from '@react-three/drei';
 import { UltraSkySystem } from '../systems/UltraSkySystem';
 import { ForestAmbience } from '../systems/AmbientParticlesSystem';
+import { SceneEnhancer } from '../components/SceneEnhancer';
 
 // ============================================================
 // COMPONENTES DEL CASTILLO
@@ -306,6 +307,9 @@ export function CastleLevel({
 
       {/* Partículas ambientales */}
       {showAmbience && <ForestAmbience />}
+
+      {/* Mejoras visuales */}
+      <SceneEnhancer biome="castle" weather />
 
       {/* Suelo exterior (hierba) */}
       <RigidBody type="fixed" colliders="cuboid">

@@ -10,6 +10,8 @@ import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { MeshReflectorMaterial, Sparkles } from '@react-three/drei';
 import { UltraSkySystem } from '../systems/UltraSkySystem';
 import { VolcanoAmbience } from '../systems/AmbientParticlesSystem';
+import { SceneEnhancer } from '../components/SceneEnhancer';
+import { WaterfallEffect } from '../components/WaterfallEffect';
 
 // ============================================================
 // COMPONENTES DEL CAÑÓN
@@ -371,8 +373,11 @@ export function CanyonLevel({
         segments={12}
       />
 
-      {/* Cascada */}
-      <Waterfall position={[0, 0, -50]} />
+      {/* Cascada mejorada */}
+      <WaterfallEffect position={[0, -20, -50]} width={5} height={22} />
+
+      {/* Mejoras visuales (PostProcess + Fog + Environment) */}
+      <SceneEnhancer biome="canyon" />
 
       {/* Cuevas */}
       <CaveEntrance position={[-30, 0, 10]} rotation={[0, Math.PI / 2, 0]} />

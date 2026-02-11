@@ -53,30 +53,36 @@ class InventoryService {
   /**
    * Obtener catálogo completo de items
    * GET /api/items
+   * Backend devuelve array plano
    */
   async getItemsCatalog(params?: { tipo?: string; rareza?: string }): Promise<Item[]> {
     const queryParams: Record<string, string> = {};
     if (params?.tipo) queryParams.tipo = params.tipo;
     if (params?.rareza) queryParams.rareza = params.rareza;
-    const response = await api.get<ItemsCatalogResponse>('/api/items', queryParams);
+    const response = await api.get<Item[] | ItemsCatalogResponse>('/api/items', queryParams);
+    if (Array.isArray(response)) return response;
     return response.items || [];
   }
 
   /**
    * Obtener catálogo de equipamiento
    * GET /api/equipment
+   * Backend devuelve array plano
    */
   async getEquipmentCatalog(): Promise<EquipmentItem[]> {
-    const response = await api.get<EquipmentCatalogResponse>('/api/equipment');
+    const response = await api.get<EquipmentItem[] | EquipmentCatalogResponse>('/api/equipment');
+    if (Array.isArray(response)) return response;
     return response.equipment || [];
   }
 
   /**
    * Obtener catálogo de consumibles
    * GET /api/consumables
+   * Backend devuelve array plano
    */
   async getConsumablesCatalog(): Promise<ConsumableItem[]> {
-    const response = await api.get<ConsumablesCatalogResponse>('/api/consumables');
+    const response = await api.get<ConsumableItem[] | ConsumablesCatalogResponse>('/api/consumables');
+    if (Array.isArray(response)) return response;
     return response.consumables || [];
   }
 
@@ -91,18 +97,22 @@ class InventoryService {
   /**
    * Obtener mi equipamiento
    * GET /api/inventory/equipment
+   * Backend devuelve array plano
    */
   async getMyEquipment(): Promise<EquipmentItem[]> {
-    const response = await api.get<{ equipment: EquipmentItem[] }>('/api/inventory/equipment');
+    const response = await api.get<EquipmentItem[] | { equipment: EquipmentItem[] }>('/api/inventory/equipment');
+    if (Array.isArray(response)) return response;
     return response.equipment || [];
   }
 
   /**
    * Obtener mis consumibles
    * GET /api/inventory/consumables
+   * Backend devuelve array plano
    */
   async getMyConsumables(): Promise<ConsumableItem[]> {
-    const response = await api.get<{ consumables: ConsumableItem[] }>('/api/inventory/consumables');
+    const response = await api.get<ConsumableItem[] | { consumables: ConsumableItem[] }>('/api/inventory/consumables');
+    if (Array.isArray(response)) return response;
     return response.consumables || [];
   }
 }

@@ -60,6 +60,7 @@ interface AnimationSystemState {
   currentAction: THREE.AnimationAction | null;
   queuedState: AnimationState | null;
   lockedUntil: number;
+  transitionEndTime: number;
 }
 
 interface UseAnimationSystemOptions {
@@ -82,6 +83,7 @@ export function useAnimationSystem({
     currentAction: null,
     queuedState: null,
     lockedUntil: 0,
+    transitionEndTime: 0,
   });
 
   const actions = useRef<Map<AnimationState, THREE.AnimationAction>>(new Map());
@@ -204,13 +206,13 @@ export function useAnimationSystem({
     if (!newConfig.loop) {
       const clip = animations.get(newState);
       if (clip) {
-        state.current.lockedUntil = currentTime + (clip.duration * 1000 * 0.8);
+        const timeScale = newConfig.timeScale ?? 1;
+        state.current.lockedUntil = currentTime + (clip.duration * 1000 * 0.8 / timeScale);
       }
     }
     
-    setTimeout(() => {
-      state.current.isTransitioning = false;
-    }, fadeTime * 1000);
+    // Marcar fin de transición usando duración real del fade
+    state.current.transitionEndTime = performance.now() + fadeTime * 1000;
     
   }, [mixer, animations]);
 
@@ -236,10 +238,14 @@ export function useAnimationSystem({
     }
   }, []);
 
-  // Update mixer
+  // Update mixer + check transition end (reemplaza setTimeout)
   useFrame((_, delta) => {
     if (mixer) {
       mixer.update(delta);
+    }
+    // Verificar fin de transición sin setTimeout
+    if (state.current.isTransitioning && performance.now() >= state.current.transitionEndTime) {
+      state.current.isTransitioning = false;
     }
   });
 

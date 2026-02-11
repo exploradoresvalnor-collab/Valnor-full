@@ -87,12 +87,6 @@ const Marketplace: React.FC = () => {
   const [purchasing, setPurchasing] = useState(false);
   const [userVal, setUserVal] = useState(user?.val || 0);
 
-  useEffect(() => {
-    if (!loading && !user) {
-      navigate('/auth/login');
-    }
-  }, [user, loading, navigate]);
-
   // Fetch marketplace listings
   useEffect(() => {
     if (loading) return;

@@ -82,10 +82,7 @@ export const useVFXStore = create<VFXStore>((set, get) => ({
       activeEffects: [...state.activeEffects, vfx],
     }));
 
-    // Auto-remove después de la duración
-    setTimeout(() => {
-      get().removeVFX(id);
-    }, vfx.duration);
+    // No usamos setTimeout — la limpieza ocurre en VFXRenderer.useFrame
   },
 
   removeVFX: (id) => {
@@ -308,6 +305,17 @@ interface VFXSystemProps {
 
 export function VFXSystem({ maxEffects = 20 }: VFXSystemProps) {
   const activeEffects = useVFXStore((state) => state.activeEffects);
+  const removeVFX = useVFXStore((state) => state.removeVFX);
+
+  // Limpiar efectos expirados en el render loop (reemplaza setTimeout)
+  useFrame(() => {
+    const now = performance.now();
+    for (const vfx of activeEffects) {
+      if (now - vfx.startTime >= vfx.duration) {
+        removeVFX(vfx.id);
+      }
+    }
+  });
 
   // Limitar efectos activos
   const visibleEffects = activeEffects.slice(-maxEffects);

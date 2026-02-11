@@ -15,14 +15,16 @@ import {
 } from '@react-three/drei';
 import { useGameModeStore } from '../../stores/gameModeStore';
 import {
-  SwordIcon,
-  SkullIcon,
-  UsersIcon,
-  UserIcon,
-  TrophyIcon,
-  EnergyIcon,
-  ChartIcon,
-} from '../../components/icons/GameIcons';
+  GiCrossedSwords,
+  GiSkullCrossedBones,
+  GiThreeFriends,
+  GiTrophy,
+  GiPowerLightning,
+  GiChart,
+  GiTicket,
+  GiLightningFrequency,
+} from 'react-icons/gi';
+import { FiUser } from 'react-icons/fi';
 import './Portals.css';
 
 // Portal 3D Component
@@ -164,6 +166,13 @@ export function Portals() {
         </Canvas>
       </div>
 
+      {/* Rune particles CSS overlay */}
+      <div className="portals-rune-particles">
+        {[...'✦◆★✶⬡✧◇⬢✦◆'].map((ch, i) => (
+          <span key={i}>{ch}</span>
+        ))}
+      </div>
+
       {/* Overlay UI */}
       <div className="portals-overlay">
         {/* Header */}
@@ -184,29 +193,29 @@ export function Portals() {
             <div className="portal-glow rpg"></div>
             <div className="portal-content">
               <div className="portal-icon">
-                <SwordIcon size={48} color="#ffd700" />
+                <GiCrossedSwords size={48} color="#ffd700" />
               </div>
               <h2>DUNGEONS</h2>
               <p className="portal-subtitle">Aventura por Equipos</p>
               
               <div className="portal-features">
                 <div className="feature">
-                  <UsersIcon size={18} color="#ffd700" />
+                  <GiThreeFriends size={18} color="#ffd700" />
                   <span>Equipo de 1-4 héroes</span>
                 </div>
                 <div className="feature">
-                  <TrophyIcon size={18} color="#ffd700" />
+                  <GiTrophy size={18} color="#ffd700" />
                   <span>Mazmorras y jefes</span>
                 </div>
                 <div className="feature">
-                  <ChartIcon size={18} color="#ffd700" />
+                  <GiChart size={18} color="#ffd700" />
                   <span>Combate automático</span>
                 </div>
               </div>
               
               <div className="portal-cost">
                 <span className="cost-label">Costo por partida:</span>
-                <span className="cost-value">🎫 1 Boleto</span>
+                <span className="cost-value"><GiTicket className="cost-icon rpg" /> 1 Boleto</span>
               </div>
               
               <button className="enter-portal-btn rpg">
@@ -225,29 +234,29 @@ export function Portals() {
             <div className="portal-glow survival"></div>
             <div className="portal-content">
               <div className="portal-icon">
-                <SkullIcon size={48} color="#e74c3c" />
+                <GiSkullCrossedBones size={48} color="#e74c3c" />
               </div>
               <h2>SURVIVAL</h2>
               <p className="portal-subtitle">Supervivencia en Tiempo Real</p>
               
               <div className="portal-features">
                 <div className="feature">
-                  <UserIcon size={18} color="#e74c3c" />
+                  <FiUser size={18} color="#e74c3c" />
                   <span>Un solo héroe</span>
                 </div>
                 <div className="feature">
-                  <SkullIcon size={18} color="#e74c3c" />
+                  <GiSkullCrossedBones size={18} color="#e74c3c" />
                   <span>Oleadas de enemigos</span>
                 </div>
                 <div className="feature">
-                  <EnergyIcon size={18} color="#e74c3c" />
+                  <GiPowerLightning size={18} color="#e74c3c" />
                   <span>Acción en tiempo real</span>
                 </div>
               </div>
               
               <div className="portal-cost">
                 <span className="cost-label">Costo por partida:</span>
-                <span className="cost-value">⚡ 10 Energía</span>
+                <span className="cost-value"><GiLightningFrequency className="cost-icon survival" /> 10 Energía</span>
               </div>
               
               <button className="enter-portal-btn survival">

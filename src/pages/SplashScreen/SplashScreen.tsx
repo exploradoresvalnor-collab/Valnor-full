@@ -7,7 +7,8 @@
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useSessionStore } from '../../stores/sessionStore';
-import { IconPlay, IconUser, IconBook } from '../../components/icons/GameIcons';
+import { GiPlayButton, GiSpellBook } from 'react-icons/gi';
+import { FiUser } from 'react-icons/fi';
 import './SplashScreen.css';
 
 function SplashScreen() {
@@ -126,7 +127,7 @@ function SplashScreen() {
                 className="splash-btn splash-btn-primary"
                 onClick={handleGuestMode}
               >
-                <span className="btn-icon"><IconPlay size={28} color="#1a1a2e" /></span>
+                <span className="btn-icon"><GiPlayButton size={28} color="#1a1a2e" /></span>
                 <span className="btn-text">Modo Invitado</span>
                 <span className="btn-sub">Juega sin registro</span>
               </button>
@@ -137,7 +138,7 @@ function SplashScreen() {
                   className="splash-btn splash-btn-secondary"
                   onClick={handleEnter}
                 >
-                  <span className="btn-icon"><IconUser size={20} /></span>
+                  <span className="btn-icon"><FiUser size={20} /></span>
                   <span className="btn-text">Entrar / Registro</span>
                 </button>
                 
@@ -145,7 +146,7 @@ function SplashScreen() {
                   className="splash-btn splash-btn-secondary"
                   onClick={handleWiki}
                 >
-                  <span className="btn-icon"><IconBook size={20} /></span>
+                  <span className="btn-icon"><GiSpellBook size={20} /></span>
                   <span className="btn-text">Wiki</span>
                 </button>
               </div>

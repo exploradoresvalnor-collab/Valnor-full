@@ -4,8 +4,10 @@
  */
 
 import * as THREE from 'three';
-import { RigidBody, CuboidCollider, CylinderCollider, BallCollider } from '@react-three/rapier';
+import { useRef } from 'react';
+import { RigidBody, CuboidCollider, CylinderCollider, BallCollider, RapierRigidBody } from '@react-three/rapier';
 import { Float, Text } from '@react-three/drei';
+import { useFrame } from '@react-three/fiber';
 
 // ============================================================
 // TIPOS COMUNES
@@ -53,10 +55,23 @@ export function Platform({
   moveDistance = 3,
   moveSpeed = 1,
 }: PlatformProps) {
-  // TODO: Implementar movimiento con Rapier kinematic
+  const bodyRef = useRef<RapierRigidBody>(null);
+  const startPos = useRef(position);
+
+  // Plataformas móviles con kinematic body
+  useFrame((state) => {
+    if (!moving || !bodyRef.current) return;
+    const t = state.clock.elapsedTime * moveSpeed;
+    const offset = Math.sin(t) * moveDistance;
+    const pos = { x: startPos.current[0], y: startPos.current[1], z: startPos.current[2] };
+    if (moveAxis === 'x') pos.x += offset;
+    else if (moveAxis === 'y') pos.y += offset;
+    else pos.z += offset;
+    bodyRef.current.setNextKinematicTranslation(pos);
+  });
 
   return (
-    <RigidBody type={moving ? 'kinematicPosition' : 'fixed'} position={position} colliders="cuboid">
+    <RigidBody ref={bodyRef} type={moving ? 'kinematicPosition' : 'fixed'} position={position} colliders="cuboid">
       <mesh castShadow receiveShadow>
         <boxGeometry args={size} />
         <meshStandardMaterial color={color} roughness={0.8} />
@@ -78,9 +93,15 @@ export function Ramp({
   size = [4, 0.5, 6],
   color = '#7a7a7a',
 }: RampProps) {
+  // Rotación aplicada al RigidBody completo para que collider y mesh coincidan
+  const combinedRotation: [number, number, number] = [
+    rotation[0] - 0.3,
+    rotation[1],
+    rotation[2],
+  ];
   return (
-    <RigidBody type="fixed" position={position} rotation={rotation} colliders="cuboid">
-      <mesh castShadow receiveShadow rotation={[-0.3, 0, 0]}>
+    <RigidBody type="fixed" position={position} rotation={combinedRotation} colliders="cuboid">
+      <mesh castShadow receiveShadow>
         <boxGeometry args={size} />
         <meshStandardMaterial color={color} roughness={0.8} />
       </mesh>
@@ -292,7 +313,8 @@ interface BarrelProps {
 
 export function Barrel({ position, color = '#5a4a3a', explosive = false }: BarrelProps) {
   return (
-    <RigidBody type="fixed" position={position} colliders="hull">
+    <RigidBody type="fixed" position={position} colliders={false}>
+      <CylinderCollider args={[0.6, 0.5]} />
       <mesh castShadow receiveShadow>
         <cylinderGeometry args={[0.5, 0.5, 1.2, 12]} />
         <meshStandardMaterial color={explosive ? '#ff4444' : color} roughness={0.8} />
