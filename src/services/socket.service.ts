@@ -65,10 +65,8 @@ export interface SocketEvents {
     timestamp: string;
   }) => void;
 
-  // Eventos globales
-  'game:event': (eventData: unknown) => void;
-  'rankings:update': (rankings: unknown) => void;
-  'battle:update': (battleState: unknown) => void;
+  // Combate
+  'combat:damage': (data: { damage: number; from: string; type: 'physical' | 'critical' | 'counter'; currentHealth: number; timestamp: string }) => void;
 }
 
 type EventName = keyof SocketEvents;

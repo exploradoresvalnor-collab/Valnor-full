@@ -1,2 +1,5 @@
+/api/achievements
+/api/rankings
+/api/user-characters
 /api/user/settings
 /api/user/settings/reset

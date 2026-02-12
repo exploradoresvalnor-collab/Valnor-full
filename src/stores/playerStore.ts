@@ -7,6 +7,29 @@ import { devtools, persist } from 'zustand/middleware';
 import { useShallow } from 'zustand/shallow';
 import type { CharacterClass, CharacterStats } from '../types';
 
+// Mapper para transformar datos del backend (ES) a PlayerState (EN)
+export const mapBackendPlayerData = (backendData: any): Partial<PlayerState> => {
+  if (!backendData) return {};
+
+  return {
+    characterId: backendData._id || backendData.id || null,
+    characterName: backendData.username || backendData.nombre || 'Adventurer',
+    characterClass: backendData.clase || backendData.characterClass || 'warrior',
+    level: backendData.nivel || backendData.level || 1,
+    gold: backendData.val ?? backendData.gold ?? 0,
+    gems: backendData.evo ?? backendData.gems ?? 0,
+    energy: backendData.energia ?? 50,
+    maxEnergy: backendData.energiaMaxima ?? 50,
+    tickets: backendData.boletos ?? 10,
+    // Stats de progreso
+    battlesWon: backendData.estadisticas?.batallasGanadas ?? backendData.battlesWon ?? 0,
+    battlesLost: backendData.estadisticas?.batallasPerdidas ?? backendData.battlesLost ?? 0,
+    dungeonsCompleted: backendData.estadisticas?.mazmorrasCompletadas ?? backendData.dungeonsCompleted ?? 0,
+    maxSurvivalWave: backendData.estadisticas?.oleadaMaxima ?? backendData.maxSurvivalWave ?? 0,
+    charactersOwned: backendData.personajes?.length || 0,
+  };
+};
+
 export interface PlayerState {
   // Información básica
   characterId: string | null;
@@ -110,6 +133,9 @@ export interface PlayerActions {
   addEnergy: (amount: number) => void;
   useEnergy: (amount: number) => boolean;
   updateEnergyRegen: () => void; // calcula y aplica regeneración
+  
+  // Salud (para actualizaciones en tiempo real)
+  setCurrentHealth: (health: number) => void;
 }
 
 const defaultStats: CharacterStats = {
@@ -188,10 +214,17 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
         ...initialState,
         
         // Inicialización
-        initPlayer: (data) => set((state) => ({
-          ...state,
-          ...data,
-        })),
+        initPlayer: (data) => set((state) => {
+          // Si los datos parecen del backend (tienen campos ES), mapearlos
+          const mappedData = data.val !== undefined || data.evo !== undefined || data.boletos !== undefined 
+            ? mapBackendPlayerData(data) 
+            : data;
+          
+          return {
+            ...state,
+            ...mappedData,
+          };
+        }),
         
         resetPlayer: () => set(initialState),
         
@@ -383,6 +416,11 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
             });
           }
         },
+        
+        // Salud (para actualizaciones en tiempo real)
+        setCurrentHealth: (health) => set((state) => ({
+          currentHealth: Math.max(0, Math.min(health, state.maxHealth)),
+        })),
       }),
       {
         name: 'valnor-player-storage',

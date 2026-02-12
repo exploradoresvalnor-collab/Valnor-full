@@ -5,6 +5,7 @@ import { usePlayerStore } from '../../stores/playerStore';
 import { useActiveTeam } from '../../stores/teamStore';
 import { SurvivalBattle } from '../../components/survival';
 import { survivalService } from '../../services';
+import { socketService } from '../../services/socket.service';
 import './Survival.css';
 
 interface SurvivalStats {
@@ -43,7 +44,7 @@ const Survival: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   
-  const { energy, maxEnergy, useEnergy, addGold, addExperience } = usePlayerStore();
+  const { energy, maxEnergy, useEnergy, addGold, addExperience, setCurrentHealth } = usePlayerStore();
   const team = useActiveTeam();
   
   const [stats, setStats] = useState<SurvivalStats>({
@@ -102,6 +103,48 @@ const Survival: React.FC = () => {
     fetchSurvival();
     return () => { cancelled = true; };
   }, [loading]);
+
+  // Configurar listeners de WebSocket para eventos en tiempo real
+  useEffect(() => {
+    // Listener para fin de survival con recompensas
+    const handleSurvivalEnd = (data: { sessionId: string; totalWaves: number; durationMs: number; rewards: any }) => {
+      console.log('[Survival] Fin de sesión recibido:', data);
+      
+      // Aplicar recompensas en tiempo real
+      if (data.rewards) {
+        if (data.rewards.valGanado || data.rewards.gold) {
+          addGold(data.rewards.valGanado || data.rewards.gold);
+        }
+        if (data.rewards.expGanada || data.rewards.experience) {
+          addExperience(data.rewards.expGanada || data.rewards.experience);
+        }
+      }
+      
+      // Mostrar notificación de recompensas
+      // TODO: Implementar notificación visual de recompensas
+    };
+
+    // Listener para daño recibido en combate
+    const handleCombatDamage = (data: { damage: number; from: string; type: string; currentHealth: number }) => {
+      console.log('[Survival] Daño recibido:', data);
+      
+      // Actualizar vida del personaje en tiempo real
+      setCurrentHealth(data.currentHealth);
+      
+      // TODO: Mostrar efecto visual de daño
+      // TODO: Reproducir sonido de daño
+    };
+
+    // Registrar listeners
+    socketService.on('survival:end', handleSurvivalEnd);
+    socketService.on('combat:damage', handleCombatDamage);
+
+    // Cleanup
+    return () => {
+      socketService.off('survival:end', handleSurvivalEnd);
+      socketService.off('combat:damage', handleCombatDamage);
+    };
+  }, [addGold, addExperience, setCurrentHealth]);
 
   if (loading || survivalLoading) {
     return (

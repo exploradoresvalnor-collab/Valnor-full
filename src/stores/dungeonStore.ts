@@ -7,6 +7,31 @@
 
 import { create } from 'zustand';
 import type { DungeonDifficulty } from '../types/dungeon.types';
+import { dungeonService } from '../services';
+
+// Mapper para transformar datos del backend a Dungeon local
+export const mapBackendDungeon = (backendData: any): Dungeon => {
+  return {
+    id: backendData.id || backendData._id,
+    name: backendData.nombre || backendData.name,
+    description: backendData.descripcion || backendData.description,
+    difficulty: backendData.dificultad || backendData.difficulty,
+    requiredLevel: backendData.nivelRequerido || backendData.requiredLevel,
+    energyCost: backendData.costoEnergia || backendData.energyCost || 0,
+    ticketCost: backendData.costoBoletos || backendData.ticketCost || 1,
+    estimatedTime: backendData.tiempoEstimado || backendData.estimatedTime || '5-10 min',
+    waves: backendData.oleadas || backendData.waves || 5,
+    bossName: backendData.nombreJefe || backendData.bossName,
+    rewards: {
+      gold: backendData.recompensas?.oro || backendData.rewards?.gold || { min: 100, max: 200 },
+      exp: backendData.recompensas?.experiencia || backendData.rewards?.exp || { min: 200, max: 400 },
+      items: backendData.recompensas?.items || backendData.rewards?.items || [],
+      rareDropChance: backendData.recompensas?.probabilidadObjetoRaro || backendData.rewards?.rareDropChance || 0.1,
+    },
+    backgroundImage: backendData.imagenFondo || backendData.backgroundImage,
+    unlocked: backendData.desbloqueada ?? backendData.unlocked ?? true,
+  };
+};
 
 // Tipos locales del store (alineados con DungeonDifficulty del backend)
 export interface DungeonReward {
@@ -149,15 +174,28 @@ export const useDungeonStore = create<DungeonState>((set, get) => ({
   selectedDungeon: null,
   isLoading: false,
   
-  loadDungeons: () => {
+  loadDungeons: async () => {
     set({ isLoading: true });
-    // Simular carga desde backend
-    setTimeout(() => {
-      set({ 
-        dungeons: DUNGEONS_DATA,
-        isLoading: false 
-      });
-    }, 300);
+    try {
+      // Intentar cargar desde backend
+      const backendDungeons = await dungeonService.getDungeons();
+      if (Array.isArray(backendDungeons) && backendDungeons.length > 0) {
+        const mappedDungeons = backendDungeons.map(mapBackendDungeon);
+        set({ 
+          dungeons: mappedDungeons,
+          isLoading: false 
+        });
+        return;
+      }
+    } catch (error) {
+      console.warn('[DungeonStore] Failed to load from backend, using fallback data:', error);
+    }
+    
+    // Fallback a datos hardcodeados
+    set({ 
+      dungeons: DUNGEONS_DATA,
+      isLoading: false 
+    });
   },
   
   selectDungeon: (dungeonId: string) => {

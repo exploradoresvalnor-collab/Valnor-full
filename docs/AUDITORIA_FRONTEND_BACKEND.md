@@ -181,10 +181,10 @@
 ### Desajustes de modelos/stores (no bloqueantes)
 | Store | Problema | Impacto |
 |-------|----------|---------|
-| `dungeonStore` | Tipo `Dungeon` local ≠ tipo en `dungeon.types.ts` ≠ backend. Usa datos hardcodeados, no llama al servicio | Bajo — cuando se conecte al backend real, necesitará mapper |
-| `playerStore` | Campos EN (`gold`, `gems`, `tickets`) ≠ campos ES del backend (`val`, `evo`, `boletos`) | Medio — necesita mapper al inicializar; quien llame `initPlayer()` debe transformar |
+| `dungeonStore` | Tipo `Dungeon` local ≠ tipo en `dungeon.types.ts` ≠ backend. Usa datos hardcodeados, no llama al servicio | **✅ RESUELTO** — Añadido `mapBackendDungeon()` y carga desde `dungeonService` con fallback |
+| `playerStore` | Campos EN (`gold`, `gems`, `tickets`) ≠ campos ES del backend (`val`, `evo`, `boletos`) | **✅ RESUELTO** — Añadido `mapBackendPlayerData()` en `initPlayer()` |
 | `teamStore` | `TeamMember` (EN) ≠ `TeamCharacter` del servicio (ES) | Bajo — ya existe `mapToTeamMember()` en mappers que debería usarse |
-| `teamStore` | `useTeamPower()` usa fórmula de poder duplicada (no usa `calcCharacterPower()`) | Bajo — riesgo de divergencia |
+| `teamStore` | `useTeamPower()` usa fórmula de poder duplicada (no usa `calcCharacterPower()`) | **✅ VERIFICADO** — Ya usa `calcCharacterPower()` correctamente |
 
 ---
 
@@ -194,3 +194,41 @@
 ✓ built in 6.38s
 PWA v1.2.0 — 72 entries precached
 ```
+
+---
+
+## Sesión 10 — Tests Unitarios y Mappers (11‑feb‑2026) ✅
+
+**Framework añadido:** Vitest + jsdom para tests unitarios.
+
+### Tests Implementados
+| Archivo | Cobertura | Estado |
+|---------|-----------|--------|
+| `src/stores/__tests__/playerStore.test.ts` | Mapper ES→EN, initPlayer, gestión recursos | ✅ Pasan |
+| `src/stores/__tests__/dungeonStore.test.ts` | Mapper backend, selección, requisitos entrada | ✅ Pasan |
+| `src/stores/__tests__/teamStore.test.ts` | Gestión equipo, poder, líder | ✅ Pasan |
+
+### Resultados
+```
+✅ All 24 tests passed
+✅ TypeScript compilation successful  
+✅ Build OK
+✅ Mappers ES→EN implementados
+✅ Fallbacks funcionando
+```
+
+### Cobertura de Tests
+| Store | Tests | Estado | Funcionalidades |
+|-------|-------|--------|----------------|
+| `playerStore` | 6 ✅ | Completo | Mapper ES→EN, recursos, estado inicial |
+| `dungeonStore` | 7 ✅ | Completo | Mapper backend, selección, requisitos |
+| `teamStore` | 11 ✅ | Completo | Gestión equipo, poder, líder |
+
+### Scripts Disponibles
+```bash
+npm run test:run    # Ejecutar todos los tests
+npm run test:ui     # Interfaz visual de Vitest
+npm run build       # Compilación TypeScript
+```
+
+---
