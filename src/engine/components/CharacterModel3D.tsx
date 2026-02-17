@@ -103,41 +103,140 @@ export function CharacterModel3D({
   }, [scene]);
 
   // Sistema de animaciones
-  const { actions, names: animationNames } = useAnimations(gltfAnimations, groupRef);
+  // --- Stripping root-position tracks prevents "root motion" from moving the visual
+  // model away from the physics/collider (common cause of visual jitter).
+  const cleanedAnimations = useMemo(() => {
+    return (gltfAnimations || []).map((clip) => {
+      const clone = clip.clone();
+      // Keep only non-root position tracks. Remove position tracks that target
+      // common root-bone names (Hips / Pelvis / Root) to neutralize root-motion.
+      clone.tracks = clone.tracks.filter((track) => {
+        const name = track.name.toLowerCase();
+        const isPosition = name.endsWith('.position');
+        const isRootTarget = /hip|pelvis|root/.test(name);
+        // drop only position tracks targeting root-like nodes
+        return !(isPosition && isRootTarget);
+      });
+      return clone;
+    });
+  }, [gltfAnimations]);
 
-  // Log de animaciones disponibles (solo en dev)
+  const { actions, names: animationNames } = useAnimations(cleanedAnimations, groupRef);
+
+  // Log de animaciones disponibles (solo en dev) + validar mappings del config
   useEffect(() => {
     if (import.meta.env.DEV && animationNames.length > 0) {
       console.log(
         `[CharacterModel3D] "${personajeId || 'unknown'}" animaciones:`,
         animationNames,
       );
-    }
-  }, [animationNames, personajeId]);
 
-  // Reproducir animación activa con crossfade
+      // Validar que los nombres declarados en config.animations existan
+      const animMap = (config as any).animations || {};
+      Object.keys(animMap).forEach((k) => {
+        const declared = animMap[k];
+        if (declared && !animationNames.includes(declared)) {
+          console.warn(
+            `[CharacterModel3D] Mismatch de animación para "${personajeId || 'unknown'}": config.animations.${k} = "${declared}" no existe en GLTF. Available: ${animationNames.join(', ')}`,
+          );
+        }
+      });
+    }
+  }, [animationNames, personajeId, config]);
+
+  // Reproducir animación activa con crossfade — con validaciones y fallback seguro
   useEffect(() => {
     if (!actions || animationNames.length === 0) return;
 
-    // Buscar la animación (case-insensitive + fuzzy match)
-    const actionKey = findBestAnimation(animation, animationNames);
+    let targetAction: THREE.AnimationAction | null = null;
+    let actionKey: string | null = null;
 
-    if (actionKey && actions[actionKey]) {
-      const action = actions[actionKey];
-      action.reset().fadeIn(0.25).play();
+    // 1. Resolver usando el mapa explícito del config (si existe)
+    const animMap = (config as any).animations || {};
+    const propToConfigKey: Record<string, string> = {
+      'Idle': 'idle',
+      'Walk': 'walk',
+      'Run': 'run',
+      'Sprint': 'run', // Usar run para sprint si no hay sprint
+      'Attack': 'attack',
+      'Death': 'death',
+      'Hit': 'hit',
+    };
 
-      return () => {
-        action.fadeOut(0.25);
-      };
-    } else if (animationNames.length > 0 && actions[animationNames[0]]) {
-      // Si no encuentra la animación solicitada, reproducir la primera disponible
-      const fallback = actions[animationNames[0]]!;
-      fallback.reset().fadeIn(0.25).play();
-      return () => {
-        fallback.fadeOut(0.25);
-      };
+    const configKey = propToConfigKey[animation] || animation.toLowerCase();
+
+    if (animMap[configKey]) {
+      const declared = animMap[configKey];
+      // Si el nombre declarado existe exactamente en actions, úsalo
+      if (actions[declared]) {
+        targetAction = actions[declared];
+        actionKey = declared;
+      } else {
+        // Nombre declarado NO existe — intentar resolver con búsqueda fuzzy y avisar
+        const fuzzy = findBestAnimation(declared, animationNames);
+        if (fuzzy && actions[fuzzy]) {
+          console.warn(
+            `[CharacterModel3D] Automap: config.animations.${configKey} = "${declared}" no existe — usando "${fuzzy}" en su lugar.`,
+          );
+          targetAction = actions[fuzzy];
+          actionKey = fuzzy;
+        } else {
+          console.warn(
+            `[CharacterModel3D] Mapeo inválido para "${personajeId || 'unknown'}": config.animations.${configKey} = "${declared}" — no se encontró en GLTF. Intentando fallback.`,
+          );
+        }
+      }
     }
-  }, [animation, actions, animationNames]);
+
+    // 2. Si no se encontró por config, intentar por el nombre pedido (prop) — fuzzy
+    if (!targetAction) {
+      const byProp = findBestAnimation(animation, animationNames);
+      if (byProp && actions[byProp]) {
+        targetAction = actions[byProp];
+        actionKey = byProp;
+      }
+    }
+
+    // 3. Fallback más seguro: priorizar Idle → Walk → Run antes de elegir la primera disponible
+    if (!targetAction && animationNames.length > 0) {
+      const preferred = ['Idle', 'Walk', 'Run'];
+      for (const p of preferred) {
+        const match = findBestAnimation(p, animationNames);
+        if (match && actions[match]) {
+          targetAction = actions[match];
+          actionKey = match;
+          break;
+        }
+      }
+    }
+
+    // 4. Último recurso: la primera animación disponible
+    if (!targetAction && animationNames.length > 0) {
+      targetAction = actions[animationNames[0]];
+      actionKey = animationNames[0];
+    }
+
+    if (targetAction) {
+      const oneShot = ['Attack', 'Hit', 'Death', 'Jump'].some(k => animation.includes(k));
+      targetAction.setLoop(oneShot ? THREE.LoopOnce : THREE.LoopRepeat, oneShot ? 0 : Infinity);
+      targetAction.clampWhenFinished = oneShot;
+
+      if (targetAction.isRunning()) {
+        targetAction.setEffectiveWeight(1);
+        targetAction.fadeIn(0.2);
+        return;
+      }
+
+      Object.keys(actions).forEach((key) => {
+        const other = actions[key];
+        if (other && other !== targetAction && other.isRunning()) {
+          other.fadeOut(0.25);
+        }
+      });
+
+      targetAction.reset().fadeIn(0.25).play();
+    }
+  }, [animation, actions, animationNames, config, personajeId]);
 
   // Notificar carga exitosa
   useEffect(() => {
