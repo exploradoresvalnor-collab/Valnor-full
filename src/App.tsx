@@ -209,11 +209,9 @@ function App() {
               </RequireAuth>
             } />
             <Route path="/teams" element={
-              <RequireAuth>
-                <GuestAccessGuard>
-                  <Teams />
-                </GuestAccessGuard>
-              </RequireAuth>
+              <GuestAccessGuard>
+                <Teams />
+              </GuestAccessGuard>
             } />
 
             {/* Ruta por defecto */}
