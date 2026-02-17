@@ -209,27 +209,33 @@ export function useMovement(
       _rayDir.current
     );
     
-    // castRay(ray, maxToi, solid, groups, filter, filterData, rigidBodyToExclude)
-    // Pasamos el rigidBody actual para excluirlo.
-    const hit = world.castRay(ray, cfg.groundRayLength + 0.5, true, undefined, undefined, undefined, bodyRef.current);
-    
-    if (hit && hit.timeOfImpact < cfg.groundRayLength) {
-      // Obtener normal real de la superficie
-      const collider = hit.collider;
-      if (collider) {
-        const normal = hit.normal;
-        if (normal) {
-          state.current.groundNormal.set(normal.x, normal.y, normal.z);
-        }
+    // castRayAndGetNormal devuelve { collider, timeOfImpact, normal }
+    // castRay solo devuelve { collider, timeOfImpact } — SIN normal.
+    const hit = world.castRayAndGetNormal(ray, cfg.groundRayLength + 0.5, true, undefined, undefined, undefined, bodyRef.current);
+
+    const wasGrounded = state.current.isGrounded;
+
+    if (hit && (hit.timeOfImpact ?? (hit as any).toi) < cfg.groundRayLength) {
+      // Normal disponible con castRayAndGetNormal
+      if (hit.normal) {
+        state.current.groundNormal.set(hit.normal.x, hit.normal.y, hit.normal.z);
       }
-      
-      if (!state.current.isGrounded) {
-        // Acabamos de aterrizar
+
+      if (!wasGrounded) {
+        // Transición aire→suelo (log una sola vez)
         state.current.jumpCount = 0;
+        if (import.meta.env.DEV) {
+          const toi = hit.timeOfImpact ?? (hit as any).toi;
+          const n = state.current.groundNormal;
+          console.log(`[useMovement] LANDED — toi=${toi.toFixed(3)} normal=(${n.x.toFixed(2)},${n.y.toFixed(2)},${n.z.toFixed(2)})`);
+        }
       }
       state.current.isGrounded = true;
       state.current.timeSinceGrounded = 0;
     } else {
+      if (wasGrounded && import.meta.env.DEV) {
+        console.log(`[useMovement] LEFT GROUND`);
+      }
       state.current.isGrounded = false;
     }
   }, [bodyRef, world, rapier, cfg.groundRayLength, cfg.groundRayOffset]);

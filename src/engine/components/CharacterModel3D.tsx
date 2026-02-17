@@ -223,12 +223,15 @@ export function CharacterModel3D({
       targetAction.setLoop(oneShot ? THREE.LoopOnce : THREE.LoopRepeat, oneShot ? 0 : Infinity);
       targetAction.clampWhenFinished = oneShot;
 
+      // If action already running, ensure it's not paused/zero-weight
       if (targetAction.isRunning()) {
+        try { targetAction.setEffectiveTimeScale((targetAction as any).getEffectiveTimeScale?.() ?? 1); } catch {}
         targetAction.setEffectiveWeight(1);
         targetAction.fadeIn(0.2);
         return;
       }
 
+      // Fade out other running actions
       Object.keys(actions).forEach((key) => {
         const other = actions[key];
         if (other && other !== targetAction && other.isRunning()) {
@@ -236,7 +239,19 @@ export function CharacterModel3D({
         }
       });
 
-      targetAction.reset().fadeIn(0.25).play();
+      // Defensive: ensure the action actually animates (weight/timeScale set)
+      targetAction.reset();
+      try {
+        targetAction.setEffectiveTimeScale(1);
+        targetAction.setEffectiveWeight(1);
+      } catch (err) {
+        /* ignore if API not available */
+      }
+      targetAction.fadeIn(0.25).play();
+
+      if (import.meta.env.DEV) {
+        console.log(`[CharacterModel3D] play → "${actionKey}" (oneShot=${oneShot})`);
+      }
     }
   }, [animation, actions, animationNames, config, personajeId]);
 

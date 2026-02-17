@@ -3,7 +3,7 @@
  * Rotación suave via spring (useMovement) + tilt lateral proporcional a giro×velocidad
  */
 
-import { useRef, useEffect, Suspense } from 'react';
+import { useRef, useEffect, useState, Suspense } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider, RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -43,6 +43,14 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
     jumpForce: 8,
   });
 
+  // Animación reactiva via useState (movement getters son refs, no triggerean re-render)
+  const [currentAnimation, setCurrentAnimation] = useState('Idle');
+  const prevAnimRef = useRef('Idle');
+  // Refs para evitar re-renders innecesarios al store
+  const prevGroundedRef = useRef<boolean | null>(null);
+  const prevMovingRef = useRef<boolean | null>(null);
+  const prevPosRef = useRef({ x: 0, y: 0, z: 0 });
+
   useEffect(() => {
     onReady?.();
   }, [onReady]);
@@ -69,11 +77,33 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
     // Clamp delta para lerps frame-independientes
     const dt = Math.min(delta, 0.05);
 
-    // Sincronizar posición con store (fuente de verdad = bodyRef)
+    // Sincronizar posición con store — solo si cambió significativamente
     const pos = bodyRef.current.translation();
-    setPosition({ x: pos.x, y: pos.y, z: pos.z });
-    setIsGrounded(movement.isGrounded);
-    setIsMoving(movement.isMoving);
+    const prevPos = prevPosRef.current;
+    if (Math.abs(pos.x - prevPos.x) > 0.01 ||
+        Math.abs(pos.y - prevPos.y) > 0.01 ||
+        Math.abs(pos.z - prevPos.z) > 0.01) {
+      setPosition({ x: pos.x, y: pos.y, z: pos.z });
+      prevPosRef.current = { x: pos.x, y: pos.y, z: pos.z };
+    }
+    // Solo actualizar isGrounded/isMoving cuando cambian
+    if (prevGroundedRef.current !== movement.isGrounded) {
+      setIsGrounded(movement.isGrounded);
+      prevGroundedRef.current = movement.isGrounded;
+    }
+    if (prevMovingRef.current !== movement.isMoving) {
+      setIsMoving(movement.isMoving);
+      prevMovingRef.current = movement.isMoving;
+    }
+    // Determinar animación — solo setState cuando cambia (evita re-render spam)
+    const anim = movement.isSprinting ? 'Run' : movement.isMoving ? 'Walk' : 'Idle';
+    if (anim !== prevAnimRef.current) {
+      setCurrentAnimation(anim);
+      prevAnimRef.current = anim;
+      if (import.meta.env.DEV) {
+        console.log(`[Player] animation → "${anim}" speed=${movement.speed.toFixed(2)} grounded=${movement.isGrounded}`);
+      }
+    }
 
     // ── Kill Zone: resetear jugador si cae al vacío ──
     if (pos.y < KILL_ZONE_Y) {
@@ -111,12 +141,8 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
         0.08, // suavizado más agresivo para eliminar vibración
       );
     }
-  });
 
-  // Determinar animación
-  // Map 'Sprint' to 'Run' if needed, or rely on CharacterModel3D fuzzy match.
-  // Pero para evitar flickering si la velocidad fluctúa cerca del umbral de sprint, añadir histéresis o simplificar.
-  const animation = movement.isSprinting ? 'Run' : movement.isMoving ? 'Walk' : 'Idle'; // Simplificado a Walk/Run/Idle estandar
+  });
 
   // NOTA: la malla visual está desacoplada del RigidBody — la física es la fuente de verdad
   // y la malla se interpola visualmente para eliminar jitter.
@@ -150,7 +176,7 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
             <CharacterModel3D
               personajeId={characterId}
               characterClass={characterClass}
-              animation={animation}
+              animation={currentAnimation}
               withWeapon={isInCombat}
             />
           </Suspense>

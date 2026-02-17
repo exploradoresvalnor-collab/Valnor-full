@@ -10,25 +10,109 @@ import { DungeonBattle } from '../../components/dungeons/DungeonBattle';
 import { PhysicsBody, CollisionGroups } from '../../engine/components/PhysicsWorld';
 import { useActiveTeam } from '../../stores/teamStore';
 import { dungeonService } from '../../services';
+import { RigidBody, CuboidCollider } from '@react-three/rapier';
+import { Html } from '@react-three/drei';
+import { useEngineStore, QualityLevel } from '../../engine/stores/engineStore';
+
+// Settings Modal Component
+function SettingsModal({ onClose }: { onClose: () => void }) {
+  const { quality, setQuality, viewDistance, fps } = useEngineStore();
+  
+  return (
+    <div style={{
+      position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
+      background: 'rgba(20, 20, 30, 0.95)', padding: '24px', borderRadius: '12px',
+      border: '1px solid #444', color: 'white', minWidth: '300px', zIndex: 1000
+    }}>
+      <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '1.5rem' }}>Configuración</h2>
+      
+      <div style={{ marginBottom: '16px' }}>
+        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Calidad Gráfica</label>
+        <div style={{ display: 'flex', gap: '8px' }}>
+          {(['low', 'medium', 'high', 'ultra'] as QualityLevel[]).map(q => (
+            <button
+              key={q}
+              onClick={() => setQuality(q)}
+              style={{
+                flex: 1, padding: '8px', borderRadius: '6px',
+                background: quality === q ? '#3b82f6' : '#333',
+                border: 'none', color: 'white', cursor: 'pointer',
+                textTransform: 'capitalize'
+              }}
+            >
+              {q}
+            </button>
+          ))}
+        </div>
+      </div>
+
+      <div style={{ marginBottom: '16px' }}>
+        <p style={{ margin: '4px 0', fontSize: '0.9rem', color: '#aaa' }}>
+          Distancia de Visión: {viewDistance}m
+        </p>
+        <p style={{ margin: '4px 0', fontSize: '0.9rem', color: '#aaa' }}>
+          FPS Actuales: {fps}
+        </p>
+      </div>
+
+      <button
+        onClick={onClose}
+        style={{
+          width: '100%', padding: '10px', borderRadius: '6px',
+          background: '#ef4444', border: 'none', color: 'white',
+          fontWeight: 'bold', cursor: 'pointer'
+        }}
+      >
+        Cerrar
+      </button>
+    </div>
+  );
+}
+
+// Import engine scenes
+import {
+  CastleLevel,
+  ValleyLevel,
+  CanyonLevel,
+  MiningMountainLevel,
+  PlainLevel,
+  TerrainTestLevel,
+  TestLevel,
+  PreviewLevel
+} from '../../engine/scenes';
 
 function SceneFromGLB({ url }: { url: string }) {
   const gltf = useGLTF(url) as any;
   useEffect(() => {
     if (gltf && gltf.scene) {
-      // center scene
+      // Center scene horizontally (X, Z) and align bottom to Y=0
       const box = new THREE.Box3().setFromObject(gltf.scene);
       const size = new THREE.Vector3();
       box.getSize(size);
       const center = new THREE.Vector3();
       box.getCenter(center);
-      gltf.scene.position.sub(center);
+      
+      // Center X and Z
+      gltf.scene.position.x = -center.x;
+      gltf.scene.position.z = -center.z;
+      // Align bottom to 0
+      gltf.scene.position.y = -box.min.y;
+
       // Diagnostic: log bbox so we can detect scale/position issues
       // eslint-disable-next-line no-console
-      console.debug('[SceneFromGLB] loaded:', url, { bboxSize: size.toArray(), bboxCenter: center.toArray() });
+      console.debug('[SceneFromGLB] loaded and centered:', url, { 
+        bboxSize: size.toArray(), 
+        originalCenter: center.toArray(),
+        newPosition: gltf.scene.position.toArray()
+      });
     }
   }, [gltf, url]);
 
-  return gltf ? <primitive object={gltf.scene} dispose={null} /> : null;
+  return gltf ? (
+    <RigidBody type="fixed" colliders="trimesh">
+      <primitive object={gltf.scene} dispose={null} />
+    </RigidBody>
+  ) : null;
 }
 
 export default function PlayDungeon() {
@@ -46,6 +130,7 @@ export default function PlayDungeon() {
   const activeTeam = useActiveTeam();
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [startingRemoteSession, setStartingRemoteSession] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   // distancia umbral para iniciar combate
   const TRIGGER_DISTANCE = 2.2;
@@ -118,6 +203,19 @@ export default function PlayDungeon() {
 
   useEffect(() => {
     if (!id) return;
+    
+    // Engine Scenes Config
+    if (id.startsWith('engine-')) {
+      // Mock metadata for engine scenes so game logic (spawns, rewards) doesn't break
+      setSceneMeta({ 
+        spawn: { x: 0, y: 2, z: 0 },
+        enemyModel: 'leviatan',
+        name: 'Engine Scene Test'
+      });
+      setGlbUrl(null); // Ensure no GLB loads
+      return;
+    }
+
     if (id.startsWith('demo-')) {
       setGlbUrl('/assets/dungeons/Fortaleza/castle_low_poly.glb');
       setSceneMeta({ spawn: { x: 0, y: 0, z: -2 } });
@@ -148,18 +246,54 @@ export default function PlayDungeon() {
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
       <GameCanvas>
-        {glbUrl ? <SceneFromGLB url={glbUrl} /> : null}
+        {/* Basic Lighting - Fallback for GLB/Demo scenes. Engine scenes use UltraSkySystem. */}
+        {!id?.startsWith('engine-') && (
+          <>
+            <hemisphereLight intensity={0.6} groundColor="#444444" />
+            <directionalLight 
+              position={[10, 20, 10]} 
+              intensity={1.2} 
+              castShadow 
+              shadow-mapSize={[2048, 2048]} 
+            />
+            <ambientLight intensity={0.3} />
+          </>
+        )}
+
+        {/* Engine Scenes — TestLevel y PreviewLevel tienen Player propio, desactivarlo */}
+        {id === 'engine-castle' && <CastleLevel />}
+        {id === 'engine-valley' && <ValleyLevel />}
+        {id === 'engine-canyon' && <CanyonLevel />}
+        {id === 'engine-mining' && <MiningMountainLevel />}
+        {id === 'engine-plain' && <PlainLevel />}
+        {id === 'engine-terrain' && <TerrainTestLevel />}
+        {id === 'engine-test' && <TestLevel showPlayer={false} />}
+        {id === 'engine-preview' && <PreviewLevel showPlayer={false} />}
+
+        {/* GLB Scene fallback */}
+        {glbUrl && !id?.startsWith('engine-') ? <SceneFromGLB url={glbUrl} /> : null}
+
+        {/* Default scene: si NO hay GLB y NO es engine-scene, cargar TestLevel como fallback */}
+        {!glbUrl && !id?.startsWith('engine-') && <TestLevel showPlayer={false} />}
+
+        {/* Safety floor — atrapa al jugador si cae por huecos */}
+        <RigidBody type="fixed" position={[0, -3, 0]} colliders={false}>
+          <CuboidCollider args={[200, 0.5, 200]} />
+        </RigidBody>
 
         {/* Player always mounts (unless preview) so engine/physics can be tested even without the GLB */}
         {!preview && <Player position={[0, 2, 6]} />}
 
-        {/* Enemy trigger - present even if GLB missing */}
+        {/* Enemy trigger - Moved further away for testing to avoid "double character" confusion */}
         <PhysicsBody
           type="fixed"
           collisionGroups={CollisionGroups.TRIGGER}
           onCollisionEnter={() => { if (!preview) startCombat(); }}
         >
-          <group position={[ (sceneMeta?.spawnPoints?.enemy?.x ?? sceneMeta?.spawn?.x ?? enemyPos.x), 0, (sceneMeta?.spawnPoints?.enemy?.z ?? sceneMeta?.spawn?.z ?? enemyPos.z) ]}>
+          <group position={[ (sceneMeta?.spawnPoints?.enemy?.x ?? sceneMeta?.spawn?.x ?? enemyPos.x), 0, (sceneMeta?.spawnPoints?.enemy?.z ?? sceneMeta?.spawn?.z ?? enemyPos.z) - 5 ]}>
+            <Html position={[0, 2.5, 0]} center distanceFactor={10}>
+              <div style={{ background: 'rgba(255,0,0,0.5)', padding: '2px 6px', borderRadius: '4px', color: 'white', fontSize: '10px' }}>Enemigo</div>
+            </Html>
             <Suspense fallback={<CharacterPlaceholder />}>
               <CharacterModel3D
                 personajeId={sceneMeta?.enemyModel || sceneMeta?.enemy?.id || 'leviatan'}
@@ -176,9 +310,16 @@ export default function PlayDungeon() {
         )}
       </GameCanvas>
 
-      <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 50 }}>
-        <button onClick={() => navigate('/dungeon')} style={{ padding: '8px 12px' }}>Salir</button>
+      <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 50, display: 'flex', gap: '10px' }}>
+        <button onClick={() => navigate('/dungeon')} style={{ padding: '8px 12px', background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer' }}>
+          Salir
+        </button>
+        <button onClick={() => setShowSettings(true)} style={{ padding: '8px 12px', background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer' }}>
+          ⚙️ Ajustes
+        </button>
       </div>
+
+      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
   {!glbUrl && (
     <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
