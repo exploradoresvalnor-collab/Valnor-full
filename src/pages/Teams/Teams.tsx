@@ -233,13 +233,27 @@ export function Teams() {
       setLoading(true);
       try {
         if (isGuest) {
-          // Cargar datos demo para invitados
+          // Cargar datos demo para invitados — normalizar al shape que espera Teams
           const demoChars = getDemoCharacters();
           const demoInventory = getDemoInventory();
 
+          const normalizeDemoChar = (c: any) => ({
+            _id: c.id,
+            personajeId: c.id,
+            nombre: c.name || c.id,
+            nivel: c.level || 1,
+            rango: 'C',
+            saludActual: (c.stats?.health ?? c.stats?.vida ?? 100),
+            saludMaxima: (c.stats?.health ?? c.stats?.vida ?? 100),
+            equipamiento: [],
+            stats: c.stats || {},
+          });
+
+          const mapped = demoChars.map(normalizeDemoChar);
+
           if (!cancelled) {
-            setAllCharacters(demoChars);
-            if (demoChars.length > 0) setSelectedChar(demoChars[0]);
+            setAllCharacters(mapped);
+            if (mapped.length > 0) setSelectedChar(mapped[0]);
             setMyEquipmentIds(demoInventory.equipment.map(item => item.id));
             setMyConsumables(demoInventory.consumables.map(item => ({ ...item, usos_restantes: item.stackSize || 1 })));
             setEquipCatalog(demoInventory.equipment);
