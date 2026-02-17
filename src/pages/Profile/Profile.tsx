@@ -14,6 +14,7 @@ import { usePlayerStore, usePlayerStats, usePlayerWallet } from '../../stores/pl
 import { useTeamMembers } from '../../stores/teamStore';
 import { useIsGuest } from '../../stores/sessionStore';
 import { GuestBanner } from '../../components/ui';
+import { CHARACTER_MODEL_MAP } from '../../config/character-models.config';
 import { rankingService, userService } from '../../services';
 import {
   GiCrossedSwords,
@@ -259,6 +260,28 @@ export function Profile() {
           </div>
 
           <h2 className="player-name">{player.characterName || 'Aventurero'}</h2>
+
+          {/* Quick character selector (permite cambiar personaje activo inmediatamente) */}
+          <div className="char-selector">
+            <label htmlFor="char-select">Personaje activo</label>
+            <select
+              id="char-select"
+              className="char-select"
+              value={player.characterId || ''}
+              onChange={(e) => {
+                const id = e.target.value || null;
+                const cfg = id ? CHARACTER_MODEL_MAP[id] : null;
+                usePlayerStore.getState().initPlayer({
+                  characterId: id,
+                  characterName: cfg?.displayName ?? (id || 'Aventurero'),
+                });
+              }}
+            >
+              {Object.keys(CHARACTER_MODEL_MAP).map((key) => (
+                <option key={key} value={key}>{CHARACTER_MODEL_MAP[key].displayName}</option>
+              ))}
+            </select>
+          </div>
 
           {/* XP */}
           <div className="xp-progress">
