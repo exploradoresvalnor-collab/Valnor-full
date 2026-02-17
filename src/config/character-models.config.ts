@@ -52,9 +52,11 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
     yOffset: 0,
     animations: {
       idle: 'Idle_Sword',
+      idle2: 'Idle_Neutral',    // segunda variante de idle disponible en el GLTF
       walk: 'Walk',
       run: 'Run',
       attack: 'Sword_Slash',
+      attack2: 'Sword_Slash',   // usar la misma animación como fallback (no hay segunda slash)
       death: 'Death',
       hit: 'HitRecieve',
     },
