@@ -154,7 +154,9 @@ const defaultStats: CharacterStats = {
 };
 
 const initialState: PlayerState = {
-  characterId: 'vision-espectral',
+  // En desarrollo usar 'sir-nocturno' (Caballero) para pruebas rápidas;
+  // en producción mantiene 'vision-espectral' como fallback.
+  characterId: import.meta.env.DEV ? 'sir-nocturno' : 'vision-espectral',
   characterName: 'Adventurer',
   characterClass: null,
   level: 1,
