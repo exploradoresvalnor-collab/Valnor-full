@@ -77,8 +77,8 @@ const DEFAULT_CONFIG: MovementConfig = {
   maxFallSpeed: 50,
   
   // Raycast: rayo corto hacia abajo desde la base de la cápsula
-  groundRayLength: 0.3,
-  groundRayOffset: 0.35, // Offset Y desde el centro del body (base de la cápsula)
+  groundRayLength: 0.6,
+  groundRayOffset: 0.6, // Offset Y desde el centro del body (base de la cápsula)
 };
 
 interface MovementState {
@@ -191,16 +191,27 @@ export function useMovement(
     
     const pos = bodyRef.current.translation();
     
-    // Origen del rayo: base de la cápsula (centro - offset)
-    _rayOrigin.current.set(pos.x, pos.y - cfg.groundRayOffset, pos.z);
-    _rayDir.current.set(0, -1, 0);
+    // Origen del rayo: Ligeramente por encima de la base (pos.y + 0.1)
+    // El collider empieza en pos.y (bottom=0).
+    // Usamos un filtro de grupo para asegurarnos de no golpearnos a nosotros mismos
+    // O empezamos LIGERAMENTE FUERA (pos.y + 0.05) y confiamos en que solid=false para backfaces?
+    // Rapier castRay solid=true detecta hits desde dentro.
     
+    // MEJOR: Empezar desde el centro del personaje (pos.y + 0.7) hacia abajo
+    // y EXCLUIR el rigidbody actual.
+    // Si no podemos excluir, empezamos desde abajo (pos.y + 0.05).
+    
+    _rayOrigin.current.set(pos.x, pos.y + 0.5, pos.z);
+    _rayDir.current.set(0, -1, 0);
+
     const ray = new rapier.Ray(
-      { x: _rayOrigin.current.x, y: _rayOrigin.current.y, z: _rayOrigin.current.z },
-      { x: 0, y: -1, z: 0 }
+      _rayOrigin.current,
+      _rayDir.current
     );
     
-    const hit = world.castRay(ray, cfg.groundRayLength, true);
+    // castRay(ray, maxToi, solid, groups, filter, filterData, rigidBodyToExclude)
+    // Pasamos el rigidBody actual para excluirlo.
+    const hit = world.castRay(ray, cfg.groundRayLength + 0.5, true, undefined, undefined, undefined, bodyRef.current);
     
     if (hit && hit.timeOfImpact < cfg.groundRayLength) {
       // Obtener normal real de la superficie
@@ -265,8 +276,9 @@ export function useMovement(
     rSpring.simulate(delta);
 
     // Aplicar delta de rotación al vector orientation
-    s.angularVelocity = rSpring.velocity;
-    if (Math.abs(rSpring.position) > 0.001) {
+    // Reducir ruido pequeño del spring para evitar micro‑vibraciones en el tilt
+    s.angularVelocity = Math.abs(rSpring.velocity) < 1e-4 ? 0 : rSpring.velocity;
+    if (Math.abs(rSpring.position) > 0.0005) {
       s.orientation.applyAxisAngle(_upAxis.current, rSpring.position);
       s.orientation.normalize();
     }
