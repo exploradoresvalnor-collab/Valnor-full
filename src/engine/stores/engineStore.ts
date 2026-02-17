@@ -111,13 +111,14 @@ export const useEngineStore = create<EngineState>()(
       drawCalls: 0,
       triangles: 0,
       
-      quality: 'high',
-      shadowQuality: 2048,
-      viewDistance: 400,
+      // Default to medium to avoid texture limit on integrated GPUs
+      quality: 'medium',
+      shadowQuality: 1024,
+      viewDistance: 200,
       enablePostProcessing: true,
       enableParticles: true,
-      enableGrass: true,
-      enableWildlife: true,
+      enableGrass: false,
+      enableWildlife: false,
       
       deltaTime: 0,
       elapsedTime: 0,

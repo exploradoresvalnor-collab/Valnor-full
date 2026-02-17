@@ -125,12 +125,11 @@ export function GameCanvas({
           try {
             // Basic GL info
             // eslint-disable-next-line no-console
+            const context = gl.getContext();
             console.debug('[GameCanvas] WebGL renderer info:', {
-              isContextLost: gl.isContextLost(),
-              version: gl.getParameter(gl.VERSION),
-              shadingLanguage: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
-              vendor: gl.getParameter(gl.VENDOR),
-              renderer: gl.getParameter(gl.RENDERER),
+              isContextLost: context ? context.isContextLost() : 'unknown', 
+              capabilities: gl.capabilities,
+              info: gl.info
             });
 
             // Listen for context events on the canvas DOM element
@@ -153,6 +152,8 @@ export function GameCanvas({
         }}
       >
         {/* Performance adapters */}
+        <color attach="background" args={['#202020']} />
+        
         <AdaptiveDpr pixelated />
         <AdaptiveEvents />
         

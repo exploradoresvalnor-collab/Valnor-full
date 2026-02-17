@@ -102,17 +102,22 @@ export function useCamera(
 
   // Manejar input del mouse
   const handleMouseMove = useCallback((event: MouseEvent) => {
-    if (!state.current.isDragging || cameraLocked) return;
+    if (cameraLocked) return;
     
-    const { movementX, movementY } = event;
+    // Modificado: Mover cámara siempre si hay pointer lock activo O si se arrastra con click derecho
+    const isPointerLocked = document.pointerLockElement !== null;
     
-    // Actualizar ángulos
-    state.current.theta -= movementX * cfg.mouseSensitivity;
-    state.current.phi = THREE.MathUtils.clamp(
-      state.current.phi - movementY * cfg.mouseSensitivity,
-      cfg.minAngle,
-      cfg.maxAngle
-    );
+    if (isPointerLocked || state.current.isDragging) {
+      const { movementX, movementY } = event;
+      
+      // Actualizar ángulos
+      state.current.theta -= movementX * cfg.mouseSensitivity;
+      state.current.phi = THREE.MathUtils.clamp(
+        state.current.phi - movementY * cfg.mouseSensitivity,
+        cfg.minAngle,
+        cfg.maxAngle
+      );
+    }
   }, [cfg.mouseSensitivity, cfg.minAngle, cfg.maxAngle, cameraLocked]);
 
   const handleMouseDown = useCallback((event: MouseEvent) => {

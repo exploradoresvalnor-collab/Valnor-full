@@ -124,6 +124,16 @@ function mapDungeon(raw: any): DungeonInfo {
 
 
 
+// Engine Scenes for testing/dev
+const ENGINE_DUNGEONS: DungeonInfo[] = [
+  { id: 'engine-castle', nombre: '🏰 DEV: Castle Scene', descripcion: 'Castillo procedural con torres y murallas', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'normal', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
+  { id: 'engine-valley', nombre: '🌲 DEV: Valley Scene', descripcion: 'Valle abierto con vegetación', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'easy', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
+  { id: 'engine-canyon', nombre: '🏜️ DEV: Canyon Scene', descripcion: 'Cañón desértico rocoso', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'hard', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
+  { id: 'engine-mining', nombre: '⛏️ DEV: Mining Scene', descripcion: 'Montaña minera con cuevas', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'expert', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
+  { id: 'engine-plain', nombre: '🌿 DEV: Plain Scene', descripcion: 'Llanura simple para pruebas', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'easy', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
+  { id: 'engine-terrain', nombre: '⛰️ DEV: Terrain Test', descripcion: 'Test de generación de terreno', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'normal', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
+];
+
 const Dungeon: React.FC = () => {
   const navigate = useNavigate();
   const { loading } = useAuth();
@@ -202,7 +212,7 @@ const Dungeon: React.FC = () => {
             },
           ];
           if (!cancelled) {
-            setDungeonsList(demoDungeons);
+            setDungeonsList([...demoDungeons, ...ENGINE_DUNGEONS]);
           }
         } else {
           console.log('[Dungeon] Loading real dungeons from backend');
@@ -214,15 +224,15 @@ const Dungeon: React.FC = () => {
             if (Array.isArray(result) && result.length > 0) {
               const mappedDungeons = (result as any[]).map(mapDungeon);
               console.log('[Dungeon] Mapped dungeons:', mappedDungeons);
-              setDungeonsList(mappedDungeons);
+              setDungeonsList([...mappedDungeons, ...ENGINE_DUNGEONS]);
             } else {
               console.warn('[Dungeon] No dungeons received from backend or empty array');
-              setDungeonsList([]);
+              setDungeonsList([...ENGINE_DUNGEONS]);
             }
           } catch (serviceError) {
             console.error('[Dungeon] Error calling dungeonService.getDungeons():', serviceError);
-            // Fallback to empty array
-            setDungeonsList([]);
+            // Fallback to empty array but keep engine scenes
+            setDungeonsList([...ENGINE_DUNGEONS]);
           }
         }
       } catch (err) {

@@ -273,8 +273,18 @@ export default function PlayDungeon() {
         {/* GLB Scene fallback */}
         {glbUrl && !id?.startsWith('engine-') ? <SceneFromGLB url={glbUrl} /> : null}
 
-        {/* Default scene: si NO hay GLB y NO es engine-scene, cargar TestLevel como fallback */}
-        {!glbUrl && !id?.startsWith('engine-') && <TestLevel showPlayer={false} />}
+        {/* Default ground — cuando no hay GLB ni engine-scene.
+            Directamente en el Physics world de GameCanvas (sin PhysicsWorldProvider anidado). */}
+        {!glbUrl && !id?.startsWith('engine-') && (
+          <RigidBody type="fixed" colliders={false}>
+            <CuboidCollider args={[50, 0.5, 50]} position={[0, -0.5, 0]} />
+            <mesh receiveShadow position={[0, 0, 0]}>
+              <boxGeometry args={[100, 1, 100]} />
+              <meshStandardMaterial color="#3d5c3d" roughness={0.9} />
+            </mesh>
+            <gridHelper args={[100, 50, '#666666', '#444444']} position={[0, 0.51, 0]} />
+          </RigidBody>
+        )}
 
         {/* Safety floor — atrapa al jugador si cae por huecos */}
         <RigidBody type="fixed" position={[0, -3, 0]} colliders={false}>

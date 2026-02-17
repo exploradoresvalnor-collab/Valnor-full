@@ -154,7 +154,7 @@ const defaultStats: CharacterStats = {
 };
 
 const initialState: PlayerState = {
-  characterId: null,
+  characterId: 'vision-espectral',
   characterName: 'Adventurer',
   characterClass: null,
   level: 1,
