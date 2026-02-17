@@ -24,12 +24,18 @@ export interface CharacterModelConfig {
   /** Nombres de animaciones disponibles en el archivo (depende del .glb) */
   animations?: {
     idle?: string;
+    idle2?: string;     // segunda animación de idle (Idle_2, Idle_01, ...)
     walk?: string;
     run?: string;
+    sprint?: string;
+    jump?: string;
+    fall?: string;
     attack?: string;
+    attack2?: string;
+    slash?: string;     // nombres alternativos para ataques
     death?: string;
     hit?: string;
-  };
+  }; 
 }
 
 /**
@@ -60,8 +66,10 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
     yOffset: 0,
     animations: {
       idle: 'Idle',
+      idle2: 'Idle_2',
       walk: 'Walk',
       run: 'Run',
+      jump: 'Jump',
       attack: 'Slash',
       death: 'Death',
       hit: 'HitReact',
@@ -74,8 +82,10 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
     yOffset: 0,
     animations: {
       idle: 'Idle',
+      idle2: 'Idle_2',
       walk: 'Walk',
       run: 'Run',
+      jump: 'Jump',
       attack: 'Slash',
       death: 'Death',
       hit: 'HitReact',
@@ -102,8 +112,10 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
     yOffset: 0,
     animations: {
       idle: 'Idle',
+      idle2: 'Idle_2',
       walk: 'Walk',
       run: 'Run',
+      jump: 'Jump',
       attack: 'Slash',
       death: 'Death',
       hit: 'HitReact',
@@ -116,8 +128,10 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
     yOffset: 0,
     animations: {
       idle: 'Idle',
+      idle2: 'Idle_2',
       walk: 'Walk',
       run: 'Run',
+      jump: 'Jump',
       attack: 'Slash',
       death: 'Death',
       hit: 'HitReact',
@@ -132,6 +146,7 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
       idle: 'Idle',
       walk: 'Walk',
       run: 'Run',
+      jump: 'Jump',
       attack: 'SwordSlash',
       death: 'Death',
       hit: 'RecieveHit',
@@ -144,6 +159,7 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
     yOffset: 0,
     animations: {
       idle: 'Idle',
+      idle2: 'Idle_2',
       walk: 'Walk',
       run: 'Run',
       attack: 'Attack',

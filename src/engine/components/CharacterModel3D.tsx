@@ -157,10 +157,12 @@ export function CharacterModel3D({
       'Idle': 'idle',
       'Walk': 'walk',
       'Run': 'run',
-      'Sprint': 'run', // Usar run para sprint si no hay sprint
+      'Sprint': 'sprint',
       'Attack': 'attack',
       'Death': 'death',
       'Hit': 'hit',
+      'Jump': 'jump',
+      'Fall': 'fall',
     };
 
     const configKey = propToConfigKey[animation] || animation.toLowerCase();
