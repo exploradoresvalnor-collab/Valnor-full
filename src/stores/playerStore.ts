@@ -437,6 +437,18 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           lastEnergyUpdate: state.lastEnergyUpdate,
           energyRegenMinutes: state.energyRegenMinutes,
         }),
+        // Asegurar en DEV que la rehidratación use 'sir-nocturno' para pruebas locales.
+        onRehydrateStorage: (storeApi) => (persistedState, error) => {
+          if (import.meta.env.DEV) {
+            try {
+              // Sobrescribir solo characterId después de rehydrate para evitar que
+              // el valor persistido (p. ej. guest/leviatan) prevalezca en dev.
+              storeApi.setState({ characterId: 'sir-nocturno' });
+            } catch (e) {
+              // noop
+            }
+          }
+        }
       }
     ),
     { name: 'PlayerStore' }
