@@ -2,8 +2,8 @@
  * GuestAccessGuard — Controla acceso a rutas según modo de sesión
  * 
  * Matriz de acceso para modo Guest:
- * ✅ PERMITIDO:  Dashboard, Wiki, Settings, Ranking (solo ver), Shop (solo ver), Profile
- * 🚫 BLOQUEADO:  Dungeon, Survival, Marketplace, Inventory, Teams
+ * ✅ PERMITIDO:  Dashboard, Wiki, Settings, Ranking (solo ver), Shop (solo ver), Teams, Inventory, Dungeon, Survival
+ * 🚫 BLOQUEADO:  Marketplace
  * 
  * En modo 'none' → redirige a /landing
  * En modo 'auth' → acceso completo
@@ -27,11 +27,12 @@ const GUEST_ACCESS_MATRIX: Record<string, GuestAccess> = {
   '/ranking':     'view-only',
   '/shop':        'view-only',
   
-  '/dungeon':     'blocked',
-  '/survival':    'blocked',
+  '/dungeon':     'full',
+  '/survival':    'full',
+  '/inventory':   'full',
+  '/teams':       'full',
+  
   '/marketplace': 'blocked',
-  '/inventory':   'blocked',
-  '/teams':       'blocked',
 };
 
 /** Obtener nivel de acceso para una ruta */

@@ -18,3 +18,6 @@ export * from './TerrainTestLevel';
 
 // Herramientas
 export * from './LevelKit';
+
+// Alias: exponer CastleLevel con nombre localizado "FortalezaDelCaballeroNegro"
+export { CastleLevel as FortalezaDelCaballeroNegro } from './CastleLevel';

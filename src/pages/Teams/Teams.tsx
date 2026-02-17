@@ -45,6 +45,7 @@ import { FiPlus, FiMinus, FiX, FiCheck, FiAlertTriangle } from 'react-icons/fi';
 
 import { useIsGuest } from '../../stores/sessionStore';
 import { userService, teamService, characterService } from '../../services';
+import { getDemoCharacters, getDemoInventory } from '../../services/demo.service';
 import { CharacterModel3D } from '../../engine/components/CharacterModel3D';
 import {
   CHARACTER_MODEL_MAP,
@@ -224,48 +225,71 @@ export function Teams() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-  // ─── Cargar todo del backend ───
+// ─── Cargar todo del backend o datos demo ───
   useEffect(() => {
-    if (isGuest) { setLoading(false); return; }
     let cancelled = false;
 
     const fetchAll = async () => {
       setLoading(true);
       try {
-        const [me, inventory, eqCat, consCat] = await Promise.all([
-          userService.getMe().catch(() => null),
-          fetchInventory(),
-          fetchEquipmentCatalog(),
-          fetchConsumablesCatalog(),
-        ]);
+        if (isGuest) {
+          // Cargar datos demo para invitados
+          const demoChars = getDemoCharacters();
+          const demoInventory = getDemoInventory();
 
-        if (cancelled) return;
-
-        if (me) {
-          const raw = (me as any).personajes;
-          if (Array.isArray(raw)) {
-            setAllCharacters(raw);
-            if (raw.length > 0) setSelectedChar(raw[0]);
+          if (!cancelled) {
+            setAllCharacters(demoChars);
+            if (demoChars.length > 0) setSelectedChar(demoChars[0]);
+            setMyEquipmentIds(demoInventory.equipment.map(item => item.id));
+            setMyConsumables(demoInventory.consumables.map(item => ({ ...item, usos_restantes: item.stackSize || 1 })));
+            setEquipCatalog(demoInventory.equipment);
+            setConsumCatalog(demoInventory.consumables);
           }
-        }
+        } else {
+          // Cargar datos reales del backend
+          const [me, inventory, eqCat, consCat] = await Promise.all([
+            userService.getMe().catch(() => null),
+            fetchInventory(),
+            fetchEquipmentCatalog(),
+            fetchConsumablesCatalog(),
+          ]);
 
-        if (inventory) {
-          setMyEquipmentIds(Array.isArray(inventory.equipment) ? inventory.equipment : []);
-          setMyConsumables(Array.isArray(inventory.consumables) ? inventory.consumables : []);
-        }
+          if (cancelled) return;
 
-        setEquipCatalog(eqCat);
-        setConsumCatalog(consCat);
-
-        try {
-          const teams = await teamService.getMyTeams();
-          if (!cancelled && teams.length > 0) {
-            const active = teams.find((t: any) => t.isActive || t.activo);
-            if (active?.characters) {
-              setActiveTeamIds(active.characters.map((c: any) => c.personajeId || c._id));
+          if (me) {
+            const raw = (me as any).personajes;
+            if (Array.isArray(raw)) {
+              console.log('[Teams] Personajes cargados:', raw.map(p => ({ _id: p._id, personajeId: p.personajeId, nombre: p.nombre })));
+              setAllCharacters(raw);
+              if (raw.length > 0) setSelectedChar(raw[0]);
             }
           }
-        } catch { /* endpoint might not exist */ }
+
+          if (inventory) {
+            setMyEquipmentIds(Array.isArray(inventory.equipment) ? inventory.equipment : []);
+            setMyConsumables(Array.isArray(inventory.consumables) ? inventory.consumables : []);
+          }
+
+          setEquipCatalog(eqCat);
+          setConsumCatalog(consCat);
+
+            const teams = await teamService.getMyTeams();
+            if (!cancelled && teams.length > 0) {
+              const active = teams.find((t: any) => t.isActive || t.activo);
+              if (active?.characters) {
+                // Mapear _id de MongoDB a personajeId para el estado local
+                const personajeIds = active.characters
+                  .map((char: any) => {
+                    // char puede ser un ObjectId string o un objeto con _id
+                    const charId = typeof char === 'string' ? char : char._id;
+                    const personaje = allCharacters.find(c => c._id === charId);
+                    return personaje?.personajeId;
+                  })
+                  .filter(Boolean) as string[];
+                setActiveTeamIds(personajeIds);
+              }
+            }
+        }
 
       } catch (err) {
         console.error('[Teams] Error:', err);
@@ -420,12 +444,24 @@ export function Teams() {
     try {
       await userService.setActiveCharacter(activeTeamIds[0]);
 
-      // El backend espera _id de MongoDB, no personajeId
+      // Enviar _id de MongoDB ya que el backend espera ObjectIds válidos
       const mongoIds = activeTeamIds
         .map(pid => allCharacters.find(c => c.personajeId === pid)?._id)
         .filter(Boolean) as string[];
 
+      console.log('[Teams] activeTeamIds (personajeId):', activeTeamIds);
+      console.log('[Teams] mongoIds (_id):', mongoIds);
+
+      // Validar que todos los IDs sean ObjectIds válidos
+      const invalidIds = mongoIds.filter(id => !/^[0-9a-fA-F]{24}$/.test(id));
+      if (invalidIds.length > 0) {
+        console.error('[Teams] IDs inválidos encontrados:', invalidIds);
+        addToast('error', `IDs de personajes inválidos: ${invalidIds.join(', ')}`);
+        return;
+      }
+
       if (mongoIds.length > 0) {
+        console.log('[Teams] Enviando petición a backend con IDs válidos:', mongoIds);
         try {
           const teams = await teamService.getMyTeams();
           const active = teams.find((t: any) => t.isActive || t.activo);
@@ -435,12 +471,16 @@ export function Teams() {
             const newTeam = await teamService.createTeam({ name: 'Equipo Principal', characters: mongoIds });
             await teamService.activateTeam(newTeam._id);
           }
+          addToast('success', 'Equipo guardado correctamente');
         } catch (teamErr: any) {
-          console.warn('[Teams] team endpoint error:', teamErr?.status, teamErr?.message, teamErr);
+          console.error('[Teams] Error del backend:', teamErr);
+          addToast('error', teamErr?.error || teamErr?.message || 'Error al guardar el equipo');
         }
+      } else {
+        addToast('error', 'No se pudieron mapear los IDs de personajes');
       }
-      addToast('success', 'Equipo guardado correctamente');
-    } catch {
+    } catch (err: any) {
+      console.error('[Teams] Error general:', err);
       addToast('error', 'Error al guardar el equipo');
     } finally {
       setSaving(false);

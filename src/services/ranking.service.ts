@@ -116,13 +116,58 @@ class RankingService {
    * Backend devuelve { exito, pagina, ..., logros: [...] }
    */
   async getAllAchievements(params?: { categoria?: string; limit?: number; page?: number }): Promise<Achievement[]> {
-    const query: Record<string, string> = {};
-    if (params?.categoria) query.categoria = params.categoria;
-    if (params?.limit) query.limit = String(params.limit);
-    if (params?.page !== undefined) query.page = String(params.page);
-    const response = await apiService.get<any>(this.achievementsPath, query);
-    // Backend usa 'logros' (ES), no 'achievements'
-    return response.logros || response.achievements || [];
+    try {
+      const query: Record<string, string> = {};
+      if (params?.categoria) query.categoria = params.categoria;
+      if (params?.limit) query.limit = String(params.limit);
+      if (params?.page !== undefined) query.page = String(params.page);
+      const response = await apiService.get<any>(this.achievementsPath, query);
+      // Backend usa 'logros' (ES), no 'achievements'
+      const achievements = response.logros || response.achievements || [];
+      
+      // Mapear campos del backend (ES) al frontend (EN)
+      return achievements.map((ach: any) => ({
+        id: ach.id || ach._id,
+        name: ach.nombre || ach.name,
+        description: ach.descripcion || ach.description,
+        category: ach.categoria || ach.category,
+        rarity: ach.dificultad === 'facil' ? 'common' :
+                ach.dificultad === 'normal' ? 'uncommon' :
+                ach.dificultad === 'dificil' ? 'rare' :
+                ach.dificultad === 'legendaria' ? 'legendary' : 'common',
+        requirements: ach.requisitos ? ach.requisitos.map((req: any) => ({
+          type: req.tipoRequisito === 'combates' ? 'kill_enemies' :
+                req.tipoRequisito === 'nivel' ? 'reach_level' :
+                req.tipoRequisito === 'dinero' ? 'spend_gold' :
+                req.tipoRequisito === 'custom' ? 'custom' : 'custom',
+          target: req.valor,
+          current: 0, // El backend no trackea progreso actual
+          customData: { descripcion: req.descripcion }
+        })) : [],
+        rewards: ach.recompensas ? ach.recompensas.map((rew: any) => ({
+          type: rew.tipo === 'xp' ? 'experience' :
+                rew.tipo === 'val' ? 'gems' :
+                rew.tipo === 'badge' ? 'title' : 'experience',
+          itemId: undefined,
+          amount: rew.valor,
+          description: rew.descripcion
+        })) : [],
+        points: ach.recompensas ? ach.recompensas.reduce((total: number, rew: any) => total + (rew.valor || 0), 0) : 0,
+        icon: ach.icono || ach.icon,
+        iconLocked: undefined,
+        isSecret: ach.oculto || false,
+        isRepeatable: false,
+        maxCompletions: 1
+      }));
+    } catch (error: any) {
+      // Si el endpoint no existe (404), retornar array vacío en lugar de lanzar error
+      if (error.status === 404) {
+        console.warn(`Endpoint ${this.achievementsPath} no encontrado en el backend. Usando datos vacíos.`);
+        return [];
+      }
+      // Para otros errores, relanzar
+      throw error;
+    }
   }
 
   /**

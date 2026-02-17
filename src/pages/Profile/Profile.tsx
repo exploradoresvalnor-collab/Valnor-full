@@ -72,7 +72,7 @@ export function Profile() {
       setProfileLoading(true);
       try {
         const [allAchievements, me] = await Promise.all([
-          rankingService.getAllAchievements().catch(() => []),
+          rankingService.getAllAchievements().catch(() => []), // Fallback a array vacío si falla
           userService.getMe().catch(() => null),
         ]);
 

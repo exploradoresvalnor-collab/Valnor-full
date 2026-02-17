@@ -24,17 +24,17 @@
   transition: opacity var(--splash-animation-duration) ease-out;
 }
 
-/* Fondo con imagen del caballero dorado - efecto Ken Burns */
+/* Fondo con imagen de portada PC - efecto Ken Burns mejorado */
 .splash-container::before {
   content: '';
   position: absolute;
   inset: -5%;
   width: 110%;
   height: 110%;
-  background: url('/assets/caballero_dorado.png') center/cover no-repeat;
+  background: url('/assets/icons/portada_pc.webp') center/cover no-repeat;
   z-index: 0;
-  filter: brightness(0.9) contrast(1.1) saturate(1.2);
-  animation: kenBurns 20s ease-in-out infinite alternate;
+  filter: brightness(0.8) contrast(1.2) saturate(1.3) hue-rotate(5deg);
+  animation: kenBurns 25s ease-in-out infinite alternate;
 }
 
 @keyframes kenBurns {
@@ -261,12 +261,12 @@
   opacity: 0;
 }
 
-/* Partículas doradas ascendentes */
+/* Partículas doradas ascendentes - mejoradas */
 .particle.gold {
   width: 4px;
   height: 4px;
   background: var(--splash-gold);
-  box-shadow: 
+  box-shadow:
     0 0 8px var(--splash-gold),
     0 0 16px var(--splash-gold-glow),
     0 0 24px rgba(255, 215, 0, 0.3);
@@ -281,6 +281,42 @@
 .particle.gold:nth-child(6) { left: 68%; animation-delay: 1.8s; animation-duration: 12s; }
 .particle.gold:nth-child(7) { left: 80%; animation-delay: 4.2s; animation-duration: 9s; }
 .particle.gold:nth-child(8) { left: 92%; animation-delay: 2.8s; animation-duration: 11s; }
+
+/* Partículas de energía azul */
+.particle.energy {
+  width: 3px;
+  height: 3px;
+  background: #4a9eff;
+  box-shadow:
+    0 0 6px #4a9eff,
+    0 0 12px rgba(74, 158, 255, 0.6),
+    0 0 18px rgba(74, 158, 255, 0.3);
+  animation: particleRiseEnergy 8s ease-in-out infinite;
+}
+
+.particle.energy:nth-child(19) { left: 8%; animation-delay: 0.5s; animation-duration: 10s; }
+.particle.energy:nth-child(20) { left: 25%; animation-delay: 2.1s; animation-duration: 12s; }
+.particle.energy:nth-child(21) { left: 48%; animation-delay: 1.7s; animation-duration: 9s; }
+.particle.energy:nth-child(22) { left: 72%; animation-delay: 3.3s; animation-duration: 11s; }
+.particle.energy:nth-child(23) { left: 88%; animation-delay: 0.9s; animation-duration: 8s; }
+
+/* Partículas de cristal púrpura */
+.particle.crystal {
+  width: 5px;
+  height: 5px;
+  background: linear-gradient(45deg, #8B5CF6, #A855F7);
+  clip-path: polygon(50% 0%, 100% 50%, 50% 100%, 0% 50%);
+  box-shadow:
+    0 0 10px #8B5CF6,
+    0 0 20px rgba(139, 92, 246, 0.5),
+    0 0 30px rgba(139, 92, 246, 0.2);
+  animation: crystalFloat 15s ease-in-out infinite;
+}
+
+.particle.crystal:nth-child(24) { left: 18%; top: 30%; animation-delay: 1s; }
+.particle.crystal:nth-child(25) { left: 45%; top: 50%; animation-delay: 4s; }
+.particle.crystal:nth-child(26) { left: 75%; top: 20%; animation-delay: 2.5s; }
+.particle.crystal:nth-child(27) { left: 32%; top: 70%; animation-delay: 6s; }
 
 @keyframes particleRiseGold {
   0% {
@@ -302,6 +338,49 @@
     bottom: 110%;
     opacity: 0;
     transform: translateX(-10px) scale(0.8);
+  }
+}
+
+@keyframes particleRiseEnergy {
+  0% {
+    bottom: -15px;
+    opacity: 0;
+    transform: translateX(0) scale(0.3) rotate(0deg);
+  }
+  8% {
+    opacity: 1;
+    transform: scale(1) rotate(90deg);
+  }
+  45% {
+    transform: translateX(-15px) scale(1.3) rotate(180deg);
+  }
+  92% {
+    opacity: 0.7;
+    transform: scale(0.9) rotate(270deg);
+  }
+  100% {
+    bottom: 105%;
+    opacity: 0;
+    transform: translateX(5px) scale(0.5) rotate(360deg);
+  }
+}
+
+@keyframes crystalFloat {
+  0%, 100% {
+    opacity: 0;
+    transform: translateY(0) rotate(0deg) scale(0.5);
+  }
+  15% {
+    opacity: 0.8;
+    transform: translateY(-20px) rotate(45deg) scale(1);
+  }
+  50% {
+    opacity: 1;
+    transform: translateY(-40px) rotate(90deg) scale(1.2);
+  }
+  85% {
+    opacity: 0.6;
+    transform: translateY(-20px) rotate(135deg) scale(0.9);
   }
 }
 
@@ -646,19 +725,63 @@
   height: 300%;
 }
 
-/* Botón principal - Jugar Ahora */
-.splash-btn-primary {
-  min-width: 240px;
-  padding: 1.2rem 2.5rem;
-  background: linear-gradient(135deg, #ffd700 0%, #ffb800 30%, #ff9500 70%, #ff7b00 100%);
-  border-radius: 16px;
-  box-shadow: 
-    0 6px 30px rgba(255, 215, 0, 0.5),
-    0 0 60px rgba(255, 180, 0, 0.3),
-    inset 0 2px 0 rgba(255, 255, 255, 0.4),
-    inset 0 -3px 0 rgba(0, 0, 0, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.3);
-  animation: primaryPulse 2s ease-in-out infinite;
+/* Botón portal materializado con mejor iluminación - MÁS GRANDE */
+.minimal-portal {
+  position: relative;
+  width: 200px;
+  height: 70px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2),
+    0 0 20px rgba(255, 215, 0, 0.1);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 1rem;
+  overflow: hidden;
+}
+
+.minimal-portal:hover {
+  background: #2a2a2a;
+  border-color: rgba(255, 215, 0, 0.4);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(255, 215, 0, 0.2),
+    0 1px 3px rgba(0, 0, 0, 0.3),
+    0 0 30px rgba(255, 215, 0, 0.3),
+    0 0 60px rgba(255, 180, 0, 0.2);
+}
+
+.minimal-portal:active {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.2),
+    0 0 15px rgba(255, 215, 0, 0.2);
+}
+
+.minimal-portal .btn-icon {
+  color: #ffd700;
+  font-size: 1.5rem;
+  filter: drop-shadow(0 0 8px rgba(255, 215, 0, 0.8));
+}
+
+.minimal-portal .btn-text {
+  font-size: 1.1rem;
+  font-weight: 500;
+  color: #ffffff;
+  text-shadow: 0 0 10px rgba(255, 255, 255, 0.8);
+  margin: 0;
+}
+
+.minimal-portal .btn-sub {
+  display: none;
 }
 
 @keyframes primaryPulse {
@@ -763,15 +886,103 @@
   filter: drop-shadow(0 0 4px var(--splash-gold-glow));
 }
 
-.splash-btn-secondary .btn-text {
-  font-size: 0.9rem;
-  font-weight: 700;
-  color: #fff;
-  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
-  letter-spacing: 0.03em;
+/* Botón sello materializado */
+.minimal-seal {
+  position: relative;
+  width: 160px;
+  height: 60px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  overflow: hidden;
 }
 
-/* Responsive para botones */
+.minimal-seal:hover {
+  background: #2a2a2a;
+  border-color: rgba(255, 215, 0, 0.3);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(255, 215, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.minimal-seal:active {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.minimal-seal .btn-icon {
+  color: #ffd700;
+  font-size: 1.2rem;
+}
+
+.minimal-seal .btn-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 0;
+}
+
+/* Botón libro materializado */
+.minimal-book {
+  position: relative;
+  width: 160px;
+  height: 60px;
+  background: #1a1a1a;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 8px;
+  box-shadow:
+    0 2px 8px rgba(0, 0, 0, 0.3),
+    0 1px 3px rgba(0, 0, 0, 0.2);
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  overflow: hidden;
+}
+
+.minimal-book:hover {
+  background: #2a2a2a;
+  border-color: rgba(255, 215, 0, 0.3);
+  transform: translateY(-1px);
+  box-shadow:
+    0 4px 16px rgba(0, 0, 0, 0.4),
+    0 2px 8px rgba(255, 215, 0, 0.1),
+    0 1px 3px rgba(0, 0, 0, 0.3);
+}
+
+.minimal-book:active {
+  transform: translateY(0);
+  box-shadow:
+    0 1px 4px rgba(0, 0, 0, 0.3),
+    0 1px 2px rgba(0, 0, 0, 0.2);
+}
+
+.minimal-book .btn-icon {
+  color: #ffd700;
+  font-size: 1.2rem;
+}
+
+.minimal-book .btn-text {
+  font-size: 0.9rem;
+  font-weight: 500;
+  color: #ffffff;
+  margin: 0;
+}
 @media (max-width: 480px) {
   .splash-btn-primary {
     min-width: 200px;

@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useIsGuest } from '../../stores/sessionStore';
 import { 
   EquipmentItem, 
   ConsumableItem, 
@@ -10,6 +11,7 @@ import {
   RARITY_NAMES 
 } from '../../types/item.types';
 import { inventoryService } from '../../services';
+import { getDemoInventory } from '../../services/demo.service';
 import './Inventory.css';
 
 /** Maps raw backend equipment item */
@@ -52,6 +54,7 @@ type InventoryTab = 'equipment' | 'consumables';
 const Inventory: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
+  const isGuest = useIsGuest();
   const [activeTab, setActiveTab] = useState<InventoryTab>('equipment');
   const [selectedItem, setSelectedItem] = useState<EquipmentItem | ConsumableItem | null>(null);
   const [equippedItems, setEquippedItems] = useState<EquippedItems>({
@@ -63,57 +66,80 @@ const Inventory: React.FC = () => {
   const [invError, setInvError] = useState<string | null>(null);
   const [invCapacity, setInvCapacity] = useState({ current: 0, max: 50 });
 
-  // Fetch real inventory data
+  // Fetch inventory data (real or demo)
   useEffect(() => {
-    if (loading || !user) return;
+    if (loading || (!user && !isGuest)) return;
     let cancelled = false;
 
     const fetchInventory = async () => {
       setInvLoading(true);
       setInvError(null);
       try {
-        const inventory = await inventoryService.getMyInventory();
-        if (cancelled) return;
+        if (isGuest) {
+          // Load demo inventory
+          const demoInventory = getDemoInventory();
+          if (cancelled) return;
 
-        const inv = inventory as any;
-
-        // Equipment
-        if (inv.equipment || inv.equipamiento) {
-          const eqArr = (inv.equipment || inv.equipamiento || []) as any[];
+          // Equipment - all in backpack for demo
           const equipped: EquippedItems = {
             weapon: null, armor: null, helmet: null, boots: null, accessory1: null, accessory2: null,
           };
-          const backpack: EquipmentItem[] = [];
-
-          eqArr.forEach((raw: any) => {
-            const item = mapEquipment(raw);
-            if (item.equipado) {
-              const slot = item.slot as keyof EquippedItems;
-              if (slot in equipped) {
-                equipped[slot] = item;
-              }
-            } else {
-              backpack.push(item);
-            }
-          });
-
           setEquippedItems(equipped);
-          setBackpackItems(backpack);
-        }
+          setBackpackItems(demoInventory.equipment);
 
-        // Consumables
-        if (inv.consumables || inv.consumibles) {
-          const conArr = (inv.consumables || inv.consumibles || []) as any[];
-          setConsumables(conArr.map(mapConsumable));
-        }
+          // Consumables
+          setConsumables(demoInventory.consumables);
 
-        // Capacity limits
-        if (inv.limits || inv.limites) {
-          const limits = inv.limits || inv.limites;
+          // Demo capacity
           setInvCapacity({
-            current: (inv.equipment?.length || 0) + (inv.consumables?.length || 0),
-            max: limits.maxEquipamiento || limits.maxEquipment || 50,
+            current: demoInventory.equipment.length + demoInventory.consumables.length,
+            max: 50,
           });
+        } else {
+          // Load real inventory
+          const inventory = await inventoryService.getMyInventory();
+          if (cancelled) return;
+
+          const inv = inventory as any;
+
+          // Equipment
+          if (inv.equipment || inv.equipamiento) {
+            const eqArr = (inv.equipment || inv.equipamiento || []) as any[];
+            const equipped: EquippedItems = {
+              weapon: null, armor: null, helmet: null, boots: null, accessory1: null, accessory2: null,
+            };
+            const backpack: EquipmentItem[] = [];
+
+            eqArr.forEach((raw: any) => {
+              const item = mapEquipment(raw);
+              if (item.equipado) {
+                const slot = item.slot as keyof EquippedItems;
+                if (slot in equipped) {
+                  equipped[slot] = item;
+                }
+              } else {
+                backpack.push(item);
+              }
+            });
+
+            setEquippedItems(equipped);
+            setBackpackItems(backpack);
+          }
+
+          // Consumables
+          if (inv.consumables || inv.consumibles) {
+            const conArr = (inv.consumables || inv.consumibles || []) as any[];
+            setConsumables(conArr.map(mapConsumable));
+          }
+
+          // Capacity limits
+          if (inv.limits || inv.limites) {
+            const limits = inv.limits || inv.limites;
+            setInvCapacity({
+              current: (inv.equipment?.length || 0) + (inv.consumables?.length || 0),
+              max: limits.maxEquipamiento || limits.maxEquipment || 50,
+            });
+          }
         }
 
       } catch (err: any) {
@@ -126,7 +152,7 @@ const Inventory: React.FC = () => {
 
     fetchInventory();
     return () => { cancelled = true; };
-  }, [loading, user]);
+  }, [loading, user, isGuest]);
 
   if (loading || invLoading) {
     return (

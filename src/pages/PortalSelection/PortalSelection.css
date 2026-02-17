@@ -180,6 +180,7 @@
   transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   border-radius: 16px;
   overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.1);
 }
 
 .portal-card::before {
@@ -381,6 +382,33 @@
 }
 
 /* ============================================================
+   CARD ACTION
+============================================================ */
+
+.card-action {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.card-click-hint {
+  font-size: 0.7rem;
+  color: rgba(255, 255, 255, 0.4);
+  font-family: 'Inter', sans-serif;
+  text-align: center;
+  opacity: 0.6;
+  transition: opacity 0.3s ease;
+  font-weight: 500;
+}
+
+.portal-card.hovered .card-click-hint {
+  opacity: 0.9;
+  color: rgba(255, 255, 255, 0.7);
+}
+
+/* ============================================================
    BOTÓN
 ============================================================ */
 
@@ -390,7 +418,6 @@
   justify-content: center;
   gap: 0.5rem;
   padding: 0.75rem 1.5rem;
-  margin-top: 0.5rem;
   border-radius: 12px;
   font-family: inherit;
   font-size: 0.95rem;
@@ -401,6 +428,9 @@
   transition: all 0.3s ease;
   border: 2px solid;
   background: transparent;
+  position: relative;
+  overflow: hidden;
+  width: 100%;
 }
 
 .card-btn svg {
@@ -410,27 +440,36 @@
 .portal-card.rpg .card-btn {
   border-color: var(--color-rpg);
   color: var(--color-rpg);
+  background: linear-gradient(135deg, rgba(74, 158, 255, 0.1) 0%, rgba(74, 158, 255, 0.05) 100%);
 }
 
 .portal-card.survival .card-btn {
   border-color: var(--color-survival);
   color: var(--color-survival);
+  background: linear-gradient(135deg, rgba(255, 74, 106, 0.1) 0%, rgba(255, 74, 106, 0.05) 100%);
 }
 
 .portal-card.rpg.hovered .card-btn {
-  background: var(--color-rpg);
+  background: linear-gradient(135deg, var(--color-rpg) 0%, rgba(74, 158, 255, 0.8) 100%);
   color: white;
   box-shadow: 0 0 25px var(--color-rpg-glow);
+  transform: scale(1.05);
 }
 
 .portal-card.survival.hovered .card-btn {
-  background: var(--color-survival);
+  background: linear-gradient(135deg, var(--color-survival) 0%, rgba(255, 74, 106, 0.8) 100%);
   color: white;
   box-shadow: 0 0 25px var(--color-survival-glow);
+  transform: scale(1.05);
 }
 
-.portal-card.hovered .card-btn svg {
-  transform: translateX(4px);
+.card-btn:active {
+  transform: scale(0.98);
+}
+
+.card-btn:focus {
+  outline: none;
+  box-shadow: 0 0 0 3px rgba(255, 215, 0, 0.3);
 }
 
 /* ============================================================
@@ -625,9 +664,13 @@
   }
   
   .card-btn {
-    padding: 0.5rem 1rem;
-    font-size: 0.8rem;
+    padding: 0.8rem 1.5rem;
+    font-size: 0.9rem;
     margin-top: 0.25rem;
+  }
+  
+  .card-click-hint {
+    font-size: 0.65rem;
   }
   
   .portals-divider {
@@ -723,8 +766,12 @@
   }
   
   .card-btn {
-    padding: 0.65rem 1.25rem;
-    font-size: 0.85rem;
+    padding: 0.85rem 1.5rem;
+    font-size: 0.9rem;
+  }
+  
+  .card-click-hint {
+    font-size: 0.7rem;
   }
   
   .portal-hint {

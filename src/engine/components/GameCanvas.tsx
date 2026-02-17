@@ -29,7 +29,11 @@ interface GameCanvasProps {
  */
 function EngineController() {
   const { gl, camera } = useThree();
-  const { updateStats, updateTime, setFps, setCameraPosition } = useEngineStore();
+  // Select only the functions we need to avoid subscribing to full store and causing re-renders
+  const updateStats = useEngineStore((s) => s.updateStats);
+  const updateTime = useEngineStore((s) => s.updateTime);
+  const setFps = useEngineStore((s) => s.setFps);
+  const setCameraPosition = useEngineStore((s) => s.setCameraPosition);
   
   useFrame((state, delta) => {
     // Actualizar tiempo
@@ -73,7 +77,7 @@ export function GameCanvas({
 }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { quality } = useGameStore();
-  const { viewDistance } = useEngineQuality();
+  const viewDistance = useEngineStore((s) => s.viewDistance);
   const { initialize, shutdown } = useEngineStore();
 
   // Configuración de calidad
@@ -110,11 +114,42 @@ export function GameCanvas({
           far: viewDistance,
           position: [0, 5, 10],
         }}
-        onCreated={({ gl }) => {
+        onCreated={({ gl, events }) => {
+          // existing renderer config
           gl.toneMapping = THREE.ACESFilmicToneMapping;
           gl.toneMappingExposure = 1;
           gl.shadowMap.enabled = true;
           gl.shadowMap.type = THREE.PCFSoftShadowMap;
+
+          // Diagnostic logs to help track WebGL context issues
+          try {
+            // Basic GL info
+            // eslint-disable-next-line no-console
+            console.debug('[GameCanvas] WebGL renderer info:', {
+              isContextLost: gl.isContextLost(),
+              version: gl.getParameter(gl.VERSION),
+              shadingLanguage: gl.getParameter(gl.SHADING_LANGUAGE_VERSION),
+              vendor: gl.getParameter(gl.VENDOR),
+              renderer: gl.getParameter(gl.RENDERER),
+            });
+
+            // Listen for context events on the canvas DOM element
+            const canvasEl = canvasRef.current as HTMLCanvasElement | null;
+            if (canvasEl && !canvasEl.hasAttribute('data-webgl-listeners')) {
+              canvasEl.addEventListener('webglcontextlost', (ev) => {
+                // eslint-disable-next-line no-console
+                console.error('[GameCanvas] webglcontextlost event', ev);
+              });
+              canvasEl.addEventListener('webglcontextrestored', (ev) => {
+                // eslint-disable-next-line no-console
+                console.info('[GameCanvas] webglcontextrestored event', ev);
+              });
+              canvasEl.setAttribute('data-webgl-listeners', '1');
+            }
+          } catch (err) {
+            // eslint-disable-next-line no-console
+            console.warn('[GameCanvas] diagnostics failed', err);
+          }
         }}
       >
         {/* Performance adapters */}

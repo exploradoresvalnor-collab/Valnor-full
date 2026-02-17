@@ -13,6 +13,7 @@ import { useGameModeStore, useGameMode } from '../../stores/gameModeStore';
 import { useActiveTeam, useTeamPower, useTeamStore } from '../../stores/teamStore';
 import { userService, characterService, teamService } from '../../services';
 import { authService } from '../../services/auth.service';
+import { useAuth } from '../../hooks/useAuth';
 import { mapToShowcase, mapToTeamMember, mapActivity, findActiveCharacter, mapStatsES } from '../../utils/mappers';
 import { EnergyBar, InventorySummary } from '../../components/ui';
 import { NotificationBell } from '../../components/notifications';
@@ -140,8 +141,10 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const isGuest = useIsGuest();
   const { guestProfile, endSession } = useSessionStore();
+  const { logout } = useAuth();
   const gameMode = useGameMode();
   const clearGameMode = useGameModeStore((s) => s.clearMode);
+  const setGameMode = useGameModeStore((s) => s.setMode);
 
   const characterId = usePlayerStore((s) => s.characterId);
   const characterName = usePlayerStore((s) => s.characterName);
@@ -357,9 +360,10 @@ const Dashboard = () => {
   // ── Handlers ──────────────────────────────────────────────
   const handleChangeMode = () => { clearGameMode(); navigate('/portals'); };
   const handleSelectMode = (mode: 'rpg' | 'survival') => {
+    setGameMode(mode);
     navigate(mode === 'rpg' ? '/dungeon' : '/survival');
   };
-  const handleLogout = useCallback(() => { endSession(); navigate('/splash'); }, [endSession, navigate]);
+  const handleLogout = useCallback(async () => { await logout(); }, [logout]);
 
   // Close dropdowns on outside click
   useEffect(() => {

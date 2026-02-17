@@ -32,6 +32,7 @@ const Inventory = lazy(() => import('./pages/Inventory'));
 const Shop = lazy(() => import('./pages/Shop'));
 const Marketplace = lazy(() => import('./pages/Marketplace'));
 const Dungeon = lazy(() => import('./pages/Dungeon'));
+const PlayDungeon = lazy(() => import('./pages/Dungeon/PlayDungeon'));
 const Ranking = lazy(() => import('./pages/Ranking'));
 const Survival = lazy(() => import('./pages/Survival'));
 const Profile = lazy(() => import('./pages/Profile'));
@@ -168,6 +169,15 @@ function App() {
                 <RequireModeSelection>
                   <GuestAccessGuard>
                     <Dungeon />
+                  </GuestAccessGuard>
+                </RequireModeSelection>
+              </RequireAuth>
+            } />
+            <Route path="/dungeon/play/:id" element={
+              <RequireAuth>
+                <RequireModeSelection>
+                  <GuestAccessGuard>
+                    <PlayDungeon />
                   </GuestAccessGuard>
                 </RequireModeSelection>
               </RequireAuth>

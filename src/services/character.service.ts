@@ -71,8 +71,18 @@ class CharacterService {
    * Backend devuelve { success, data: [...] }
    */
   async getMyCharacters(): Promise<CharacterData[]> {
-    const response = await api.get<any>(this.userCharactersPath);
-    return response.data || response.characters || [];
+    try {
+      const response = await api.get<any>(this.userCharactersPath);
+      return response.data || response.characters || [];
+    } catch (error: any) {
+      // Si es error de autenticación (401), retornar array vacío
+      if (error.status === 401) {
+        console.warn('[CharacterService] Usuario no autenticado, retornando array vacío');
+        return [];
+      }
+      // Para otros errores, relanzar
+      throw error;
+    }
   }
 
   /**

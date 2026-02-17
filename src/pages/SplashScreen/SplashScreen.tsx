@@ -123,30 +123,28 @@ function SplashScreen() {
           ) : (
             <div className={`splash-options ${isExiting ? 'exit' : ''}`}>
               {/* Botón principal - Modo Invitado */}
-              <button 
-                className="splash-btn splash-btn-primary"
+              <button
+                className="splash-btn splash-btn-primary minimal-portal"
                 onClick={handleGuestMode}
               >
-                <span className="btn-icon"><GiPlayButton size={28} color="#1a1a2e" /></span>
-                <span className="btn-text">Modo Invitado</span>
-                <span className="btn-sub">Juega sin registro</span>
+                <span className="btn-icon"><GiPlayButton size={24} /></span>
+                <span className="btn-text">Invitado</span>
               </button>
-              
               {/* Botones secundarios */}
               <div className="splash-btn-row">
-                <button 
-                  className="splash-btn splash-btn-secondary"
+                <button
+                  className="splash-btn splash-btn-secondary minimal-seal"
                   onClick={handleEnter}
                 >
-                  <span className="btn-icon"><FiUser size={20} /></span>
-                  <span className="btn-text">Entrar / Registro</span>
+                  <span className="btn-icon"><FiUser size={18} /></span>
+                  <span className="btn-text">Entrar</span>
                 </button>
-                
-                <button 
-                  className="splash-btn splash-btn-secondary"
+
+                <button
+                  className="splash-btn splash-btn-secondary minimal-book"
                   onClick={handleWiki}
                 >
-                  <span className="btn-icon"><GiSpellBook size={20} /></span>
+                  <span className="btn-icon"><GiSpellBook size={18} /></span>
                   <span className="btn-text">Wiki</span>
                 </button>
               </div>
@@ -166,6 +164,17 @@ function SplashScreen() {
         <div className="particle gold"></div>
         <div className="particle gold"></div>
         <div className="particle gold"></div>
+        {/* Partículas de energía azul */}
+        <div className="particle energy"></div>
+        <div className="particle energy"></div>
+        <div className="particle energy"></div>
+        <div className="particle energy"></div>
+        <div className="particle energy"></div>
+        {/* Partículas de cristal púrpura */}
+        <div className="particle crystal"></div>
+        <div className="particle crystal"></div>
+        <div className="particle crystal"></div>
+        <div className="particle crystal"></div>
         {/* Partículas de brillo */}
         <div className="particle sparkle"></div>
         <div className="particle sparkle"></div>

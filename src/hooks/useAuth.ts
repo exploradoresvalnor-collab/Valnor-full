@@ -88,7 +88,7 @@ export function useAuth() {
       await authService.logout();
       // Limpiar sesión (sale de modo auth/guest)
       useSessionStore.getState().endSession();
-      navigate('/splash');
+      navigate('/landing');
     } finally {
       setLoading(false);
     }

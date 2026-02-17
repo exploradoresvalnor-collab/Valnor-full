@@ -97,12 +97,22 @@ class ApiService {
    */
   async post<T>(endpoint: string, body: any, options?: RequestOptions): Promise<T> {
     const url = this.buildUrl(endpoint);
+    console.log('[API] POST request to:', url);
+    console.log('[API] POST body:', JSON.stringify(body, null, 2));
+
+    const headers = this.getHeaders(options?.headers);
+    console.log('[API] Headers:', { ...headers, Authorization: headers.Authorization ? '[PRESENT]' : '[MISSING]' });
+
     const response = await fetch(url, {
       method: 'POST',
-      headers: this.getHeaders(options?.headers),
+      headers,
       credentials: 'include',
       body: JSON.stringify(body),
     });
+
+    console.log('[API] Response status:', response.status);
+    console.log('[API] Response url:', response.url);
+
     return this.handleResponse<T>(response);
   }
 

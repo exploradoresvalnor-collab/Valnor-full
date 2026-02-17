@@ -156,7 +156,7 @@ export default function PortalSelection() {
           </div>
           <div className="header-text">
             <h1 className="main-title">Elige tu Destino</h1>
-            <p className="main-subtitle">Tu aventura comienza aquí</p>
+            <p className="main-subtitle">Selecciona el modo de juego que prefieras</p>
           </div>
         </header>
         
@@ -202,10 +202,13 @@ export default function PortalSelection() {
               </div>
             </div>
             
-            <button className="card-btn">
-              <span>Entrar</span>
-              <ArrowRightIcon size={18} />
-            </button>
+            <div className="card-action">
+              <button className="card-btn" onClick={(e) => { e.stopPropagation(); handleSelectPortal('rpg'); }}>
+                <span>Seleccionar Modo Historia</span>
+                <ArrowRightIcon size={18} />
+              </button>
+              <div className="card-click-hint">👆 Toca para seleccionar</div>
+            </div>
           </div>
           
           {/* Separador */}
@@ -254,16 +257,19 @@ export default function PortalSelection() {
               </div>
             </div>
             
-            <button className="card-btn">
-              <span>Entrar</span>
-              <ArrowRightIcon size={18} />
-            </button>
+            <div className="card-action">
+              <button className="card-btn" onClick={(e) => { e.stopPropagation(); handleSelectPortal('survival'); }}>
+                <span>Seleccionar Modo Survival</span>
+                <ArrowRightIcon size={18} />
+              </button>
+              <div className="card-click-hint">👆 Toca para seleccionar</div>
+            </div>
           </div>
         </div>
         
         {/* Footer hint */}
         <div className="portal-hint">
-          <span>Puedes cambiar de modo en cualquier momento desde el menú</span>
+          <span>💡 Puedes cambiar de modo en cualquier momento desde el menú principal</span>
         </div>
       </div>
       
