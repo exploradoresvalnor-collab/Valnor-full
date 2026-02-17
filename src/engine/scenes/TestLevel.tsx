@@ -19,7 +19,7 @@ interface TestLevelProps {
 function Ground() {
   return (
     <RigidBody type="fixed" colliders={false}>
-      <CuboidCollider args={[50, 0.5, 50]} position={[0, -0.5, 0]} />
+      <CuboidCollider args={[50, 0.5, 50]} position={[0, 0, 0]} />
       
       {/* Suelo principal */}
       <mesh receiveShadow position={[0, 0, 0]}>

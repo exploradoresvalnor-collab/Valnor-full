@@ -277,7 +277,7 @@ export default function PlayDungeon() {
             Directamente en el Physics world de GameCanvas (sin PhysicsWorldProvider anidado). */}
         {!glbUrl && !id?.startsWith('engine-') && (
           <RigidBody type="fixed" colliders={false}>
-            <CuboidCollider args={[50, 0.5, 50]} position={[0, -0.5, 0]} />
+            <CuboidCollider args={[50, 0.5, 50]} position={[0, 0, 0]} />
             <mesh receiveShadow position={[0, 0, 0]}>
               <boxGeometry args={[100, 1, 100]} />
               <meshStandardMaterial color="#3d5c3d" roughness={0.9} />

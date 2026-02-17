@@ -284,7 +284,7 @@ function CaveRoom({ position, size = 15 }: { position: [number, number, number];
   return (
     <RigidBody type="fixed" position={position} colliders={false}>
       {/* Suelo */}
-      <CuboidCollider args={[size / 2, 0.5, size / 2]} position={[0, -0.25, 0]} />
+      <CuboidCollider args={[size / 2, 0.5, size / 2]} position={[0, -0.5, 0]} />
       <mesh position={[0, 0, 0]} rotation={[-Math.PI / 2, 0, 0]} receiveShadow>
         <circleGeometry args={[size / 2, 16]} />
         <meshStandardMaterial color="#3a3535" roughness={0.95} />

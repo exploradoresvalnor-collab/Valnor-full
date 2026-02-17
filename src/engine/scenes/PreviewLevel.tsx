@@ -105,7 +105,7 @@ function FloatingIsland({ position }: { position: [number, number, number] }) {
 function MainPlatform() {
   return (
     <RigidBody type="fixed" colliders={false}>
-      <CuboidCollider args={[15, 0.5, 15]} position={[0, -0.5, 0]} />
+      <CuboidCollider args={[15, 0.5, 15]} position={[0, 0, 0]} />
       
       {/* Superficie principal */}
       <mesh receiveShadow position={[0, 0, 0]}>

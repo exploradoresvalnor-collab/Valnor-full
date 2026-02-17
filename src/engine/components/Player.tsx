@@ -3,7 +3,7 @@
  *
  * Arquitectura:
  * - RigidBody (Rapier) es la fuente de verdad para la posición
- * - meshRef es HIJO del RigidBody → su posición es LOCAL → solo offset de pies (-0.7)
+ * - meshRef es HIJO del RigidBody → su posición LOCAL es [0,0,0] → pies en base del capsule
  * - NO se hace lerp de posición (rapier ya maneja la interpolación visual)
  * - La rotación se aplica al meshRef (lockRotations impide que el body rote)
  * - Animación basada en VELOCIDAD (spring-smoothed) para estabilidad
@@ -184,10 +184,12 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
       <CapsuleCollider args={[0.4, 0.3]} position={[0, 0.7, 0]} />
 
       {/*
-        Container visual — offset Y = -0.7 alinea pies con base del collider.
+        Container visual — pies del modelo deben coincidir con la base del CapsuleCollider.
+        CapsuleCollider bottom = 0.7 - 0.4 - 0.3 = 0.0 (local), así que meshRef en Y=0
+        alinea los pies exactamente con el contacto físico del suelo.
         Posición MUNDO la maneja Rapier automáticamente. NO lerp manual.
       */}
-      <group ref={meshRef} position={[0, -0.7, 0]}>
+      <group ref={meshRef} position={[0, 0, 0]}>
         <group ref={tiltContainerRef}>
           <Suspense fallback={<CharacterPlaceholder />}>
             <CharacterModel3D
