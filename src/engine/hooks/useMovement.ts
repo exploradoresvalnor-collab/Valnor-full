@@ -18,6 +18,7 @@ import { RapierRigidBody, useRapier } from '@react-three/rapier';
 import * as THREE from 'three';
 import { useInput } from './useInput';
 import { VectorSpringSimulator, RelativeSpringSimulator } from '../utils/SpringSimulator';
+import { CollisionGroups } from '../components/PhysicsWorld';
 
 export interface MovementConfig {
   // Velocidades
@@ -210,8 +211,18 @@ export function useMovement(
     );
     
     // castRayAndGetNormal devuelve { collider, timeOfImpact, normal }
-    // castRay solo devuelve { collider, timeOfImpact } — SIN normal.
-    const hit = world.castRayAndGetNormal(ray, cfg.groundRayLength + 0.5, true, undefined, undefined, undefined, bodyRef.current);
+    // Filtrar por grupos para IGNORAR Triggers y al propio jugador (evita "raycast fantasma").
+    const RAY_FILTER = (CollisionGroups.PLAYER << 16) | (CollisionGroups.ALL & ~CollisionGroups.TRIGGER & ~CollisionGroups.PLAYER);
+
+    const hit = world.castRayAndGetNormal(
+      ray,
+      cfg.groundRayLength + 0.5,
+      true,
+      RAY_FILTER, // <-- ahora filtramos correctamente
+      undefined,
+      undefined,
+      bodyRef.current
+    );
 
     const wasGrounded = state.current.isGrounded;
 

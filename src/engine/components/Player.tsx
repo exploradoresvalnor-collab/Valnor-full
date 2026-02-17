@@ -107,11 +107,13 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
 
     // ── Kill Zone ──
     if (pos.y < KILL_ZONE_Y) {
-      bodyRef.current.setTranslation(
-        { x: spawnPos.current[0], y: spawnPos.current[1] + 2, z: spawnPos.current[2] },
-        true,
-      );
-      bodyRef.current.setLinvel({ x: 0, y: 0, z: 0 }, true);
+      // Usar movement.teleport() para restaurar posición física *y* resetear los springs
+      // (evita que velocitySpring aplique impulso acumulado después del teleport)
+      movement.teleport(new THREE.Vector3(
+        spawnPos.current[0],
+        spawnPos.current[1] + 2,
+        spawnPos.current[2]
+      ));
       return;
     }
 
