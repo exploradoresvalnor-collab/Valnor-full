@@ -12,8 +12,6 @@ import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { usePlayerStore, usePlayerStats, usePlayerWallet } from '../../stores/playerStore';
 import { useTeamMembers } from '../../stores/teamStore';
-import { useIsGuest } from '../../stores/sessionStore';
-import { GuestBanner } from '../../components/ui';
 import { CHARACTER_MODEL_MAP } from '../../config/character-models.config';
 import { rankingService, userService } from '../../services';
 import {
@@ -49,7 +47,6 @@ export function Profile() {
   const stats = usePlayerStats();
   const wallet = usePlayerWallet();
   const team = useTeamMembers();
-  const isGuest = useIsGuest();
 
   const [activeTab, setActiveTab] = useState<ProfileTab>('stats');
   const [achievements, setAchievements] = useState<
@@ -62,11 +59,6 @@ export function Profile() {
 
   /* ── fetch ───────────────────────────────────────── */
   useEffect(() => {
-    if (isGuest) {
-      setProfileLoading(false);
-      return;
-    }
-
     let cancelled = false;
 
     const fetchProfile = async () => {
@@ -171,7 +163,7 @@ export function Profile() {
     return () => {
       cancelled = true;
     };
-  }, [isGuest]);
+  }, []);
 
   /* ── helpers ─────────────────────────────────────── */
   const formatDate = (date: Date) => {
@@ -231,16 +223,6 @@ export function Profile() {
           <FiSettings /> Ajustes
         </button>
       </header>
-
-      {/* ── Guest Banner ── */}
-      {isGuest && (
-        <div className="profile-guest-banner">
-          <GuestBanner
-            message="Estás en modo demo. Crea una cuenta para guardar tu progreso y desbloquear todas las funciones."
-            variant="warning"
-          />
-        </div>
-      )}
 
       {profileLoading && (
         <div className="profile-loading">

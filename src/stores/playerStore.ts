@@ -442,7 +442,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           if (import.meta.env.DEV) {
             try {
               // Sobrescribir solo characterId después de rehydrate para evitar que
-              // el valor persistido (p. ej. guest/leviatan) prevalezca en dev.
+              // el valor persistido prevalezca en dev.
               storeApi.setState({ characterId: 'sir-nocturno' });
             } catch (e) {
               // noop

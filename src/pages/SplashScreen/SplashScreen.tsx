@@ -1,13 +1,12 @@
 /**
  * Splash Screen - Pantalla de inicio
  * Migrado desde Angular splash-screen.component
- * Ahora con opciones: Jugar como invitado o Iniciar sesión
+ * Opciones: Iniciar sesión o ver Wiki
  */
 
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSessionStore } from '../../stores/sessionStore';
-import { GiPlayButton, GiSpellBook } from 'react-icons/gi';
+import { GiSpellBook } from 'react-icons/gi';
 import { FiUser } from 'react-icons/fi';
 import './SplashScreen.css';
 
@@ -17,7 +16,6 @@ function SplashScreen() {
   const [isLandscape, setIsLandscape] = useState(false);
   const [showOptions, setShowOptions] = useState(false);
   const navigate = useNavigate();
-  const { startAsGuest, isInitialized } = useSessionStore();
 
   // Detectar orientación
   useEffect(() => {
@@ -47,22 +45,6 @@ function SplashScreen() {
     if (isAnimating) return;
     setShowOptions(true);
   }, [isAnimating]);
-
-  // Entrar como invitado
-  const handleGuestMode = useCallback(() => {
-    if (isAnimating) return;
-    
-    setIsAnimating(true);
-    setIsExiting(true);
-    
-    // Iniciar sesión como invitado
-    startAsGuest();
-
-    // Ir al dashboard
-    setTimeout(() => {
-      navigate('/dashboard');
-    }, 600);
-  }, [isAnimating, navigate, startAsGuest]);
 
   // Ir al landing (para registro/login)
   const handleEnter = useCallback(() => {
@@ -122,24 +104,16 @@ function SplashScreen() {
             </p>
           ) : (
             <div className={`splash-options ${isExiting ? 'exit' : ''}`}>
-              {/* Botón principal - Modo Invitado */}
+              {/* Botón principal - Entrar */}
               <button
                 className="splash-btn splash-btn-primary minimal-portal"
-                onClick={handleGuestMode}
+                onClick={handleEnter}
               >
-                <span className="btn-icon"><GiPlayButton size={24} /></span>
-                <span className="btn-text">Invitado</span>
+                <span className="btn-icon"><FiUser size={24} /></span>
+                <span className="btn-text">Entrar</span>
               </button>
-              {/* Botones secundarios */}
+              {/* Botón secundario */}
               <div className="splash-btn-row">
-                <button
-                  className="splash-btn splash-btn-secondary minimal-seal"
-                  onClick={handleEnter}
-                >
-                  <span className="btn-icon"><FiUser size={18} /></span>
-                  <span className="btn-text">Entrar</span>
-                </button>
-
                 <button
                   className="splash-btn splash-btn-secondary minimal-book"
                   onClick={handleWiki}

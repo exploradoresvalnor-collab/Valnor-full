@@ -65,9 +65,9 @@ describe('DungeonStore', () => {
   });
 
   describe('dungeon selection', () => {
-    beforeEach(() => {
+    beforeEach(async () => {
       // Load hardcoded dungeons for testing
-      useDungeonStore.getState().loadDungeons();
+      await useDungeonStore.getState().loadDungeons();
     });
 
     it('should select dungeon correctly', () => {
@@ -112,7 +112,54 @@ describe('DungeonStore', () => {
 
   describe('canEnterDungeon', () => {
     beforeEach(() => {
-      useDungeonStore.getState().loadDungeons();
+      // Evitar dependencia de backend en los tests: establecer dungeons explícitamente.
+      useDungeonStore.setState({
+        dungeons: [
+          {
+            id: 'forest-ruins',
+            name: 'Ruinas del Bosque',
+            description: 'Antiguas ruinas en el bosque',
+            difficulty: 'easy',
+            requiredLevel: 1,
+            energyCost: 5,
+            ticketCost: 1,
+            estimatedTime: '3-5 min',
+            waves: 5,
+            bossName: 'Guardian del Bosque',
+            rewards: { gold: { min: 50, max: 100 }, exp: { min: 100, max: 200 }, items: [], rareDropChance: 0.1 },
+            backgroundImage: 'forest-bg.jpg',
+            unlocked: true,
+          },
+          {
+            id: 'crystal-cave',
+            name: 'Caverna de Cristales',
+            description: 'Una cueva llena de cristales',
+            difficulty: 'normal',
+            requiredLevel: 5,
+            energyCost: 0,
+            ticketCost: 1,
+            estimatedTime: '3-5 min',
+            waves: 5,
+            bossName: 'Golem de Cristal',
+            rewards: { gold: { min: 150, max: 350 }, exp: { min: 250, max: 400 }, items: ['fragmento de cristal'], rareDropChance: 0.1 },
+            unlocked: true,
+          },
+          {
+            id: 'shadow-temple',
+            name: 'Templo de las Sombras',
+            description: 'Un templo maldito',
+            difficulty: 'hard',
+            requiredLevel: 10,
+            energyCost: 0,
+            ticketCost: 2,
+            estimatedTime: '5-8 min',
+            waves: 7,
+            bossName: 'Sacerdote Oscuro',
+            rewards: { gold: { min: 400, max: 800 }, exp: { min: 500, max: 750 }, items: ['tomo oscuro'], rareDropChance: 0.15 },
+            unlocked: true,
+          }
+        ]
+      });
     });
 
     it('should allow entry when requirements met', () => {

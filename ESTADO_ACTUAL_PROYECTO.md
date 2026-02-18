@@ -59,3 +59,42 @@ Hoy hemos avanzado fuertemente en la experiencia 3D de las Dungeons: implementam
 
 ---
 Si quieres, actualizo este archivo con más granularidad (por componente), genero issues desde los pendientes o implemento ahora la animación/patrulla del enemigo. ¿Cuál prefieres como siguiente tarea?
+
+---
+
+## Registro — 17 de febrero de 2026 (resumen de hoy)
+**Hora:** 17 de febrero de 2026 — 18:20
+
+### Resumen corto
+Hoy centramos el trabajo en la página `Teams`: implementamos un visor 3D «épico», migramos el panel de estadísticas dentro del Canvas (anclado al personaje), sustituimos partículas planas por orbes volumétricos, y mejoramos iluminación (modo diurno). Todo probado localmente y visualmente verificado; cambios todavía no push al remoto.
+
+### Cambios realizados (detallado)
+- `src/pages/Teams/Teams.tsx`
+  - Visor 3D: suelo reflectante pulido, anillo mágico, partículas volumétricas (ArcaneEmbers).
+  - Panel `ProStatsPanel` integrado dentro del Canvas (Html) y anclado al personaje; backdrop eliminado a petición.
+  - Iluminación: añadido modo diurno y ajuste de luces (spot + direccional).  
+  - Reducción y reubicación de partículas (evitan área del panel).
+  - Mejoras en ergonomía: `Float` para presencia del personaje; panel sin recubrimiento gris.
+- UI: `src/components/ui/ProStatsPanel.tsx`, `src/components/ui/ProStats.css` — nuevo componente de estadísticas estilo glassmorphism.
+- Visual tuning: ajustes a `MeshReflectorMaterial` (suavizado del reflejo) y a parámetros de Bloom para que el personaje permanezca nítido.
+- Sustitución de `Sparkles` por `ArcaneEmbers` (partículas volumétricas con blending aditivo y toneMapped=false).
+- Ajustes en `src/engine/components/TeamShowcase3D.tsx` (previas mejoras de exhibición y limpieza de DoF).
+
+### Estado actual
+- Visual / UX: Panel legible e integrado en escena; partículas no interfieren; escenario con iluminación diurna. ✅
+- Funcionalidad Demo: equip/use/save en modo Demo funcionan en cliente (no se tocó la lógica de backend). ✅
+- Repositorio: cambios locales; **no** se han push a remoto (esperando tu OK). ⚠️
+
+### Qué queda pendiente (sugerido)
+- Añadir toggle "Modo Épico" (activar/desactivar partículas + espejo). (siguiente recommended)
+- Añadir pruebas unitarias para handlers Demo en `Teams`. (importante)
+- Pruebas de rendimiento en dispositivos de gama baja y ajustar `MeshReflectorMaterial` si hace falta.
+
+### Acordado / decisiones tomadas hoy
+- Mantener demo como cliente‑only. ✅
+- Mostrar stats dentro del Canvas y anclar al personaje. ✅
+- Priorizar legibilidad sobre efectos visuales excesivos. ✅
+
+---
+
+¿Deseas que haga commit + push de los cambios de hoy, o que implemente primero el toggle "Modo Épico" y las pruebas unitarias?

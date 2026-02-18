@@ -1,13 +1,11 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useIsGuest } from '../../stores/sessionStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useActiveTeam } from '../../stores/teamStore';
 import { SurvivalBattle } from '../../components/survival';
 import { survivalService } from '../../services';
 import { socketService } from '../../services/socket.service';
-import { getDemoCharacters } from '../../services/demo.service';
 import './Survival.css';
 
 interface SurvivalStats {
@@ -45,7 +43,6 @@ const powerUps: PowerUp[] = [
 const Survival: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const isGuest = useIsGuest();
   
   const { energy, maxEnergy, useEnergy, addGold, addExperience, setCurrentHealth } = usePlayerStore();
   const team = useActiveTeam();
@@ -66,21 +63,6 @@ const Survival: React.FC = () => {
     const fetchSurvival = async () => {
       setSurvivalLoading(true);
       try {
-        if (isGuest) {
-          // Demo data for guests
-          setStats({
-            mejorOleada: 0,
-            partidasJugadas: 0,
-            totalEnemigosEliminados: 0,
-            tiempoTotalJugado: 0,
-            mejorRacha: 0,
-          });
-          setLeaderboard([
-            { posicion: 1, username: 'Jugador1', oleada: 25, tiempo: 180 },
-            { posicion: 2, username: 'Jugador2', oleada: 22, tiempo: 165 },
-            { posicion: 3, username: 'Jugador3', oleada: 20, tiempo: 150 },
-          ]);
-        } else {
           // Load real data
           const [myStats, lb] = await Promise.all([
             survivalService.getMyStats().catch(() => null),
@@ -112,7 +94,6 @@ const Survival: React.FC = () => {
               })));
             }
           }
-        }
       } catch (err) {
         console.error('[Survival] Error:', err);
       } finally {
@@ -122,7 +103,7 @@ const Survival: React.FC = () => {
 
     fetchSurvival();
     return () => { cancelled = true; };
-  }, [loading, isGuest]);
+  }, [loading]);
 
   // Configurar listeners de WebSocket para eventos en tiempo real
   useEffect(() => {
@@ -182,9 +163,9 @@ const Survival: React.FC = () => {
     return `${mins}m`;
   };
 
-  const userEnergy = isGuest ? 50 : energy; // Demo energy for guests
+  const userEnergy = energy;
   const energyCost = 15;
-  const hasTeam = isGuest ? getDemoCharacters().length > 0 : team.length > 0;
+  const hasTeam = team.length > 0;
   const canPlay = userEnergy >= energyCost && hasTeam;
 
   const handleStartGame = () => {
@@ -196,10 +177,8 @@ const Survival: React.FC = () => {
       return;
     }
     
-    // Consumir energía (solo para usuarios reales)
-    if (!isGuest) {
-      useEnergy(energyCost);
-    }
+    // Consumir energía
+    useEnergy(energyCost);
     
     // Iniciar batalla
     setShowBattle(true);

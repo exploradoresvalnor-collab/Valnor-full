@@ -6,7 +6,7 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSessionStore, useIsGuest } from '../../stores/sessionStore';
+import { useSessionStore } from '../../stores/sessionStore';
 import { usePlayerStore, usePlayerLevel, usePlayerHealth } from '../../stores/playerStore';
 import { useGameStore } from '../../stores/gameStore';
 import { useGameModeStore, useGameMode } from '../../stores/gameModeStore';
@@ -50,7 +50,6 @@ import {
   FiLogOut,
   FiUser,
   FiRefreshCw,
-  FiX,
   FiPlus,
 } from 'react-icons/fi';
 
@@ -139,8 +138,7 @@ function StatBar({ label, current, max, color, icon }: StatBarProps) {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const isGuest = useIsGuest();
-  const { guestProfile, endSession } = useSessionStore();
+  const { endSession } = useSessionStore();
   const { logout } = useAuth();
   const gameMode = useGameMode();
   const clearGameMode = useGameModeStore((s) => s.clearMode);
@@ -158,13 +156,10 @@ const Dashboard = () => {
   const { current: hp, max: maxHp } = usePlayerHealth();
   const { quality } = useGameStore();
 
-  const [showGuestBanner, setShowGuestBanner] = useState(true);
   const [showProfile, setShowProfile] = useState(false);
   const [, setDashboardLoading] = useState(false);
 
-  const playerName = isGuest
-    ? (guestProfile?.name || 'Invitado')
-    : (characterName || 'Aventurero');
+  const playerName = characterName || 'Aventurero';
   const playerClass = characterClass || 'warrior';
 
   // ── Backend data ──────────────────────────────────────────
@@ -198,7 +193,6 @@ const Dashboard = () => {
   }, [teamShowcasePersonajes]);
 
   useEffect(() => {
-    if (isGuest) return;
     let cancelled = false;
 
     const load = async () => {
@@ -338,7 +332,7 @@ const Dashboard = () => {
     };
     load();
     return () => { cancelled = true; };
-  }, [isGuest]);
+  }, []);
 
   const displayActivity = useMemo(() => {
     if (recentActivity.length > 0) return recentActivity;
@@ -374,22 +368,6 @@ const Dashboard = () => {
     return () => document.removeEventListener('click', handler);
   }, []);
 
-  // Init guest player
-  useEffect(() => {
-    if (isGuest && !characterId) {
-      initPlayer({
-        characterId: `guest_${Date.now()}`,
-        characterName: guestProfile?.name || 'Invitado',
-        characterClass: 'warrior',
-        level: 1,
-        gold: 100,
-        gems: 10,
-        energy: 50,
-        maxEnergy: 50,
-      });
-    }
-  }, [isGuest, characterId, guestProfile?.name, initPlayer]);
-
   // ── RENDER ────────────────────────────────────────────────
   return (
     <div className="dashboard">
@@ -411,21 +389,6 @@ const Dashboard = () => {
           <span className="dash-bg__particle">&#x2736;</span>
         </div>
       </div>
-
-      {/* ===== BANNER INVITADO ===== */}
-      {isGuest && showGuestBanner && (
-        <div className="guest-banner">
-          <div className="guest-banner__body">
-            <GiCrystalGrowth size={16} color="#ffd700" />
-            <span>Modo Demo</span>
-            <span className="guest-banner__dot">·</span>
-            <span className="guest-banner__cta" onClick={() => navigate('/auth/register')}>Guardar progreso</span>
-          </div>
-          <button className="guest-banner__close" onClick={() => setShowGuestBanner(false)}>
-            <FiX size={14} />
-          </button>
-        </div>
-      )}
 
       {/* ===== HEADER PRO ===== */}
       <header className="dash-header">
@@ -498,15 +461,9 @@ const Dashboard = () => {
                 <GiTrophy size={16} /> Mi Ranking
               </button>
               <hr className="dropdown__hr" />
-              {isGuest ? (
-                <button className="dropdown__item dropdown__item--gold" onClick={() => { setShowProfile(false); navigate('/auth/register'); }}>
-                  <FiUser size={16} /> Crear Cuenta
-                </button>
-              ) : (
-                <button className="dropdown__item" onClick={() => { setShowProfile(false); navigate('/settings'); }}>
-                  <FiSettings size={16} /> Editar Perfil
-                </button>
-              )}
+              <button className="dropdown__item" onClick={() => { setShowProfile(false); navigate('/settings'); }}>
+                <FiSettings size={16} /> Editar Perfil
+              </button>
             </div>
           )}
 
@@ -652,16 +609,12 @@ const Dashboard = () => {
               title="Tienda"
               color="orange"
               onClick={() => navigate('/shop')}
-              locked={isGuest}
-              lockMessage="Regístrate"
             />
             <ActionCard
               icon={<GiSwapBag size={24} />}
               title="Mercado"
               color="blue"
               onClick={() => navigate('/marketplace')}
-              locked={isGuest}
-              lockMessage="Regístrate"
             />
             <ActionCard
               icon={<GiThreeFriends size={24} />}
@@ -686,7 +639,6 @@ const Dashboard = () => {
             <div className="player-card__info">
               <h3 className="player-card__name">
                 {playerName.toUpperCase()}
-                {isGuest && <span className="player-card__demo">DEMO</span>}
               </h3>
               <span className="player-card__class">{playerClass}</span>
             </div>
@@ -710,18 +662,6 @@ const Dashboard = () => {
           {/* Inventario resumen */}
           <InventorySummary />
 
-          {/* CTA invitado */}
-          {isGuest && (
-            <div className="cta-box">
-              <h4><GiCrystalGrowth size={18} /> Regístrate y obtén:</h4>
-              <ul>
-                <li><GiTwoCoins size={14} /> 500 VAL de bienvenida</li>
-                <li><GiKnapsack size={14} /> Paquete Pionero GRATIS</li>
-                <li><GiUpgrade size={14} /> Guarda tu progreso</li>
-              </ul>
-              <button className="cta-box__btn" onClick={() => navigate('/auth/register')}>Crear Cuenta Gratis</button>
-            </div>
-          )}
         </aside>
       </main>
 

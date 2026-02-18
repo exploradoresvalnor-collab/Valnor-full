@@ -72,13 +72,6 @@
   color: #e74c3c;
 }
 
-/* Guest Banner */
-.settings-guest-banner {
-  max-width: 1200px;
-  margin: 0 auto;
-  padding: 1rem 1rem 0;
-}
-
 /* Container */
 .settings-container {
   display: flex;

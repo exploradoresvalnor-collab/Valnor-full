@@ -11,6 +11,7 @@ export * from './socket.service';
 export * from './user.service';
 export * from './inventory.service';
 export * from './character.service';
+export * from './guest.service';
 
 // Equipos y tienda
 export * from './team.service';

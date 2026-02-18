@@ -1,15 +1,4 @@
-/**
- * Player - Componente del jugador con física, controles y Character Tilt
- *
- * Arquitectura:
- * - RigidBody (Rapier) es la fuente de verdad para la posición
- * - meshRef es HIJO del RigidBody → su posición LOCAL es [0,0,0] → pies en base del capsule
- * - NO se hace lerp de posición (rapier ya maneja la interpolación visual)
- * - La rotación se aplica al meshRef (lockRotations impide que el body rote)
- * - Animación basada en VELOCIDAD (spring-smoothed) para estabilidad
- */
-
-import { useRef, useEffect, useState, Suspense } from 'react';
+import { useRef, useEffect, useState, Suspense, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import { RigidBody, CapsuleCollider, RapierRigidBody } from '@react-three/rapier';
 import * as THREE from 'three';
@@ -19,17 +8,12 @@ import { useInput } from '../hooks/useInput';
 import { usePlayerStore } from '../../stores/playerStore';
 import { CollisionGroups } from './PhysicsWorld';
 import { CharacterModel3D, CharacterPlaceholder } from './CharacterModel3D';
+import { useAnimationSystem, type AnimationState } from '../systems/AnimationSystem';
 
 interface PlayerProps {
   position?: [number, number, number];
   onReady?: () => void;
 }
-
-// ── Umbrales de velocidad para animación (con histéresis) ──
-const SPEED_WALK_START = 0.5;   // empezar Walk cuando speed > 0.5
-const SPEED_WALK_STOP  = 0.3;   // volver a Idle cuando speed < 0.3
-const SPEED_RUN_START  = 8.0;   // empezar Run cuando speed > 8
-const SPEED_RUN_STOP   = 6.0;   // volver a Walk cuando speed < 6
 
 // Temporales reutilizados (evitan allocaciones por frame)
 const _tmpQuat = new THREE.Quaternion();
@@ -49,8 +33,8 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
     mouseSensitivity: 0.003,
   });
 
-  // Pointer lock para cámara RPG (registra handlers globales de ratón)
-  useInput({ capturePointerLock: true });
+  // Input
+  const input = useInput({ capturePointerLock: true });
 
   const movement = useMovement(bodyRef, camera, {
     walkSpeed: 4,
@@ -59,9 +43,24 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
     jumpForce: 8,
   });
 
-  // ── Animation state (via useState para triggear re-render en CharacterModel3D) ──
-  const [currentAnimation, setCurrentAnimation] = useState('Idle');
-  const prevAnimRef = useRef('Idle');
+  // --- Animation System ---
+  const [animationData, setAnimationData] = useState<{
+    mixer: THREE.AnimationMixer;
+    animations: Map<AnimationState, THREE.AnimationClip>;
+  } | null>(null);
+
+  const animationSystem = useAnimationSystem({
+    mixer: animationData?.mixer,
+    animations: animationData?.animations || new Map(),
+  });
+
+  const handleAnimationsReady = useCallback(
+    (mixer: THREE.AnimationMixer, animations: Map<AnimationState, THREE.AnimationClip>) => {
+      setAnimationData({ mixer, animations });
+    },
+    [],
+  );
+  // ---
 
   // ── Refs para throttle de store updates ──
   const prevGroundedRef = useRef<boolean | null>(null);
@@ -83,7 +82,7 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
   // Frame loop
   // ────────────────────────────────────────────────────────────
   useFrame((_, delta) => {
-    if (!bodyRef.current || !meshRef.current) return;
+    if (!bodyRef.current || !meshRef.current || !animationSystem) return;
     const dt = Math.min(delta, 0.05);
 
     const pos = bodyRef.current.translation();
@@ -107,8 +106,6 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
 
     // ── Kill Zone ──
     if (pos.y < KILL_ZONE_Y) {
-      // Usar movement.teleport() para restaurar posición física *y* resetear los springs
-      // (evita que velocitySpring aplique impulso acumulado después del teleport)
       movement.teleport(new THREE.Vector3(
         spawnPos.current[0],
         spawnPos.current[1] + 2,
@@ -117,36 +114,21 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
       return;
     }
 
-    // ── Animación basada en VELOCIDAD con histéresis ──
-    // Esto evita el flickeo Walk↔Idle que ocurría con isMoving (binario).
-    const speed = movement.speed;
-    const prev = prevAnimRef.current;
-    let anim: string;
+    // ── Animation Control ──
+    // Delegar al sistema de animación para que decida el estado correcto
+    animationSystem.updateFromMovement(
+      movement.isMoving,
+      movement.isSprinting,
+      movement.isGrounded,
+      movement.velocity.y
+    );
 
-    if (prev === 'Idle') {
-      anim = speed > SPEED_WALK_START ? 'Walk' : 'Idle';
-    } else if (prev === 'Run') {
-      if (speed < SPEED_WALK_STOP) anim = 'Idle';
-      else if (speed < SPEED_RUN_STOP) anim = 'Walk';
-      else anim = 'Run';
-    } else {
-      // Walk
-      if (speed < SPEED_WALK_STOP) anim = 'Idle';
-      else if (speed > SPEED_RUN_START) anim = 'Run';
-      else anim = 'Walk';
-    }
-
-    if (anim !== prev) {
-      setCurrentAnimation(anim);
-      prevAnimRef.current = anim;
-      if (import.meta.env.DEV) {
-        console.log(`[Player] animation → "${anim}" speed=${speed.toFixed(2)} grounded=${movement.isGrounded}`);
-      }
+    // Trigger de ataque
+    if (input.isAttacking) {
+      animationSystem.play('attack1', { force: true });
     }
 
     // ── Rotación visual suave ──
-    // meshRef es hijo del RigidBody con lockRotations → localRot = worldRot.
-    // atan2(x,z) apunta +Z del modelo hacia la dirección de movimiento.
     const dir = movement.facingDirection;
     const targetRotation = Math.atan2(dir.x, dir.z);
     _tmpQuat.setFromEuler(_tmpEuler.set(0, targetRotation, 0));
@@ -154,7 +136,7 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
 
     // ── Character Tilt (inclinación lateral al girar) ──
     if (tiltContainerRef.current) {
-      const tiltAmount = -movement.angularVelocity * TILT_MULTIPLIER * Math.min(speed / 7, 1);
+      const tiltAmount = -movement.angularVelocity * TILT_MULTIPLIER * Math.min(movement.speed / 7, 1);
       const clampedTilt = THREE.MathUtils.clamp(tiltAmount, -0.25, 0.25);
       tiltContainerRef.current.rotation.z = THREE.MathUtils.lerp(
         tiltContainerRef.current.rotation.z,
@@ -184,21 +166,15 @@ export function Player({ position = [0, 2, 0], onReady }: PlayerProps) {
       }
     >
       <CapsuleCollider args={[0.4, 0.3]} position={[0, 0.7, 0]} />
-
-      {/*
-        Container visual — pies del modelo deben coincidir con la base del CapsuleCollider.
-        CapsuleCollider bottom = 0.7 - 0.4 - 0.3 = 0.0 (local), así que meshRef en Y=0
-        alinea los pies exactamente con el contacto físico del suelo.
-        Posición MUNDO la maneja Rapier automáticamente. NO lerp manual.
-      */}
+      
       <group ref={meshRef} position={[0, 0, 0]}>
         <group ref={tiltContainerRef}>
           <Suspense fallback={<CharacterPlaceholder />}>
             <CharacterModel3D
               personajeId={characterId}
               characterClass={characterClass}
-              animation={currentAnimation}
               withWeapon={isInCombat}
+              onAnimationsReady={handleAnimationsReady}
             />
           </Suspense>
         </group>

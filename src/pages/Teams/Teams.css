@@ -514,13 +514,15 @@
 /* 3D Canvas */
 .viewer-3d {
   flex-shrink: 0;
-  height: 300px;
-  min-height: 250px;
+  height: 520px; /* aumentado para que la escena ocupe más espacio ahora que las stats están dentro del Canvas */
+  min-height: 420px;
   position: relative;
   border-radius: 8px;
   margin: 0 14px;
   overflow: hidden;
   border: 1px solid rgba(255, 215, 0, 0.06);
+  /* Fondo diurno (sky) */
+  background: linear-gradient(180deg, #a7d8ff 0%, #dfefff 45%, #f4fbff 100%);
 }
 
 .viewer-3d canvas { border-radius: 8px; }

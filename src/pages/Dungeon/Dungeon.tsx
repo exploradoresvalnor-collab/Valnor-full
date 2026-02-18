@@ -1,44 +1,10 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useIsGuest } from '../../stores/sessionStore';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useActiveTeam } from '../../stores/teamStore';
 import type { Dungeon as DungeonType } from '../../stores/dungeonStore';
-import { getDemoCharacters } from '../../services/demo.service';
 import { useTeamStore } from '../../stores/teamStore';
-
-// Map CharacterData (demo) -> TeamMember
-function mapDemoToTeam(char: any) {
-  // map classes not present in TeamMember to closest match
-  const classMap: Record<string, string> = {
-    necromancer: 'mage',
-    berserker: 'warrior',
-    monk: 'rogue',
-    paladin: 'paladin',
-    archer: 'archer',
-    warrior: 'warrior',
-    mage: 'mage',
-    rogue: 'rogue',
-    healer: 'healer',
-  };
-
-  const mappedClass = (classMap[String(char.class).toLowerCase()] || 'warrior') as any;
-
-  return {
-    id: char.id,
-    name: char.name,
-    level: char.level || 1,
-    class: mappedClass,
-    rarity: char.rarity || 'common',
-    stats: char.stats ? {
-      attack: char.stats.attack ?? 10,
-      defense: char.stats.defense ?? 5,
-      health: char.stats.health ?? (char.stats.vida ?? 100),
-      speed: char.stats.speed ?? 10,
-    } : undefined,
-  };
-}
 import { dungeonService } from '../../services';
 import { DungeonBattle } from '../../components/dungeons/DungeonBattle';
 import DungeonModelPreview from '../../engine/components/DungeonModelPreview';
@@ -137,7 +103,6 @@ const ENGINE_DUNGEONS: DungeonInfo[] = [
 const Dungeon: React.FC = () => {
   const navigate = useNavigate();
   const { loading } = useAuth();
-  const isGuest = useIsGuest();
 
   const { level: playerLevel, energy, maxEnergy, addGold, addExperience, useEnergy } = usePlayerStore();
   const team = useActiveTeam();
@@ -151,15 +116,6 @@ const Dungeon: React.FC = () => {
   const [dungeonLoading, setDungeonLoading] = useState(true);
   const gridRef = useRef<HTMLDivElement | null>(null);
 
-  // Inject demo team when modal opens for guests (so cinematic preview/team display works)
-  useEffect(() => {
-    if (showEnterModal && isGuest && team.length === 0 && selectedDungeon) {
-      const demo = getDemoCharacters();
-      const mapped = demo.map(mapDemoToTeam);
-      useTeamStore.getState().setTeam(mapped);
-    }
-  }, [showEnterModal, isGuest, team.length, selectedDungeon]);
-
   // Fetch dungeons (real or demo)
   useEffect(() => {
     let cancelled = false;
@@ -167,54 +123,6 @@ const Dungeon: React.FC = () => {
     const fetchDungeons = async () => {
       setDungeonLoading(true);
       try {
-        if (isGuest) {
-          // Demo dungeons for guests
-          const demoDungeons: DungeonInfo[] = [
-            {
-              id: 'demo-dungeon-1',
-              nombre: 'Mazmorra de Entrenamiento',
-              descripcion: 'Una mazmorra básica para principiantes.',
-              nivelMinimo: 1,
-              nivelMaximo: 5,
-              dificultad: 'easy',
-              costoEnergia: 10,
-              recompensas: {
-                valMin: 50,
-                valMax: 100,
-                evoMin: 10,
-                evoMax: 25,
-                items: ['pocion-salud'],
-              },
-              enemigos: ['Goblin', 'Orco'],
-              boss: 'Orco Jefe',
-              pisos: 3,
-              completado: false,
-            },
-            {
-              id: 'demo-dungeon-2',
-              nombre: 'Cueva Oscura',
-              descripcion: 'Explora las profundidades de esta cueva misteriosa.',
-              nivelMinimo: 3,
-              nivelMaximo: 8,
-              dificultad: 'normal',
-              costoEnergia: 15,
-              recompensas: {
-                valMin: 100,
-                valMax: 200,
-                evoMin: 20,
-                evoMax: 40,
-                items: ['pocion-mana', 'espada-hierro'],
-              },
-              enemigos: ['Murciélago', 'Araña Gigante', 'Esqueleto'],
-              boss: 'Lich',
-              pisos: 5,
-              completado: false,
-            },
-          ];
-          if (!cancelled) {
-            setDungeonsList([...demoDungeons, ...ENGINE_DUNGEONS]);
-          }
-        } else {
           console.log('[Dungeon] Loading real dungeons from backend');
           try {
             const result = await dungeonService.getDungeons();
@@ -234,7 +142,6 @@ const Dungeon: React.FC = () => {
             // Fallback to empty array but keep engine scenes
             setDungeonsList([...ENGINE_DUNGEONS]);
           }
-        }
       } catch (err) {
         console.error('[Dungeon] Error fetching dungeons:', err);
       } finally {
@@ -244,7 +151,7 @@ const Dungeon: React.FC = () => {
 
     fetchDungeons();
     return () => { cancelled = true; };
-  }, [isGuest]);
+  }, []);
 
   // Close modal with Escape key and trap focus hint
   useEffect(() => {
@@ -264,8 +171,8 @@ const Dungeon: React.FC = () => {
     );
   }
 
-  const userLevel = isGuest ? 5 : playerLevel; // Demo level for guests
-  const userEnergy = isGuest ? 50 : energy; // Demo energy for guests
+  const userLevel = playerLevel;
+  const userEnergy = energy;
 
   const canEnter = (dungeon: DungeonInfo) => {
     return userLevel >= dungeon.nivelMinimo && userEnergy >= dungeon.costoEnergia;
@@ -277,21 +184,12 @@ const Dungeon: React.FC = () => {
     // Verificar si hay equipo activo (demo o real)
     const hasTeam = team.length > 0;
     if (!hasTeam) {
-      if (isGuest) {
-        // Inject demo characters into team store so DungeonBattle has participants
-        const demo = getDemoCharacters();
-        const mapped = demo.map(mapDemoToTeam);
-        useTeamStore.getState().setTeam(mapped);
-      } else {
-        alert('¡Necesitas un equipo para entrar a la dungeon!');
-        return;
-      }
+      alert('¡Necesitas un equipo para entrar a la dungeon!');
+      return;
     }
     
-    // Usar energía (solo para usuarios reales)
-    if (!isGuest) {
-      useEnergy(selectedDungeon.costoEnergia);
-    }
+    // Usar energía
+    useEnergy(selectedDungeon.costoEnergia);
     
     // Navegar a la pantalla de juego (carga la escena 3D). El combate NO se ejecuta automáticamente; el motor
     // de juego debe gestionar el inicio del combate cuando el jugador alcance al enemigo.
@@ -416,15 +314,10 @@ const Dungeon: React.FC = () => {
       {showEnterModal && selectedDungeon && (
         <div className="modal-overlay" onClick={() => setShowEnterModal(false)}>
           <div className="enter-modal" onClick={e => e.stopPropagation()}>
-            <div style={{ position: 'relative', width: '100%', height: isGuest ? 420 : 'auto' }}>
+            <div style={{ position: 'relative', width: '100%', height: 'auto' }}>
               {/* No renderizar la escena 3D dentro del modal. Usar thumbnail o placeholder. */}
-              {isGuest && (
-                <div style={{ position: 'absolute', inset: 0, zIndex: 0, display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'rgba(0,0,0,0.35)', borderRadius: 8 }}>
-                  <img src={`/assets/dungeons/${selectedDungeon.id}.jpg`} alt={selectedDungeon.nombre} style={{ maxWidth: '60%', maxHeight: '90%', borderRadius: 8, boxShadow: '0 8px 24px rgba(0,0,0,0.6)' }} />
-                </div>
-              )}
 
-              <div style={{ position: 'relative', zIndex: 2, padding: 16, background: isGuest ? 'rgba(6,10,18,0.6)' : 'var(--modal-bg)', borderRadius: 8 }}>
+              <div style={{ position: 'relative', zIndex: 2, padding: 16, background: 'var(--modal-bg)', borderRadius: 8 }}>
                 <h3>⚔️ Entrar a la Dungeon</h3>
                 
                 <div className="modal-dungeon">
@@ -505,7 +398,7 @@ const Dungeon: React.FC = () => {
                   </div>
                 )}
 
-                {(!isGuest && team.length === 0) && (
+                {(team.length === 0) && (
                   <div className="modal-warning team-warning">
                     ⚠️ ¡No tienes equipo activo! Ve al Dashboard para configurar tu equipo.
                   </div>
@@ -532,8 +425,8 @@ const Dungeon: React.FC = () => {
                   <button 
                     className="confirm-btn" 
                     onClick={handleEnterDungeon}
-                    disabled={(!isGuest && team.length === 0) || !canEnter(selectedDungeon)}
-                    title={(!isGuest && team.length === 0) ? 'No tienes equipo activo' : (!canEnter(selectedDungeon) ? 'Requisitos no cumplidos' : '')}
+                    disabled={team.length === 0 || !canEnter(selectedDungeon)}
+                    title={team.length === 0 ? 'No tienes equipo activo' : (!canEnter(selectedDungeon) ? 'Requisitos no cumplidos' : '')}
                   >
                     ⚔️ ¡Adelante!
                   </button>

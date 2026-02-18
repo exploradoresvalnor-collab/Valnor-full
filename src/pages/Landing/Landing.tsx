@@ -5,6 +5,7 @@
 
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { startDemoSession } from '../../services';
 import './Landing.css';
 
 const Landing = () => {
@@ -44,9 +45,10 @@ const Landing = () => {
     closeMobileMenu();
     setHeroState('exit');
 
-    // Navigate after animation - ir al splash para elegir modo
+    // Iniciar sesión demo y navegar a selección de modo tras la animación
     setTimeout(() => {
-      navigate('/splash');
+      startDemoSession();
+      navigate('/portals');
     }, 600);
   }, [isEntering, navigate]);
 

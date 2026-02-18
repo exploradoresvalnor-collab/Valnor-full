@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useIsGuest } from '../../stores/sessionStore';
 import { usePlayerStore } from '../../stores/playerStore';
-import { GuestBanner } from '../../components/ui';
 import { Item, ItemRarity, RARITY_COLORS, RARITY_NAMES } from '../../types/item.types';
 import { inventoryService, shopService, userService } from '../../services';
 import './Shop.css';
@@ -37,7 +35,6 @@ type SortOption = 'price-asc' | 'price-desc' | 'level' | 'rarity';
 const Shop: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const isGuest = useIsGuest();
   const gold = usePlayerStore((s) => s.gold);
   const [category, setCategory] = useState<ShopCategory>('all');
   const [sortBy, setSortBy] = useState<SortOption>('price-asc');
@@ -58,7 +55,7 @@ const Shop: React.FC = () => {
 
   // Fetch real shop data
   useEffect(() => {
-    if (isGuest || loading) return;
+    if (loading) return;
     let cancelled = false;
 
     const fetchShop = async () => {
@@ -106,7 +103,7 @@ const Shop: React.FC = () => {
 
     fetchShop();
     return () => { cancelled = true; };
-  }, [isGuest, loading]);
+  }, [loading]);
 
   if (loading || shopLoading) {
     return (
@@ -219,16 +216,6 @@ const Shop: React.FC = () => {
           <span className="wallet-label">VAL</span>
         </div>
       </header>
-
-      {/* Banner para invitados */}
-      {isGuest && (
-        <div className="shop-guest-banner">
-          <GuestBanner 
-            message="Puedes ver los items pero no comprar. Regístrate para desbloquear la tienda completa."
-            variant="locked"
-          />
-        </div>
-      )}
 
       <div className="shop-container">
         {/* Sidebar */}

@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useIsGuest } from '../../stores/sessionStore';
 import { 
   EquipmentItem, 
   ConsumableItem, 
@@ -11,7 +10,6 @@ import {
   RARITY_NAMES 
 } from '../../types/item.types';
 import { inventoryService } from '../../services';
-import { getDemoInventory } from '../../services/demo.service';
 import './Inventory.css';
 
 /** Maps raw backend equipment item */
@@ -54,7 +52,6 @@ type InventoryTab = 'equipment' | 'consumables';
 const Inventory: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const isGuest = useIsGuest();
   const [activeTab, setActiveTab] = useState<InventoryTab>('equipment');
   const [selectedItem, setSelectedItem] = useState<EquipmentItem | ConsumableItem | null>(null);
   const [equippedItems, setEquippedItems] = useState<EquippedItems>({
@@ -68,34 +65,13 @@ const Inventory: React.FC = () => {
 
   // Fetch inventory data (real or demo)
   useEffect(() => {
-    if (loading || (!user && !isGuest)) return;
+    if (loading || !user) return;
     let cancelled = false;
 
     const fetchInventory = async () => {
       setInvLoading(true);
       setInvError(null);
       try {
-        if (isGuest) {
-          // Load demo inventory
-          const demoInventory = getDemoInventory();
-          if (cancelled) return;
-
-          // Equipment - all in backpack for demo
-          const equipped: EquippedItems = {
-            weapon: null, armor: null, helmet: null, boots: null, accessory1: null, accessory2: null,
-          };
-          setEquippedItems(equipped);
-          setBackpackItems(demoInventory.equipment);
-
-          // Consumables
-          setConsumables(demoInventory.consumables);
-
-          // Demo capacity
-          setInvCapacity({
-            current: demoInventory.equipment.length + demoInventory.consumables.length,
-            max: 50,
-          });
-        } else {
           // Load real inventory
           const inventory = await inventoryService.getMyInventory();
           if (cancelled) return;
@@ -140,7 +116,6 @@ const Inventory: React.FC = () => {
               max: limits.maxEquipamiento || limits.maxEquipment || 50,
             });
           }
-        }
 
       } catch (err: any) {
         console.error('[Inventory] Error loading:', err);
@@ -152,7 +127,7 @@ const Inventory: React.FC = () => {
 
     fetchInventory();
     return () => { cancelled = true; };
-  }, [loading, user, isGuest]);
+  }, [loading, user]);
 
   if (loading || invLoading) {
     return (

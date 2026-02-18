@@ -42,18 +42,6 @@ export function InventorySummary() {
   useEffect(() => {
     let cancelled = false;
     const load = async () => {
-      // En modo guest no llamar al backend
-      const sessionRaw = localStorage.getItem('valnor-session-storage');
-      if (sessionRaw) {
-        try {
-          const parsed = JSON.parse(sessionRaw);
-          if (parsed?.state?.mode === 'guest') {
-            setItems([]);
-            setLoading(false);
-            return;
-          }
-        } catch { /* ignore */ }
-      }
       try {
         const inv = await inventoryService.getMyInventory();
         if (cancelled) return;

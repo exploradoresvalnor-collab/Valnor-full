@@ -122,39 +122,6 @@ const Wiki: React.FC = () => {
             
             {/* Modos de acceso */}
             <div className="access-modes-grid">
-              {/* Modo Invitado */}
-              <div className="access-card guest">
-                <div className="access-header">
-                  <div className="access-icon"><GiPlayButton size={32} color="#27ae60" /></div>
-                  <h3>Modo Invitado</h3>
-                  <span className="access-badge free">Gratis • Inmediato</span>
-                </div>
-                <div className="access-content">
-                  <p className="access-description">
-                    ¡Empieza a jugar al instante sin necesidad de registro! Perfecto para 
-                    probar el juego y decidir si quieres continuar.
-                  </p>
-                  <ul className="access-features">
-                    <li><GiHealthNormal size={14} /> Acceso completo al modo historia</li>
-                    <li><GiSkullCrossedBones size={14} /> Survival mode disponible</li>
-                    <li><GiCrossedSwords size={14} /> Explora todas las dungeons</li>
-                    <li><GiKnapsack size={14} /> Guarda tu progreso localmente</li>
-                  </ul>
-                  <div className="access-limitations">
-                    <h4>Limitaciones:</h4>
-                    <ul>
-                      <li>Sin acceso al Marketplace (comercio entre jugadores)</li>
-                      <li>Sin Rankings globales</li>
-                      <li>Progreso solo guardado en este dispositivo</li>
-                      <li>Sin sincronización entre dispositivos</li>
-                    </ul>
-                  </div>
-                </div>
-                <button className="access-action-btn guest" onClick={() => navigate('/splash')}>
-                  <GiPlayButton size={18} /> Jugar como Invitado
-                </button>
-              </div>
-
               {/* Registro */}
               <div className="access-card register">
                 <div className="access-header">
@@ -168,7 +135,7 @@ const Wiki: React.FC = () => {
                     ¡Tu progreso se sincroniza en todos tus dispositivos!
                   </p>
                   <ul className="access-features">
-                    <li><GiShield size={14} /> Todo el contenido del modo invitado</li>
+                    <li><GiShield size={14} /> Acceso completo a todo el contenido</li>
                     <li><GiTwoCoins size={14} /> Acceso al Marketplace</li>
                     <li><GiTrophy size={14} /> Rankings y competiciones</li>
                     <li><GiCrystalGrowth size={14} /> Sincronización cloud</li>
@@ -220,61 +187,51 @@ const Wiki: React.FC = () => {
               </div>
             </div>
 
-            {/* Comparación rápida */}
+            {/* Características principales */}
             <div className="comparison-table-wrapper">
-              <h3 className="comparison-title">Comparación de Modos</h3>
+              <h3 className="comparison-title">Características de Valnor</h3>
               <table className="comparison-table">
                 <thead>
                   <tr>
                     <th>Característica</th>
-                    <th>Invitado</th>
-                    <th>Registrado</th>
+                    <th>Disponible</th>
                   </tr>
                 </thead>
                 <tbody>
                   <tr>
                     <td>Modo Historia</td>
                     <td className="yes">✓</td>
-                    <td className="yes">✓</td>
                   </tr>
                   <tr>
                     <td>Survival Mode</td>
-                    <td className="yes">✓</td>
                     <td className="yes">✓</td>
                   </tr>
                   <tr>
                     <td>Dungeons</td>
                     <td className="yes">✓</td>
-                    <td className="yes">✓</td>
                   </tr>
                   <tr>
                     <td>PvP Arena</td>
-                    <td className="limited">Local</td>
                     <td className="yes">✓ Online</td>
                   </tr>
                   <tr>
                     <td>Marketplace</td>
-                    <td className="no">✗</td>
                     <td className="yes">✓</td>
                   </tr>
                   <tr>
                     <td>Rankings Globales</td>
-                    <td className="no">✗</td>
                     <td className="yes">✓</td>
                   </tr>
                   <tr>
                     <td>Sincronización Cloud</td>
-                    <td className="no">✗</td>
                     <td className="yes">✓</td>
                   </tr>
                   <tr>
                     <td>Ganar VAL</td>
-                    <td className="no">✗</td>
                     <td className="yes">✓</td>
                   </tr>
                   <tr>
                     <td>Eventos Especiales</td>
-                    <td className="limited">Algunos</td>
                     <td className="yes">✓ Todos</td>
                   </tr>
                 </tbody>

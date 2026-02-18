@@ -26,11 +26,6 @@
   background-clip: text;
 }
 
-/* Guest Banner */
-.shop-guest-banner {
-  padding: 1rem 2rem 0;
-}
-
 .wallet-display {
   display: flex;
   align-items: center;

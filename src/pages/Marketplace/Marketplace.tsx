@@ -1,8 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { useIsGuest } from '../../stores/sessionStore';
-import { GuestBanner } from '../../components/ui';
 import { ItemRarity, RARITY_COLORS, RARITY_NAMES } from '../../types/item.types';
 import { marketplaceService } from '../../services';
 import type { MarketplaceListing as BackendListing, MarketplaceTransaction } from '../../services/marketplace.service';
@@ -73,7 +71,6 @@ type SortOption = 'recent' | 'price-asc' | 'price-desc' | 'level' | 'rarity';
 const Marketplace: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
-  const isGuest = useIsGuest();
   const [activeTab, setActiveTab] = useState<MarketTab>('buy');
   const [listings, setListings] = useState<MarketListing[]>([]);
   const [transactions, setTransactions] = useState<TransactionEntry[]>([]);
@@ -246,16 +243,6 @@ const Marketplace: React.FC = () => {
           <span className="wallet-label">VAL</span>
         </div>
       </header>
-
-      {/* Banner para invitados */}
-      {isGuest && (
-        <div className="marketplace-guest-banner">
-          <GuestBanner 
-            message="Solo puedes ver el marketplace. Regístrate para comprar, vender y comerciar."
-            variant="locked"
-          />
-        </div>
-      )}
 
       {/* Tabs */}
       <div className="marketplace-tabs">

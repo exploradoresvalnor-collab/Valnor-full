@@ -26,7 +26,7 @@ export function useAuth() {
     setError(null);
     try {
       await authService.login(data);
-      // Cambiar sesión a modo AUTH (sale de modo invitado)
+      // Cambiar sesión a modo AUTH
       useSessionStore.getState().startAsAuth();
       navigate(returnUrl);
       return true;
@@ -86,7 +86,7 @@ export function useAuth() {
     setLoading(true);
     try {
       await authService.logout();
-      // Limpiar sesión (sale de modo auth/guest)
+      // Limpiar sesión
       useSessionStore.getState().endSession();
       navigate('/landing');
     } finally {

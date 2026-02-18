@@ -5,7 +5,7 @@
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 import { Suspense, lazy, useEffect } from 'react';
 import { AuthProvider } from './context/AuthContext';
-import { RequireAuth, RequireNoAuth, GuestAccessGuard } from './components/guards';
+import { RequireAuth, RequireNoAuth } from './components/guards';
 import { InstallPrompt } from './components/pwa';
 import CookieConsent from './components/CookieConsent';
 import { useGameModeStore } from './stores/gameModeStore';
@@ -131,7 +131,7 @@ function App() {
             {/* requireVerified=true → también debe tener   */}
             {/* el email verificado                         */}
             {/* ============================================ */}
-            {/* Dashboard permite modo invitado - pero requiere selección de modo */}
+            {/* Dashboard - requiere selección de modo */}
             <Route path="/dashboard" element={
               <RequireAuth>
                 <RequireModeSelection>
@@ -142,59 +142,45 @@ function App() {
             <Route path="/inventory" element={
               <RequireAuth>
                 <RequireModeSelection>
-                  <GuestAccessGuard>
                     <Inventory />
-                  </GuestAccessGuard>
                 </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/shop" element={
               <RequireAuth>
-                <GuestAccessGuard>
                   <Shop />
-                </GuestAccessGuard>
               </RequireAuth>
             } />
             <Route path="/marketplace" element={
               <RequireAuth>
                 <RequireModeSelection>
-                  <GuestAccessGuard>
                     <Marketplace />
-                  </GuestAccessGuard>
                 </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/dungeon" element={
               <RequireAuth>
                 <RequireModeSelection>
-                  <GuestAccessGuard>
                     <Dungeon />
-                  </GuestAccessGuard>
                 </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/dungeon/play/:id" element={
               <RequireAuth>
                 <RequireModeSelection>
-                  <GuestAccessGuard>
                     <PlayDungeon />
-                  </GuestAccessGuard>
                 </RequireModeSelection>
               </RequireAuth>
             } />
             <Route path="/ranking" element={
               <RequireAuth>
-                <GuestAccessGuard>
                   <Ranking />
-                </GuestAccessGuard>
               </RequireAuth>
             } />
             <Route path="/survival" element={
               <RequireAuth>
                 <RequireModeSelection>
-                  <GuestAccessGuard>
                     <Survival />
-                  </GuestAccessGuard>
                 </RequireModeSelection>
               </RequireAuth>
             } />
@@ -209,9 +195,9 @@ function App() {
               </RequireAuth>
             } />
             <Route path="/teams" element={
-              <GuestAccessGuard>
+              <RequireAuth>
                 <Teams />
-              </GuestAccessGuard>
+              </RequireAuth>
             } />
 
             {/* Ruta por defecto */}

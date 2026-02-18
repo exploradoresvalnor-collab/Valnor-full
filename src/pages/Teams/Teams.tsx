@@ -10,8 +10,11 @@
 
 import { useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { Canvas } from '@react-three/fiber';
-import { OrbitControls, AdaptiveDpr, ContactShadows, Environment } from '@react-three/drei';
+import { Canvas, useFrame } from '@react-three/fiber';
+import { OrbitControls, Environment, Float, MeshReflectorMaterial, Html } from '@react-three/drei';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
+import * as THREE from 'three';
+import { ProStatsPanel } from '../../components/ui/ProStatsPanel';
 
 // react-icons — Game Icons para RPG
 import {
@@ -43,10 +46,10 @@ import {
 } from 'react-icons/gi';
 import { FiPlus, FiMinus, FiX, FiCheck, FiAlertTriangle } from 'react-icons/fi';
 
-import { useIsGuest } from '../../stores/sessionStore';
 import { userService, teamService, characterService } from '../../services';
-import { getDemoCharacters, getDemoInventory } from '../../services/demo.service';
 import { CharacterModel3D } from '../../engine/components/CharacterModel3D';
+import { usePlayerStore } from '../../stores/playerStore';
+import { useTeamStore } from '../../stores/teamStore';
 import {
   CHARACTER_MODEL_MAP,
   getCharacterModelConfig,
@@ -189,14 +192,111 @@ function ToastContainer({ toasts, onDismiss }: { toasts: ToastMsg[]; onDismiss: 
 // COMPONENTE PRINCIPAL
 // ============================================================
 
+// Runa mágica giratoria (helper para el visor épico)
+function AnilloMagico() {
+  const ringRef = useRef<THREE.Mesh | null>(null);
+  useFrame((state) => {
+    if (ringRef.current) ringRef.current.rotation.z = state.clock.elapsedTime * 0.3;
+  });
+  return (
+    <mesh ref={ringRef} rotation={[-Math.PI / 2, 0, 0]} position={[0, 0.01, 0]}>
+      <ringGeometry args={[1.8, 2.0, 64]} />
+      <meshBasicMaterial color="#00e5ff" transparent opacity={0.6} toneMapped={false} />
+    </mesh>
+  );
+}
+
+// Partículas volumétricas: luciérnagas arcanas (reemplaza Sparkles)
+function ArcaneEmbers({ count = 30 }: { count?: number }) {
+  const groupRef = useRef<THREE.Group | null>(null);
+  // Evitar que partículas aparezcan justo delante del panel (ángulo ~ PI)
+  const particles = useMemo(() => {
+    const PANEL_ANGLE = Math.PI; // panel situado en X negativo
+    const PANEL_SPREAD = 0.9; // radianes a evitar alrededor del panel
+    return Array.from({ length: count }).map(() => {
+      // sample angle evitando la franja del panel
+      let angle = Math.random() * Math.PI * 2;
+      let attempts = 0;
+      while (attempts < 12) {
+        const delta = Math.abs(((angle - PANEL_ANGLE + Math.PI) % (Math.PI * 2)) - Math.PI);
+        if (delta > PANEL_SPREAD) break;
+        angle = Math.random() * Math.PI * 2;
+        attempts++;
+      }
+
+      // radio ligeramente mayor si quedó cerca del panel para desplazarla
+      let radius = 1.2 + Math.random() * 1.5;
+      const nearPanel = Math.abs(Math.cos(angle - PANEL_ANGLE)) > 0.7;
+      if (nearPanel) radius += 0.6;
+
+      return {
+        angle,
+        radius,
+        y: -1 + Math.random() * 3,
+        speed: 0.1 + Math.random() * 0.3,
+        size: 0.02 + Math.random() * 0.04,
+        offset: Math.random() * 100,
+      };
+    });
+  }, [count]);
+
+  useFrame((state) => {
+    const time = state.clock.elapsedTime;
+    if (groupRef.current) {
+      groupRef.current.rotation.y = time * 0.1;
+      groupRef.current.children.forEach((mesh, i) => {
+        const p = particles[i];
+        mesh.position.y = p.y + Math.sin(time * p.speed + p.offset) * 0.5;
+        const currentRadius = p.radius + Math.cos(time * 0.5 + p.offset) * 0.2;
+        mesh.position.x = Math.cos(p.angle) * currentRadius;
+        mesh.position.z = Math.sin(p.angle) * currentRadius;
+
+        // Evitar que las partículas crucen la zona del panel (empujarlas hacia afuera)
+        const PANEL_POS = new THREE.Vector2(-1.6, 0);
+        const dx = mesh.position.x - PANEL_POS.x;
+        const dz = mesh.position.z - PANEL_POS.y;
+        const dist2 = dx * dx + dz * dz;
+        const minDist = 0.6;
+        if (dist2 < minDist * minDist) {
+          const dist = Math.sqrt(dist2) || 0.001;
+          const push = (minDist - dist) + 0.12;
+          mesh.position.x += (dx / dist) * push;
+          mesh.position.z += (dz / dist) * push;
+        }
+      });
+    }
+  });
+
+  return (
+    <group ref={groupRef}>
+      {particles.map((p, i) => (
+        <mesh key={i}>
+          <sphereGeometry args={[p.size, 8, 8]} />
+          <meshBasicMaterial
+            color="#00e5ff"
+            transparent
+            opacity={0.6}
+            blending={THREE.AdditiveBlending}
+            depthWrite={false}
+            toneMapped={false}
+          />
+        </mesh>
+      ))}
+    </group>
+  );
+}
+
 export function Teams() {
   const navigate = useNavigate();
-  const isGuest = useIsGuest();
 
   // Estado principal
   const [allCharacters, setAllCharacters] = useState<BackendCharacter[]>([]);
   const [selectedChar, setSelectedChar] = useState<BackendCharacter | null>(null);
   const [activeTeamIds, setActiveTeamIds] = useState<string[]>([]);
+  // Demo helpers: mostrar todos los personajes y modo single-select
+  const [demoShowAll, setDemoShowAll] = useState<boolean>(usePlayerStore.getState().characterName === 'Jugador Demo');
+  const [singleSelectMode, setSingleSelectMode] = useState<boolean>(false);
+  const isDemoUser = usePlayerStore(state => state.characterName) === 'Jugador Demo';
 
   // Catálogos resueltos
   const [equipCatalog, setEquipCatalog] = useState<CatalogEquipment[]>([]);
@@ -231,80 +331,156 @@ export function Teams() {
 
     const fetchAll = async () => {
       setLoading(true);
-      try {
-        if (isGuest) {
-          // Cargar datos demo para invitados — normalizar al shape que espera Teams
-          const demoChars = getDemoCharacters();
-          const demoInventory = getDemoInventory();
 
-          const normalizeDemoChar = (c: any) => ({
+      // Detectar Demo: playerStore.characterName se establece por loadDemoEnvironment()
+      const isDemo = usePlayerStore.getState().characterName === 'Jugador Demo';
+
+      if (isDemo) {
+        // --- INYECCIÓN DE MODO DEMO ---
+        const localTeamStore = useTeamStore.getState();
+
+        // 1) Personajes demo — Si demoShowAll=true cargamos *todos* los modelos disponibles,
+        //    sino usamos solo los personajes 'owned' del teamStore (comportamiento previo).
+        const owned = localTeamStore.ownedCharacters || [];
+        let demoChars: BackendCharacter[] = [];
+
+        if (demoShowAll) {
+          const ownedMap = new Map(owned.map(o => [o.id, o]));
+          demoChars = Object.entries(CHARACTER_MODEL_MAP).map(([pid, cfg]) => {
+            const ownedDef = ownedMap.get(pid);
+            if (ownedDef) {
+              return {
+                _id: ownedDef.id,
+                personajeId: ownedDef.id,
+                nombre: ownedDef.name,
+                rango: ownedDef.rarity === 'legendary' ? 'SS' : ownedDef.rarity === 'epic' ? 'S' : 'A',
+                nivel: ownedDef.level,
+                etapa: 1,
+                progreso: 0,
+                experiencia: 0,
+                saludActual: ownedDef.stats?.health || 100,
+                saludMaxima: ownedDef.stats?.health || 100,
+                estado: 'activo',
+                stats: { atk: ownedDef.stats?.attack || 10, vida: ownedDef.stats?.health || 100, defensa: ownedDef.stats?.defense || 10 },
+                equipamiento: [],
+                activeBuffs: [],
+                fechaHerido: null,
+              } as BackendCharacter;
+            }
+
+            // Personaje no-owned: crear entrada demo básica para poder probarlo
+            return {
+              _id: pid,
+              personajeId: pid,
+              nombre: cfg.displayName || pid,
+              rango: 'A',
+              nivel: 20,
+              etapa: 1,
+              progreso: 0,
+              experiencia: 0,
+              saludActual: 1200,
+              saludMaxima: 1200,
+              estado: 'activo',
+              stats: { atk: 140, vida: 1200, defensa: 110 },
+              equipamiento: [],
+              activeBuffs: [],
+              fechaHerido: null,
+            } as BackendCharacter;
+          });
+        } else {
+          demoChars = owned.map(c => ({
             _id: c.id,
             personajeId: c.id,
-            nombre: c.name || c.id,
-            nivel: c.level || 1,
-            rango: 'C',
-            saludActual: (c.stats?.health ?? c.stats?.vida ?? 100),
-            saludMaxima: (c.stats?.health ?? c.stats?.vida ?? 100),
+            nombre: c.name,
+            rango: c.rarity === 'legendary' ? 'SS' : c.rarity === 'epic' ? 'S' : 'A',
+            nivel: c.level,
+            etapa: 1,
+            progreso: 0,
+            experiencia: 0,
+            saludActual: c.stats?.health || 100,
+            saludMaxima: c.stats?.health || 100,
+            estado: 'activo',
+            stats: { atk: c.stats?.attack || 10, vida: c.stats?.health || 100, defensa: c.stats?.defense || 10 },
             equipamiento: [],
-            stats: c.stats || {},
-          });
-
-          const mapped = demoChars.map(normalizeDemoChar);
-
-          if (!cancelled) {
-            setAllCharacters(mapped);
-            if (mapped.length > 0) setSelectedChar(mapped[0]);
-            setMyEquipmentIds(demoInventory.equipment.map(item => item.id));
-            setMyConsumables(demoInventory.consumables.map(item => ({ ...item, usos_restantes: item.stackSize || 1 })));
-            setEquipCatalog(demoInventory.equipment);
-            setConsumCatalog(demoInventory.consumables);
-          }
-        } else {
-          // Cargar datos reales del backend
-          const [me, inventory, eqCat, consCat] = await Promise.all([
-            userService.getMe().catch(() => null),
-            fetchInventory(),
-            fetchEquipmentCatalog(),
-            fetchConsumablesCatalog(),
-          ]);
-
-          if (cancelled) return;
-
-          if (me) {
-            const raw = (me as any).personajes;
-            if (Array.isArray(raw)) {
-              console.log('[Teams] Personajes cargados:', raw.map(p => ({ _id: p._id, personajeId: p.personajeId, nombre: p.nombre })));
-              setAllCharacters(raw);
-              if (raw.length > 0) setSelectedChar(raw[0]);
-            }
-          }
-
-          if (inventory) {
-            setMyEquipmentIds(Array.isArray(inventory.equipment) ? inventory.equipment : []);
-            setMyConsumables(Array.isArray(inventory.consumables) ? inventory.consumables : []);
-          }
-
-          setEquipCatalog(eqCat);
-          setConsumCatalog(consCat);
-
-            const teams = await teamService.getMyTeams();
-            if (!cancelled && teams.length > 0) {
-              const active = teams.find((t: any) => t.isActive || t.activo);
-              if (active?.characters) {
-                // Mapear _id de MongoDB a personajeId para el estado local
-                const personajeIds = active.characters
-                  .map((char: any) => {
-                    // char puede ser un ObjectId string o un objeto con _id
-                    const charId = typeof char === 'string' ? char : char._id;
-                    const personaje = allCharacters.find(c => c._id === charId);
-                    return personaje?.personajeId;
-                  })
-                  .filter(Boolean) as string[];
-                setActiveTeamIds(personajeIds);
-              }
-            }
+            activeBuffs: [],
+            fechaHerido: null,
+          }));
         }
 
+        // 2) Catálogo demo (más items y consumibles "potentes" para probar)
+        const demoEquipCatalog: CatalogEquipment[] = [
+          { _id: 'eq-espada-1', nombre: 'Espada del Alba', tipoItem: 'arma', tipo: 'arma', rango: 'SS', stats: { atk: 350, defensa: 0, vida: 0 }, nivel_minimo_requerido: 1, costo_val: 0, descripcion: 'Espada demo de alto daño', habilidades: [], fuentes_obtencion: [] },
+          { _id: 'eq-armadura-1', nombre: 'Peto de Mithril', tipoItem: 'armadura', tipo: 'armadura', rango: 'S', stats: { atk: 0, defensa: 420, vida: 800 }, nivel_minimo_requerido: 1, costo_val: 0, descripcion: 'Armadura demo con alta defensa', habilidades: [], fuentes_obtencion: [] },
+          { _id: 'eq-anillo-1', nombre: 'Anillo de Vida', tipoItem: 'anillo', tipo: 'anillo', rango: 'A', stats: { atk: 40, defensa: 30, vida: 1500 }, nivel_minimo_requerido: 1, costo_val: 0, descripcion: 'Anillo que aumenta vida y ataque', habilidades: [], fuentes_obtencion: [] },
+          { _id: 'eq-escudo-1', nombre: 'Escudo del Vínculo', tipoItem: 'escudo', tipo: 'escudo', rango: 'S', stats: { atk: 0, defensa: 300, vida: 600 }, nivel_minimo_requerido: 1, costo_val: 0, descripcion: 'Escudo que reduce daño recibido', habilidades: [], fuentes_obtencion: [] },
+          { _id: 'eq-botas-1', nombre: 'Botas de Carrera', tipoItem: 'botas', tipo: 'botas', rango: 'A', stats: { atk: 0, defensa: 50, vida: 0 }, nivel_minimo_requerido: 1, costo_val: 0, descripcion: 'Aumenta la velocidad (ideal para pruebas)', habilidades: [], fuentes_obtencion: [] },
+        ];
+
+        const demoConsumCatalog: CatalogConsumable[] = [
+          { _id: 'cons-pot-1', nombre: 'Poción Suprema', tipo: 'pocion', rango: 'SS', efecto: 'heal_1500', descripcion: 'Restaura 1500 HP al instante' },
+          { _id: 'cons-fruto-1', nombre: 'Fruto Mitico', tipo: 'fruto_mitico', rango: 'S', efecto: 'buff_atk_50', descripcion: 'Aumenta ATK en +50 (demo)' },
+          { _id: 'cons-breb-1', nombre: 'Brebaje de Defensa', tipo: 'pocion', rango: 'A', efecto: 'buff_def_200', descripcion: 'Otorga +200 DEF temporalmente' },
+          { _id: 'cons-pot2', nombre: 'Poción Menor', tipo: 'pocion', rango: 'B', efecto: 'heal_300', descripcion: 'Restaura 300 HP' },
+        ];
+
+        // 3) Aplicar al estado UI
+        setAllCharacters(demoChars as any);
+        if (demoChars.length > 0) setSelectedChar(demoChars[0] as any);
+        setActiveTeamIds(localTeamStore.activeTeam.map(t => t.id));
+
+        setEquipCatalog(demoEquipCatalog);
+        setConsumCatalog(demoConsumCatalog);
+
+        // Inventario demo: 1 copia de cada equipo, varios consumibles
+        setMyEquipmentIds(demoEquipCatalog.map(e => e._id));
+        setMyConsumables([
+          { _id: 'inv-pot-sup', consumableId: 'cons-pot-1', usos_restantes: 3 },
+          { _id: 'inv-fruto-1', consumableId: 'cons-fruto-1', usos_restantes: 2 },
+          { _id: 'inv-breb-1', consumableId: 'cons-breb-1', usos_restantes: 2 },
+          { _id: 'inv-pot-2', consumableId: 'cons-pot2', usos_restantes: 8 },
+        ]);
+
+        setLoading(false);
+        return;
+      }
+
+      // --- LÓGICA NORMAL (BACKEND REAL) ---
+      try {
+        const [me, inventory, eqCat, consCat] = await Promise.all([
+          userService.getMe().catch(() => null),
+          fetchInventory(), fetchEquipmentCatalog(), fetchConsumablesCatalog(),
+        ]);
+
+        if (cancelled) return;
+
+        if (me) {
+          const raw = (me as any).personajes;
+          if (Array.isArray(raw)) {
+            setAllCharacters(raw);
+            if (raw.length > 0) setSelectedChar(raw[0]);
+          }
+        }
+
+        if (inventory) {
+          setMyEquipmentIds(Array.isArray(inventory.equipment) ? inventory.equipment : []);
+          setMyConsumables(Array.isArray(inventory.consumables) ? inventory.consumables : []);
+        }
+
+        setEquipCatalog(eqCat);
+        setConsumCatalog(consCat);
+
+        const teams = await teamService.getMyTeams();
+        if (!cancelled && teams.length > 0) {
+          const active = teams.find((t: any) => t.isActive || t.activo);
+          if (active?.characters) {
+            const personajeIds = active.characters.map((char: any) => {
+              const charId = typeof char === 'string' ? char : char._id;
+              const personaje = allCharacters.find(c => c._id === charId);
+              return personaje?.personajeId;
+            }).filter(Boolean) as string[];
+            setActiveTeamIds(personajeIds);
+          }
+        }
       } catch (err) {
         console.error('[Teams] Error:', err);
       } finally {
@@ -314,7 +490,7 @@ export function Teams() {
 
     fetchAll();
     return () => { cancelled = true; };
-  }, [isGuest]);
+  }, [demoShowAll]);
 
   // ─── Resolver items contra catálogo ───
   const myEquipmentResolved = useMemo(() =>
@@ -375,10 +551,11 @@ export function Teams() {
   const toggleTeamMember = useCallback((personajeId: string) => {
     setActiveTeamIds(prev => {
       if (prev.includes(personajeId)) return prev.filter(id => id !== personajeId);
+      if (singleSelectMode) return [personajeId];
       if (prev.length >= 4) return prev;
       return [...prev, personajeId];
     });
-  }, []);
+  }, [singleSelectMode]);
 
   const refreshAfterAction = useCallback(async () => {
     const [me, inventory] = await Promise.all([
@@ -403,6 +580,22 @@ export function Teams() {
 
   const handleEquip = useCallback(async (itemId: string) => {
     if (!selectedChar) return;
+    const isDemo = usePlayerStore.getState().characterName === 'Jugador Demo';
+
+    if (isDemo) {
+      // Simulación Local
+      const item = equipCatalog.find(e => e._id === itemId);
+      const updatedChar = {
+        ...selectedChar,
+        equipamiento: [...(selectedChar.equipamiento || []), { id: itemId, nombre: item?.nombre, tipoItem: item?.tipo, slot: item?.tipo }]
+      } as any;
+      setSelectedChar(updatedChar);
+      setAllCharacters(prev => prev.map(c => c.personajeId === updatedChar.personajeId ? updatedChar : c) as any);
+      addToast('success', `${item?.nombre} equipado`);
+      return;
+    }
+
+    // Backend Real
     setActionLoading(itemId);
     try {
       const resp = await characterService.equip(selectedChar.personajeId, itemId);
@@ -420,6 +613,21 @@ export function Teams() {
 
   const handleUnequip = useCallback(async (itemId: string) => {
     if (!selectedChar) return;
+    const isDemo = usePlayerStore.getState().characterName === 'Jugador Demo';
+
+    if (isDemo) {
+      // Simulación Local
+      const updatedChar = {
+        ...selectedChar,
+        equipamiento: (selectedChar.equipamiento || []).filter((eq: any) => (eq.id || eq) !== itemId)
+      } as any;
+      setSelectedChar(updatedChar);
+      setAllCharacters(prev => prev.map(c => c.personajeId === updatedChar.personajeId ? updatedChar : c) as any);
+      addToast('success', `Item desequipado`);
+      return;
+    }
+
+    // Backend Real
     setActionLoading(itemId);
     try {
       const resp = await characterService.unequip(selectedChar.personajeId, itemId);
@@ -433,10 +641,65 @@ export function Teams() {
     } finally {
       setActionLoading(null);
     }
-  }, [selectedChar, equipCatalog, refreshAfterAction, addToast]);
+  }, [selectedChar, refreshAfterAction, addToast]);
 
   const handleUseConsumable = useCallback(async (consumableId: string) => {
     if (!selectedChar) return;
+    const isDemo = usePlayerStore.getState().characterName === 'Jugador Demo';
+
+    if (isDemo) {
+      const consDetail = consumCatalog.find(c => c._id === consumableId);
+      // restar 1 uso
+      setMyConsumables(prev => prev.map(it => it.consumableId === consumableId ? { ...it, usos_restantes: Math.max(0, it.usos_restantes - 1) } : it));
+
+      if (consDetail) {
+        // efectos demo simples: heal_X, heal_full, buff_atk_X, buff_def_X
+        if (consDetail.efecto?.startsWith('heal_')) {
+          const amount = parseInt(consDetail.efecto.split('_')[1] || '0', 10);
+          setSelectedChar(prev => {
+            if (!prev) return prev;
+            const nhp = Math.min(prev.saludMaxima, prev.saludActual + amount);
+            const updated = { ...prev, saludActual: nhp } as BackendCharacter;
+            setAllCharacters(prevAll => prevAll.map(c => c.personajeId === updated.personajeId ? updated : c));
+            return updated;
+          });
+          addToast('success', `HP restaurado +${consDetail.efecto.split('_')[1] || ''}`);
+        } else if (consDetail.efecto === 'heal_full') {
+          setSelectedChar(prev => {
+            if (!prev) return prev;
+            const updated = { ...prev, saludActual: prev.saludMaxima } as BackendCharacter;
+            setAllCharacters(prevAll => prevAll.map(c => c.personajeId === updated.personajeId ? updated : c));
+            return updated;
+          });
+          addToast('success', 'HP restaurado al máximo');
+        } else if (consDetail.efecto?.startsWith('buff_atk_')) {
+          const val = parseInt(consDetail.efecto.split('_')[2] || '0', 10);
+          setSelectedChar(prev => {
+            if (!prev) return prev;
+            const updated = { ...prev, stats: { ...prev.stats, atk: (prev.stats.atk || 0) + val }, activeBuffs: [...(prev.activeBuffs || []), { type: 'atk', value: val, source: consDetail.nombre }] } as BackendCharacter;
+            setAllCharacters(prevAll => prevAll.map(c => c.personajeId === updated.personajeId ? updated : c));
+            return updated;
+          });
+          addToast('success', `+${val} ATK (buff)`);
+        } else if (consDetail.efecto?.startsWith('buff_def_')) {
+          const val = parseInt(consDetail.efecto.split('_')[2] || '0', 10);
+          setSelectedChar(prev => {
+            if (!prev) return prev;
+            const updated = { ...prev, stats: { ...prev.stats, defensa: (prev.stats.defensa || 0) + val }, activeBuffs: [...(prev.activeBuffs || []), { type: 'def', value: val, source: consDetail.nombre }] } as BackendCharacter;
+            setAllCharacters(prevAll => prevAll.map(c => c.personajeId === updated.personajeId ? updated : c));
+            return updated;
+          });
+          addToast('success', `+${val} DEF (buff)`);
+        } else {
+          addToast('success', `${consDetail.nombre} usado`);
+        }
+      } else {
+        addToast('success', 'Consumible usado');
+      }
+      return;
+    }
+
+    // Backend Real
     setActionLoading(consumableId);
     try {
       const resp = await characterService.useConsumable(selectedChar.personajeId, consumableId);
@@ -450,46 +713,40 @@ export function Teams() {
     } finally {
       setActionLoading(null);
     }
-  }, [selectedChar, consumCatalog, refreshAfterAction, addToast]);
+  }, [selectedChar, refreshAfterAction, addToast]);
 
   const handleSave = useCallback(async () => {
     if (activeTeamIds.length === 0) return;
+    const isDemo = usePlayerStore.getState().characterName === 'Jugador Demo';
+
+    if (isDemo) {
+      // Guardar el equipo en Zustand para poder usarlo en modo demo
+      const localTeamStore = useTeamStore.getState();
+      const newActiveTeam = activeTeamIds.map(id => localTeamStore.ownedCharacters.find(c => c.id === id)).filter(Boolean as any);
+      localTeamStore.setTeam(newActiveTeam as any);
+      addToast('success', 'Equipo Guardado (Modo Demo)');
+      return;
+    }
+
+    // Backend Real
     setSaving(true);
     try {
       await userService.setActiveCharacter(activeTeamIds[0]);
 
-      // Enviar _id de MongoDB ya que el backend espera ObjectIds válidos
       const mongoIds = activeTeamIds
         .map(pid => allCharacters.find(c => c.personajeId === pid)?._id)
         .filter(Boolean) as string[];
 
-      console.log('[Teams] activeTeamIds (personajeId):', activeTeamIds);
-      console.log('[Teams] mongoIds (_id):', mongoIds);
-
-      // Validar que todos los IDs sean ObjectIds válidos
-      const invalidIds = mongoIds.filter(id => !/^[0-9a-fA-F]{24}$/.test(id));
-      if (invalidIds.length > 0) {
-        console.error('[Teams] IDs inválidos encontrados:', invalidIds);
-        addToast('error', `IDs de personajes inválidos: ${invalidIds.join(', ')}`);
-        return;
-      }
-
       if (mongoIds.length > 0) {
-        console.log('[Teams] Enviando petición a backend con IDs válidos:', mongoIds);
-        try {
-          const teams = await teamService.getMyTeams();
-          const active = teams.find((t: any) => t.isActive || t.activo);
-          if (active) {
-            await teamService.updateTeam(active._id, { characters: mongoIds });
-          } else {
-            const newTeam = await teamService.createTeam({ name: 'Equipo Principal', characters: mongoIds });
-            await teamService.activateTeam(newTeam._id);
-          }
-          addToast('success', 'Equipo guardado correctamente');
-        } catch (teamErr: any) {
-          console.error('[Teams] Error del backend:', teamErr);
-          addToast('error', teamErr?.error || teamErr?.message || 'Error al guardar el equipo');
+        const teams = await teamService.getMyTeams();
+        const active = teams.find((t: any) => t.isActive || t.activo);
+        if (active) {
+          await teamService.updateTeam(active._id, { characters: mongoIds });
+        } else {
+          const newTeam = await teamService.createTeam({ name: 'Equipo Principal', characters: mongoIds });
+          await teamService.activateTeam(newTeam._id);
         }
+        addToast('success', 'Equipo guardado correctamente');
       } else {
         addToast('error', 'No se pudieron mapear los IDs de personajes');
       }
@@ -543,9 +800,14 @@ export function Teams() {
             <span className="power-number">{teamPowerTotal}</span>
             <span className="power-label">PODER</span>
           </span>
-          <span className="team-count-badge">
-            <GiTeamIdea size={14} /> {activeTeamIds.length}/4
+          <span className="team-count-badge" title={singleSelectMode ? 'Modo 1 personaje' : 'Máx. 4 personajes'}>
+            <GiTeamIdea size={14} /> {activeTeamIds.length}/{singleSelectMode ? 1 : 4}
           </span>
+          {isDemoUser && (
+            <button className={`demo-mode-badge ${singleSelectMode ? 'active' : ''}`} onClick={() => { setSingleSelectMode(s => { const next = !s; if (next && activeTeamIds.length > 1) setActiveTeamIds([activeTeamIds[0]]); return next; }); }} title="Alternar modo 1 personaje">
+              {singleSelectMode ? '1' : 'M'} Demo
+            </button>
+          )}
           <button className="save-btn" onClick={handleSave} disabled={saving || activeTeamIds.length === 0}>
             <GiSaveArrow size={16} /> {saving ? 'Guardando...' : 'Guardar'}
           </button>
@@ -605,7 +867,15 @@ export function Teams() {
 
         {/* === PANEL IZQUIERDO: Personajes === */}
         <aside className="characters-panel">
-          <h3><GiTeamIdea size={16} /> Mis Personajes ({allCharacters.length})</h3>
+          <h3>
+            <GiTeamIdea size={16} /> Mis Personajes ({allCharacters.length})
+            {isDemoUser && (
+              <small className="demo-controls">
+                <button className={`demo-btn ${demoShowAll ? 'active' : ''}`} onClick={() => setDemoShowAll(s => !s)}>{demoShowAll ? 'Todos' : 'Solo owned'}</button>
+                <button className={`demo-btn ${singleSelectMode ? 'active' : ''}`} onClick={() => { setSingleSelectMode(s => { const next = !s; if (next && activeTeamIds.length > 1) setActiveTeamIds([activeTeamIds[0]]); return next; }); }}>{singleSelectMode ? '1 personaje' : 'multi'}</button>
+              </small>
+            )}
+          </h3>
           <div className="characters-list">
             {allCharacters.map((char) => {
               const isInTeam = activeTeamIds.includes(char.personajeId);
@@ -639,7 +909,7 @@ export function Teams() {
                     className={`team-toggle ${isInTeam ? 'remove' : 'add'}`}
                     onClick={(e) => { e.stopPropagation(); toggleTeamMember(char.personajeId); }}
                     title={isInTeam ? 'Quitar del equipo' : 'Añadir al equipo'}
-                    disabled={!isInTeam && activeTeamIds.length >= 4}
+                    disabled={!isInTeam && (singleSelectMode ? activeTeamIds.length >= 1 : activeTeamIds.length >= 4)}
                   >
                     {isInTeam ? <FiMinus size={14} /> : <FiPlus size={14} />}
                   </button>
@@ -674,102 +944,94 @@ export function Teams() {
                 </div>
               </div>
 
-              {/* Canvas 3D */}
               <div className="viewer-3d">
                 <Canvas
                   shadows
-                  dpr={[0.75, 1.5]}
-                  camera={{ position: [0, 1.5, 3], fov: 40 }}
-                  gl={{ antialias: true, alpha: true }}
-                  style={{ background: 'radial-gradient(ellipse at bottom, #1a1a2e 0%, #0a0a14 100%)' }}
+                  dpr={[1, 2]}
+                  camera={{ position: [0, 1.2, 4], fov: 40 }}
+                  gl={{ antialias: true, alpha: true, stencil: false }}
                 >
-                  <Suspense fallback={
-                    <mesh position={[0, 0.8, 0]}>
-                      <capsuleGeometry args={[0.25, 0.6, 8, 16]} />
-                      <meshStandardMaterial color="#ffd700" wireframe />
+                  {/* Canvas transparente — el fondo diurno viene del CSS .viewer-3d */}
+
+                  <Suspense fallback={null}>
+                    {/* Luz principal tipo SOL, más suave para día */}
+                    <spotLight position={[2, 8, 2]} angle={0.45} penumbra={0.4} intensity={2.2} distance={30} color="#fff7d9" castShadow />
+
+                    {/* Volumetric ligero (muy sutil en día) */}
+                    <mesh position={[0, 3, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+                      <coneGeometry args={[2.5, 6, 32, 1, true]} />
+                      <meshBasicMaterial color="#fff7d9" transparent opacity={0.03} blending={THREE.AdditiveBlending} depthWrite={false} />
                     </mesh>
-                  }>
-                    <ambientLight intensity={0.5} />
-                    <directionalLight position={[3, 5, 3]} intensity={1.4} castShadow />
-                    <directionalLight position={[-2, 3, -1]} intensity={0.4} color="#9b59b6" />
-                    <pointLight position={[0, 2, -3]} intensity={0.6} color="#3498db" />
-                    <spotLight position={[0, 5, 0]} intensity={0.3} angle={Math.PI / 4} penumbra={1} />
 
-                    <group position={[0, 0, 0]} rotation={[0, Math.PI, 0]}>
-                      <CharacterModel3D personajeId={selectedChar.personajeId} animation="Idle" scale={1} />
-                    </group>
+                    {/* Luz solar y relleno suave */}
+                    <directionalLight position={[4, 6, 2]} intensity={1.1} color="#fff6d1" />
+                    <directionalLight position={[-2, 2, -3]} intensity={0.45} color="#dfeeff" />
 
-                    <ContactShadows position={[0, 0, 0]} opacity={0.6} scale={4} blur={2} far={3} />
-                    <Environment preset="night" />
+                    {/* Personaje con leve float para presencia */}
+                    <Float speed={1.5} rotationIntensity={0.05} floatIntensity={selectedChar?.stats?.atk > 20 ? 0 : 0.2}>
+                      <group position={[0, 0, 0]}>
+                        <CharacterModel3D personajeId={selectedChar.personajeId} animation="Idle" scale={1} />
+
+                        {/* PANEL ANCLADO AL PERSONAJE: backdrop + ProStats */}
+                        <group position={[-1.1, 1.05, 0]}>
+                          <Html transform distanceFactor={1.05} style={{ width: 360, pointerEvents: 'auto', zIndex: 1000 }}>
+                            <ProStatsPanel character={selectedChar} totalPower={calcCharacterPower(selectedChar, equipCatalog)} />
+                          </Html>
+                        </group>
+                      </group>
+                    </Float>
+
+                    {/* Runa mágica + partículas volumétricas */}
+                    <AnilloMagico />
+                    <ArcaneEmbers count={22} />
+
+                    {/* Suelo reflectante (obsidiana) */}
+                    <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, 0, 0]} receiveShadow>
+                      <planeGeometry args={[50, 50]} />
+                      <MeshReflectorMaterial
+                        blur={[220, 80]}
+                        resolution={1024}
+                        mixBlur={0.8}
+                        mixStrength={24}
+                        roughness={0.28}
+                        depthScale={0.9}
+                        minDepthThreshold={0.4}
+                        maxDepthThreshold={1.2}
+                        color="#0b1220"
+                        metalness={0.45}
+                        mirror={0.6}
+                      />
+                    </mesh>
+
+                    <Environment preset="studio" environmentIntensity={0.1} />
+
+
+
+                    {/* Bloom selectivo para runa y particles */}
+                    <EffectComposer disableNormalPass>
+                      <Bloom luminanceThreshold={1} mipmapBlur intensity={1.5} radius={0.8} />
+                    </EffectComposer>
                   </Suspense>
-                  <OrbitControls target={[0, 1, 0]} minDistance={2} maxDistance={6} minPolarAngle={Math.PI / 6} maxPolarAngle={Math.PI / 2.1} enablePan={false} />
-                  <AdaptiveDpr pixelated />
+
+                  <OrbitControls
+                    target={[0, 1, 0]}
+                    minDistance={2}
+                    maxDistance={5}
+                    maxPolarAngle={Math.PI / 2.05}
+                    minPolarAngle={Math.PI / 4}
+                    enablePan={false}
+                  />
                 </Canvas>
               </div>
 
-              {/* Stats reales */}
-              <div className="viewer-stats">
-                <h3><GiChart size={16} /> Estadísticas</h3>
-                <div className="stats-grid">
-                  <div className="stat-item">
-                    <GiRuneSword size={20} className="stat-icon atk" />
-                    <span className="stat-value">{selectedChar.stats?.atk ?? 0}</span>
-                    <span className="stat-label">ATK</span>
-                  </div>
-                  <div className="stat-item">
-                    <GiShieldBash size={20} className="stat-icon def" />
-                    <span className="stat-value">{selectedChar.stats?.defensa ?? 0}</span>
-                    <span className="stat-label">DEF</span>
-                  </div>
-                  <div className="stat-item">
-                    <GiHearts size={20} className="stat-icon hp" />
-                    <span className="stat-value">{selectedChar.saludActual}/{selectedChar.saludMaxima}</span>
-                    <span className="stat-label">HP</span>
-                  </div>
-                  <div className="stat-item">
-                    <GiSpeedometer size={20} className="stat-icon spd" />
-                    <span className="stat-value">{selectedChar.stats?.vida ?? 0}</span>
-                    <span className="stat-label">VID</span>
-                  </div>
-                  {Object.entries(selectedChar.stats || {})
-                    .filter(([k]) => !['atk', 'vida', 'defensa'].includes(k))
-                    .map(([key, val]) => (
-                      <div key={key} className="stat-item">
-                        <GiStaryu size={20} className="stat-icon misc" />
-                        <span className="stat-value">{val}</span>
-                        <span className="stat-label">{key.toUpperCase()}</span>
-                      </div>
-                    ))}
-                </div>
 
-                {/* HP bar visual */}
-                <div className="hp-bar-container">
-                  <div className="hp-bar-bg">
-                    <div className="hp-bar-fill" style={{ width: `${(selectedChar.saludActual / Math.max(selectedChar.saludMaxima, 1)) * 100}%` }} />
-                  </div>
-                  <span className="hp-bar-text"><GiHearts size={12} /> {selectedChar.saludActual} / {selectedChar.saludMaxima}</span>
-                </div>
-
-                <div className="char-extra-info">
-                  <span>Etapa: {selectedChar.etapa}</span>
-                  <span>EXP: {selectedChar.experiencia}</span>
-                  <span>Estado: <span className={`estado-${selectedChar.estado}`}>{selectedChar.estado}</span></span>
-                </div>
-
-                {/* Poder total del personaje (base + equipo) */}
-                <div className="char-power-summary">
-                  <GiPowerLightning size={16} className="power-icon" />
-                  <span className="power-number">{calcCharacterPower(selectedChar, equipCatalog)}</span>
-                  <span className="power-label">PODER</span>
-                </div>
-              </div>
 
               {/* Acción */}
               <div className="viewer-actions">
                 <button
                   className={`action-btn ${activeTeamIds.includes(selectedChar.personajeId) ? 'remove' : 'add'}`}
                   onClick={() => toggleTeamMember(selectedChar.personajeId)}
-                  disabled={!activeTeamIds.includes(selectedChar.personajeId) && activeTeamIds.length >= 4}
+                  disabled={!activeTeamIds.includes(selectedChar.personajeId) && (singleSelectMode ? activeTeamIds.length >= 1 : activeTeamIds.length >= 4)}
                 >
                   {activeTeamIds.includes(selectedChar.personajeId)
                     ? <><FiMinus size={16} /> Quitar del equipo</>

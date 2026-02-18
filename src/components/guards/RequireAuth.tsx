@@ -1,8 +1,6 @@
 /**
  * RequireAuth - Guard para rutas protegidas
- * Permite acceso si:
- * - Está autenticado (modo auth)
- * - Está en modo invitado (modo guest)
+ * Permite acceso solo si está autenticado (modo auth)
  */
 
 import { Navigate, useLocation } from 'react-router-dom';
@@ -13,17 +11,14 @@ import { LoadingScreen } from '../ui/LoadingScreen';
 interface RequireAuthProps {
   children: React.ReactNode;
   requireVerified?: boolean;
-  /** Si es true, NO permite acceso en modo guest */
-  requireFullAuth?: boolean;
 }
 
 export function RequireAuth({ 
   children, 
   requireVerified = false,
-  requireFullAuth = false 
 }: RequireAuthProps) {
   const { user, loading: isLoading, isAuthenticated } = useAuth();
-  const { mode, isInitialized: isGuestSession } = useSessionStore();
+  const { mode } = useSessionStore();
   const location = useLocation();
 
   // Mientras carga auth, mostrar loading
@@ -34,11 +29,6 @@ export function RequireAuth({
   // MODO NONE: No ha elegido → ir a landing
   if (mode === 'none' && !isAuthenticated) {
     return <Navigate to="/landing" state={{ from: location }} replace />;
-  }
-
-  // MODO INVITADO: Si hay sesión guest activa y no requiere auth completo
-  if (mode === 'guest' && isGuestSession && !requireFullAuth) {
-    return <>{children}</>;
   }
 
   // MODO AUTH: Verificar autenticación normal
