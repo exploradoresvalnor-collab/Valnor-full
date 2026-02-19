@@ -6,6 +6,7 @@ import { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { authService } from '../services/auth.service';
 import { useSessionStore } from '../stores/sessionStore';
+import { performLogout } from '../services/session.service';
 import { User, LoginRequest, RegisterRequest } from '../types';
 
 export function useAuth() {
@@ -85,9 +86,7 @@ export function useAuth() {
   const logout = useCallback(async () => {
     setLoading(true);
     try {
-      await authService.logout();
-      // Limpiar sesión
-      useSessionStore.getState().endSession();
+      await performLogout();
       navigate('/landing');
     } finally {
       setLoading(false);

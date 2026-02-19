@@ -4,6 +4,7 @@
 
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
+import { useShallow } from 'zustand/react/shallow';
 
 export type ModalType = 
   | 'settings'
@@ -171,25 +172,32 @@ export const useUIStore = create<UIState & UIActions>()(
   )
 );
 
-// Helper hooks
-export const useLoading = () => useUIStore((state) => ({
-  isLoading: state.isLoading,
-  message: state.loadingMessage,
-  progress: state.loadingProgress,
-  setLoading: state.setLoading,
-  setProgress: state.setLoadingProgress,
-}));
+// Helper hooks — useShallow evita crear un objeto nuevo en cada render
+// (sin useShallow React 19 detecta la nueva referencia y fuerza re-render infinito)
+export const useLoading = () => useUIStore(
+  useShallow((state) => ({
+    isLoading: state.isLoading,
+    message: state.loadingMessage,
+    progress: state.loadingProgress,
+    setLoading: state.setLoading,
+    setProgress: state.setLoadingProgress,
+  }))
+);
 
-export const useModal = () => useUIStore((state) => ({
-  activeModal: state.activeModal,
-  modalData: state.modalData,
-  openModal: state.openModal,
-  closeModal: state.closeModal,
-}));
+export const useModal = () => useUIStore(
+  useShallow((state) => ({
+    activeModal: state.activeModal,
+    modalData: state.modalData,
+    openModal: state.openModal,
+    closeModal: state.closeModal,
+  }))
+);
 
-export const useToasts = () => useUIStore((state) => ({
-  toasts: state.toasts,
-  addToast: state.addToast,
-  removeToast: state.removeToast,
-  clearToasts: state.clearToasts,
-}));
+export const useToasts = () => useUIStore(
+  useShallow((state) => ({
+    toasts: state.toasts,
+    addToast: state.addToast,
+    removeToast: state.removeToast,
+    clearToasts: state.clearToasts,
+  }))
+);

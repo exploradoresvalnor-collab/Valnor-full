@@ -90,4 +90,21 @@ export function loadDemoEnvironment() {
   console.info('✅ Entorno Demo cargado en memoria y localStorage');
 }
 
+export function clearDemoEnvironment() {
+  // Reset stores y limpiar claves de demo en localStorage
+  useTeamStore.getState().resetTeam();
+  usePlayerStore.getState().resetPlayer();
+
+  try {
+    localStorage.removeItem(STORAGE_KEYS.USER);
+    localStorage.removeItem('guest_user');
+    // Notificar a authService que el usuario fue removido
+    authService.loadFromStorage();
+  } catch (err) {
+    console.warn('[demo] no se pudo limpiar storage demo', err);
+  }
+
+  console.info('🧹 Entorno Demo limpiado (localStorage + stores)');
+}
+
 export default loadDemoEnvironment;

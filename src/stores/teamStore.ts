@@ -101,7 +101,7 @@ export const useTeamStore = create<TeamState & TeamActions>()(
         
         // Establecer equipo completo
         setTeam: (team) => {
-          set({ 
+          set({
             activeTeam: team.slice(0, get().maxTeamSize),
             leaderId: team[0]?.id || null,
           });

@@ -29,12 +29,38 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
       const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
       
+      // Si la sesión actual es Guest ya persistida, evitar llamadas al backend
+      const session = useSessionStore.getState();
+
+      // Debido a que la rehidratación de Zustand/persist puede ser asíncrona,
+      // comprobar también el almacenamiento persistido como fallback.
+      const persistedSessionRaw = localStorage.getItem('valnor-session-storage');
+      const persistedIsGuest = (() => {
+        if (!persistedSessionRaw) return false;
+        try {
+          const parsed = JSON.parse(persistedSessionRaw);
+          return !!(parsed && parsed.state && parsed.state.isGuest);
+        } catch {
+          return false;
+        }
+      })();
+
+      if (session.isGuest || persistedIsGuest) {
+        if (storedUser) {
+          try {
+            const parsed = JSON.parse(storedUser);
+            setUser(parsed);
+          } catch { /* parse failed */ }
+        }
+        setLoading(false);
+        return;
+      }
+
       // Si hay token o usuario guardado, verificar sesión
       if (token || storedUser) {
         try {
           const isValid = await authService.checkSession();
           if (isValid) {
-            const session = useSessionStore.getState();
             if (session.mode !== 'auth') {
               session.startAsAuth();
             }
@@ -50,7 +76,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
             try {
               const parsed = JSON.parse(storedUser);
               setUser(parsed);
-              const session = useSessionStore.getState();
               if (session.mode !== 'auth') {
                 session.startAsAuth();
               }

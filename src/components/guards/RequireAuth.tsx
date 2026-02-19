@@ -19,6 +19,8 @@ export function RequireAuth({
 }: RequireAuthProps) {
   const { user, loading: isLoading, isAuthenticated } = useAuth();
   const { mode } = useSessionStore();
+  // useIsGuestSession siempre en el nivel superior (reglas de hooks)
+  const isGuest = useSessionStore((s) => s.isGuest);
   const location = useLocation();
 
   // Mientras carga auth, mostrar loading
@@ -29,6 +31,11 @@ export function RequireAuth({
   // MODO NONE: No ha elegido → ir a landing
   if (mode === 'none' && !isAuthenticated) {
     return <Navigate to="/landing" state={{ from: location }} replace />;
+  }
+
+  // Sesión Guest (demo) cliente-only — permitir acceso sin backend
+  if (mode === 'auth' && isGuest) {
+    return <>{children}</>;
   }
 
   // MODO AUTH: Verificar autenticación normal

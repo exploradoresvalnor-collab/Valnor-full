@@ -6,7 +6,9 @@ import { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useAuth } from '../../hooks/useAuth';
-import { usePlayerStore } from '../../stores';
+import { useAuthContext } from '../../context/AuthContext';
+import { usePlayerStore, useIsGuestSession } from '../../stores';
+import { useToasts } from '../../stores';
 import './GlobalNavbar.css';
 
 interface NavItem {
@@ -30,12 +32,24 @@ const NAV_ITEMS: NavItem[] = [
 export function GlobalNavbar() {
   const location = useLocation();
   const navigate = useNavigate();
-  const { user, isAuthenticated, logout } = useAuth();
+  const { user, isAuthenticated } = useAuthContext();
+  // useAuth provides logout() which delegates to performLogout() (centralized)
+  const { logout } = useAuth();
   const { gold, gems, level } = usePlayerStore();
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const [isProfileMenuOpen, setIsProfileMenuOpen] = useState(false);
 
+  const isGuest = useIsGuestSession();
+  const { addToast } = useToasts();
+  const [showGuestLogoutConfirm, setShowGuestLogoutConfirm] = useState(false);
+
   const handleLogout = async () => {
+    // Si es sesión demo, mostrar confirmación antes de cerrar
+    if (isGuest) {
+      setShowGuestLogoutConfirm(true);
+      return;
+    }
+
     await logout();
     navigate('/landing');
   };
@@ -92,6 +106,7 @@ export function GlobalNavbar() {
           <div className="user-profile">
             <button
               className="profile-button"
+              data-testid="profile-button"
               onClick={() => setIsProfileMenuOpen(!isProfileMenuOpen)}
             >
               <div className="profile-avatar">
@@ -117,7 +132,7 @@ export function GlobalNavbar() {
                     <span>🎒</span> Inventario
                   </Link>
                   <div className="dropdown-divider" />
-                  <button className="dropdown-item logout" onClick={handleLogout}>
+                  <button className="dropdown-item logout" data-testid="profile-logout" onClick={handleLogout}>
                     <span>🚪</span> Cerrar Sesión
                   </button>
                 </motion.div>
@@ -133,6 +148,31 @@ export function GlobalNavbar() {
           <Link to="/auth/register" className="auth-button register">
             Registrarse
           </Link>
+        </div>
+      )}
+
+      {/* Guest logout confirmation modal */}
+      {showGuestLogoutConfirm && (
+        <div className="modal-overlay" onClick={() => setShowGuestLogoutConfirm(false)}>
+          <div className="confirm-modal" data-testid="guest-logout-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>⚠️ ¿Salir del Modo Demo?</h3>
+            <p>Se eliminará el entorno Demo de este navegador. No se guardará ningún progreso. ¿Deseas continuar?</p>
+            <div className="confirm-actions">
+              <button className="cancel-btn" data-testid="guest-logout-cancel" onClick={() => setShowGuestLogoutConfirm(false)}>Cancelar</button>
+              <button
+                className="confirm-btn danger"
+                data-testid="guest-logout-confirm"
+                onClick={async () => {
+                  await logout();
+                  setShowGuestLogoutConfirm(false);
+                  addToast({ type: 'success', title: 'Modo Demo cerrado', message: 'El entorno Demo ha sido eliminado.' });
+                  navigate('/landing');
+                }}
+              >
+                Salir
+              </button>
+            </div>
+          </div>
         </div>
       )}
 

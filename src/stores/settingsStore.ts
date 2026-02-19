@@ -8,6 +8,7 @@
  */
 
 import { create } from 'zustand';
+import { useShallow } from 'zustand/react/shallow';
 import { devtools, persist } from 'zustand/middleware';
 
 export interface UserSettings {
@@ -162,15 +163,19 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
 );
 
 // Selectores
-export const useAudioSettings = () => useSettingsStore((s) => ({
-  musicVolume: s.musicVolume,
-  sfxVolume: s.sfxVolume,
-  masterVolume: s.masterVolume,
-}));
+export const useAudioSettings = () => useSettingsStore(
+  useShallow((s) => ({
+    musicVolume: s.musicVolume,
+    sfxVolume: s.sfxVolume,
+    masterVolume: s.masterVolume,
+  }))
+);
 
 export const useLanguage = () => useSettingsStore((s) => s.language);
 
-export const useNotificationSettings = () => useSettingsStore((s) => ({
-  notificationsEnabled: s.notificationsEnabled,
-  soundNotifications: s.soundNotifications,
-}));
+export const useNotificationSettings = () => useSettingsStore(
+  useShallow((s) => ({
+    notificationsEnabled: s.notificationsEnabled,
+    soundNotifications: s.soundNotifications,
+  }))
+);

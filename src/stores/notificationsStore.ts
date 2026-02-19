@@ -97,9 +97,9 @@ export const useNotificationsStore = create<NotificationsState & NotificationsAc
     (set, _get) => ({
       ...initialState,
 
-      setNotifications: (notifications, total) => 
-        set({ 
-          notifications, 
+      setNotifications: (notifications, total) =>
+        set({
+          notifications,
           total,
           hasMore: notifications.length < total,
         }),

@@ -14,6 +14,8 @@ import { useActiveTeam, useTeamPower, useTeamStore } from '../../stores/teamStor
 import { userService, characterService, teamService } from '../../services';
 import { authService } from '../../services/auth.service';
 import { useAuth } from '../../hooks/useAuth';
+import { useIsGuestSession } from '../../stores/sessionStore';
+import { useToasts } from '../../stores';
 import { mapToShowcase, mapToTeamMember, mapActivity, findActiveCharacter, mapStatsES } from '../../utils/mappers';
 import { EnergyBar, InventorySummary } from '../../components/ui';
 import { NotificationBell } from '../../components/notifications';
@@ -140,6 +142,8 @@ const Dashboard = () => {
   const navigate = useNavigate();
   const { endSession } = useSessionStore();
   const { logout } = useAuth();
+  const isGuest = useIsGuestSession();
+  const { addToast } = useToasts();
   const gameMode = useGameMode();
   const clearGameMode = useGameModeStore((s) => s.clearMode);
   const setGameMode = useGameModeStore((s) => s.setMode);
@@ -357,7 +361,15 @@ const Dashboard = () => {
     setGameMode(mode);
     navigate(mode === 'rpg' ? '/dungeon' : '/survival');
   };
-  const handleLogout = useCallback(async () => { await logout(); }, [logout]);
+  const [showGuestLogoutConfirm, setShowGuestLogoutConfirm] = useState(false);
+
+  const handleLogout = useCallback(async () => {
+    if (isGuest) {
+      setShowGuestLogoutConfirm(true);
+      return;
+    }
+    await logout();
+  }, [isGuest, logout]);
 
   // Close dropdowns on outside click
   useEffect(() => {
@@ -470,11 +482,35 @@ const Dashboard = () => {
           <button className="hdr-btn" onClick={() => navigate('/settings')} title="Configuración">
             <FiSettings size={18} />
           </button>
-          <button className="hdr-btn hdr-btn--danger" onClick={handleLogout} title="Salir">
+          <button className="hdr-btn hdr-btn--danger" onClick={handleLogout} title="Salir" data-testid="dash-logout">
             <FiLogOut size={18} />
           </button>
         </div>
       </header>
+
+      {/* Guest logout confirmation (dashboard) — igual comportamiento que GlobalNavbar */}
+      {showGuestLogoutConfirm && (
+        <div className="modal-overlay" onClick={() => setShowGuestLogoutConfirm(false)}>
+          <div className="confirm-modal" data-testid="guest-logout-modal" onClick={(e) => e.stopPropagation()}>
+            <h3>⚠️ ¿Salir del Modo Demo?</h3>
+            <p>Se eliminará el entorno Demo de este navegador. No se guardará ningún progreso. ¿Deseas continuar?</p>
+            <div className="confirm-actions">
+              <button className="cancel-btn" data-testid="guest-logout-cancel" onClick={() => setShowGuestLogoutConfirm(false)}>Cancelar</button>
+              <button
+                className="confirm-btn danger"
+                data-testid="guest-logout-confirm"
+                onClick={async () => {
+                  await logout();
+                  setShowGuestLogoutConfirm(false);
+                  addToast({ type: 'success', title: 'Modo Demo cerrado', message: 'El entorno Demo ha sido eliminado.' });
+                }}
+              >
+                Salir
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {/* ===== MAIN CONTENT ===== */}
       <main className="dash-main">

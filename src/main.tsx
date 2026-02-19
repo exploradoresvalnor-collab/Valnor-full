@@ -35,7 +35,6 @@ if (import.meta.env.DEV) {
     const { usePlayerStore } = require('./stores/playerStore');
     // Overwrite persisted characterId _only_ in dev for reliable local testing
     usePlayerStore.setState({ characterId: 'sir-nocturno' });
-    console.info('[dev] forced playerStore.characterId = "sir-nocturno" for local testing');
   } catch (err) {
     // ignore if store not yet available or SSR
   }

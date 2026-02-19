@@ -29,6 +29,22 @@ Juego RPG 3D con motor propio construido con React Three Fiber. Migrado desde An
 
 ---
 
+### Últimas novedades (18–19 de febrero de 2026)
+- Modo **Demo / Invitado**: sesión guest persistente (F5), `startDemoSession()` → `startGuestSession()` y `performLogout()`; logout demo limpia localStorage + stores **sin** llamar al backend.
+- Corrección crítica en `RequireAuth`: hook movido al nivel superior para evitar violaciones de las reglas de hooks de React (evita crashes inesperados).
+- Fix: crash `Maximum update depth exceeded` en `Dashboard` resuelto — estabilizados selectores (uso de `useShallow` en `uiStore` y `settingsStore`).
+- UX: modal de confirmación "Salir del Modo Demo" (Navbar + Dashboard) y corrección de CSS móvil del Navbar.
+- Tests añadidos: unit tests (`guest.service`, `session.service`) y E2E (`demo-logout`, `debug-dev-dashboard`); script `npm run test:e2e` disponible.
+- Limpieza: eliminados logs de instrumentación DEV introducidos durante la depuración.
+
+**Cómo probar el modo Demo rápidamente:**
+1. Abrir la app → pulsar **Entrar al Demo** en Landing (o ejecutar `startDemoSession()` en consola).
+2. Verificar `localStorage.valnor-session-storage` contiene `isGuest:true` y `localStorage.valnor_user`.
+3. Ir a `/dashboard` → pulsar Logout (debe mostrar modal y **no** realizar llamada al backend).
+4. Ejecutar E2E: `npm run test:e2e` (verifica flujo demo + logout).
+
+---
+
 ## 🔌 Servicios del Backend
 
 **Base URL:** `https://valgame-backend.onrender.com`
@@ -108,7 +124,8 @@ npm install
 npm run dev          # → http://localhost:5173
 npm run build        # Producción
 npm run cap:sync     # Sincronizar con Android
+npm run test:e2e     # Ejecutar pruebas E2E (Puppeteer + vitest)
 ```
 
 ---
-*Última actualización: 12 de febrero de 2026*
+*Última actualización: 19 de febrero de 2026*

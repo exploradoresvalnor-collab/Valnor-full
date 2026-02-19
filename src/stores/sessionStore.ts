@@ -39,6 +39,9 @@ export interface SessionState {
   // Modo de sesión
   mode: SessionMode;
   
+  // ¿Es sesión Guest (demo) cliente-only?
+  isGuest: boolean;
+  
   // ¿Primera vez?
   isFirstTime: boolean;
   
@@ -47,6 +50,9 @@ export interface SessionState {
 }
 
 export interface SessionActions {
+  // Iniciar sesión de invitado (demo, client-only)
+  startGuestSession: () => void;
+
   // Iniciar con cuenta (llamar después de login exitoso)
   startAsAuth: () => void;
   
@@ -59,6 +65,7 @@ export interface SessionActions {
 
 const initialState: SessionState = {
   mode: 'none',
+  isGuest: false,
   isFirstTime: true,
   isInitialized: false,
 };
@@ -68,10 +75,21 @@ export const useSessionStore = create<SessionState & SessionActions>()(
     persist(
       (set) => ({
         ...initialState,
-        
+
+        startGuestSession: () => {
+          set({
+            mode: 'auth',
+            isGuest: true,
+            isFirstTime: false,
+            isInitialized: true,
+          });
+          console.debug('🎮 Sesión iniciada como INVITADO (Demo)');
+        },
+
         startAsAuth: () => {
           set({
             mode: 'auth',
+            isGuest: false,
             isFirstTime: false,
             isInitialized: true,
           });
@@ -82,6 +100,7 @@ export const useSessionStore = create<SessionState & SessionActions>()(
           resetGameStores();
           set({
             mode: 'none',
+            isGuest: false,
             isInitialized: false,
           });
           console.log('👋 Sesión terminada');
@@ -99,3 +118,4 @@ export const useSessionStore = create<SessionState & SessionActions>()(
 
 // Selectores helper
 export const useSessionMode = () => useSessionStore((state) => state.mode);
+export const useIsGuestSession = () => useSessionStore((state) => state.isGuest);

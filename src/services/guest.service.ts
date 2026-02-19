@@ -55,8 +55,8 @@ export const startDemoSession = (): void => {
     .then((m) => m.loadDemoEnvironment())
     .catch((e) => console.warn('[demo] loadDemoEnvironment falló:', e));
 
-  // Marcar sesión como AUTH (persistido en sessionStore)
-  useSessionStore.getState().startAsAuth();
+  // Marcar sesión como AUTH de tipo Guest (persistido en sessionStore)
+  useSessionStore.getState().startGuestSession();
 
   console.info('[demo] sesión demo iniciada (cliente-only)');
 };
