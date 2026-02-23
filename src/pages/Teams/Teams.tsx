@@ -294,9 +294,9 @@ export function Teams() {
   const [selectedChar, setSelectedChar] = useState<BackendCharacter | null>(null);
   const [activeTeamIds, setActiveTeamIds] = useState<string[]>([]);
   // Demo helpers: mostrar todos los personajes y modo single-select
-  const [demoShowAll, setDemoShowAll] = useState<boolean>(usePlayerStore.getState().characterName === 'Jugador Demo');
+  const isDemoUser = useIsGuestSession();
+  const [demoShowAll, setDemoShowAll] = useState<boolean>(isDemoUser);
   const [singleSelectMode, setSingleSelectMode] = useState<boolean>(false);
-  const isDemoUser = usePlayerStore(state => state.characterName) === 'Jugador Demo';
 
   // Catálogos resueltos
   const [equipCatalog, setEquipCatalog] = useState<CatalogEquipment[]>([]);
@@ -332,8 +332,8 @@ export function Teams() {
     const fetchAll = async () => {
       setLoading(true);
 
-      // Detectar Demo: playerStore.characterName se establece por loadDemoEnvironment()
-      const isDemo = usePlayerStore.getState().characterName === 'Jugador Demo';
+          // Detectar Demo a partir del store de sesión en lugar del nombre de personaje
+      const isDemo = isDemoUser;
 
       if (isDemo) {
         // --- INYECCIÓN DE MODO DEMO ---
@@ -490,7 +490,7 @@ export function Teams() {
 
     fetchAll();
     return () => { cancelled = true; };
-  }, [demoShowAll]);
+  }, [demoShowAll, isDemoUser]);
 
   // ─── Resolver items contra catálogo ───
   const myEquipmentResolved = useMemo(() =>
@@ -580,7 +580,7 @@ export function Teams() {
 
   const handleEquip = useCallback(async (itemId: string) => {
     if (!selectedChar) return;
-    const isDemo = usePlayerStore.getState().characterName === 'Jugador Demo';
+    const isDemo = isDemoUser;
 
     if (isDemo) {
       // Simulación Local
@@ -609,11 +609,11 @@ export function Teams() {
     } finally {
       setActionLoading(null);
     }
-  }, [selectedChar, equipCatalog, refreshAfterAction, addToast]);
+  }, [selectedChar, equipCatalog, refreshAfterAction, addToast, isDemoUser]);
 
   const handleUnequip = useCallback(async (itemId: string) => {
     if (!selectedChar) return;
-    const isDemo = usePlayerStore.getState().characterName === 'Jugador Demo';
+    const isDemo = isDemoUser;
 
     if (isDemo) {
       // Simulación Local
@@ -641,11 +641,11 @@ export function Teams() {
     } finally {
       setActionLoading(null);
     }
-  }, [selectedChar, refreshAfterAction, addToast]);
+  }, [selectedChar, refreshAfterAction, addToast, isDemoUser]);
 
   const handleUseConsumable = useCallback(async (consumableId: string) => {
     if (!selectedChar) return;
-    const isDemo = usePlayerStore.getState().characterName === 'Jugador Demo';
+    const isDemo = isDemoUser;
 
     if (isDemo) {
       const consDetail = consumCatalog.find(c => c._id === consumableId);
@@ -713,11 +713,11 @@ export function Teams() {
     } finally {
       setActionLoading(null);
     }
-  }, [selectedChar, refreshAfterAction, addToast]);
+  }, [selectedChar, refreshAfterAction, addToast, isDemoUser]);
 
   const handleSave = useCallback(async () => {
     if (activeTeamIds.length === 0) return;
-    const isDemo = usePlayerStore.getState().characterName === 'Jugador Demo';
+    const isDemo = isDemoUser;
 
     if (isDemo) {
       // Guardar el equipo en Zustand para poder usarlo en modo demo
@@ -756,7 +756,7 @@ export function Teams() {
     } finally {
       setSaving(false);
     }
-  }, [activeTeamIds, allCharacters, addToast]);
+  }, [activeTeamIds, allCharacters, addToast, isDemoUser]);
 
   // ─── Derived ───
   const selectedConfig = selectedChar ? getCharacterModelConfig(selectedChar.personajeId) : null;
