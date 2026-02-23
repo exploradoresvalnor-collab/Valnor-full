@@ -12,6 +12,7 @@ import { useState, useEffect, useCallback, Suspense, useMemo, useRef } from 'rea
 import { useNavigate } from 'react-router-dom';
 import { Canvas, useFrame } from '@react-three/fiber';
 import { OrbitControls, Environment, Float, MeshReflectorMaterial, Html } from '@react-three/drei';
+import { useIsGuestSession } from '../../stores/sessionStore';
 import { EffectComposer, Bloom } from '@react-three/postprocessing';
 import * as THREE from 'three';
 import { ProStatsPanel } from '../../components/ui/ProStatsPanel';
