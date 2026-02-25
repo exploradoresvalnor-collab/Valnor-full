@@ -1,10 +1,7 @@
-import React, { useEffect, useState, Suspense } from 'react';
+import { useEffect, useState, Suspense } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { GameCanvas } from '../../engine/components/GameCanvas';
-import { Player } from '../../engine/components/Player';
 import { CharacterModel3D, CharacterPlaceholder } from '../../engine/components/CharacterModel3D';
-import { useGLTF } from '@react-three/drei';
-import * as THREE from 'three';
 import { usePlayerStore } from '../../stores/playerStore';
 import { DungeonBattle } from '../../components/dungeons/DungeonBattle';
 import { PhysicsBody, CollisionGroups } from '../../engine/components/PhysicsWorld';
@@ -12,12 +9,13 @@ import { useActiveTeam } from '../../stores/teamStore';
 import { dungeonService } from '../../services';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Html } from '@react-three/drei';
+import FortalezaLevel from '../../engine/scenes/FortalezaLevel';
 import { useEngineStore, QualityLevel } from '../../engine/stores/engineStore';
 
 // Settings Modal Component
 function SettingsModal({ onClose }: { onClose: () => void }) {
   const { quality, setQuality, viewDistance, fps } = useEngineStore();
-  
+
   return (
     <div style={{
       position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
@@ -25,7 +23,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
       border: '1px solid #444', color: 'white', minWidth: '300px', zIndex: 1000
     }}>
       <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '1.5rem' }}>Configuración</h2>
-      
+
       <div style={{ marginBottom: '16px' }}>
         <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Calidad Gráfica</label>
         <div style={{ display: 'flex', gap: '8px' }}>
@@ -69,51 +67,7 @@ function SettingsModal({ onClose }: { onClose: () => void }) {
   );
 }
 
-// Import engine scenes
-import {
-  CastleLevel,
-  ValleyLevel,
-  CanyonLevel,
-  MiningMountainLevel,
-  PlainLevel,
-  TerrainTestLevel,
-  TestLevel,
-  PreviewLevel
-} from '../../engine/scenes';
-
-function SceneFromGLB({ url }: { url: string }) {
-  const gltf = useGLTF(url) as any;
-  useEffect(() => {
-    if (gltf && gltf.scene) {
-      // Center scene horizontally (X, Z) and align bottom to Y=0
-      const box = new THREE.Box3().setFromObject(gltf.scene);
-      const size = new THREE.Vector3();
-      box.getSize(size);
-      const center = new THREE.Vector3();
-      box.getCenter(center);
-      
-      // Center X and Z
-      gltf.scene.position.x = -center.x;
-      gltf.scene.position.z = -center.z;
-      // Align bottom to 0
-      gltf.scene.position.y = -box.min.y;
-
-      // Diagnostic: log bbox so we can detect scale/position issues
-      // eslint-disable-next-line no-console
-      console.debug('[SceneFromGLB] loaded and centered:', url, { 
-        bboxSize: size.toArray(), 
-        originalCenter: center.toArray(),
-        newPosition: gltf.scene.position.toArray()
-      });
-    }
-  }, [gltf, url]);
-
-  return gltf ? (
-    <RigidBody type="fixed" colliders="trimesh">
-      <primitive object={gltf.scene} dispose={null} />
-    </RigidBody>
-  ) : null;
-}
+// Legacy scenes removed
 
 export default function PlayDungeon() {
   const { id } = useParams();
@@ -122,7 +76,6 @@ export default function PlayDungeon() {
   const preview = new URLSearchParams(search).get('preview') === 'true';
   const [glbUrl, setGlbUrl] = useState<string | null>(null);
   const [sceneMeta, setSceneMeta] = useState<any>(null);
-  const playerPos = usePlayerStore((s) => s.position);
   const [enemyPos] = useState(() => ({ x: 0, y: 0, z: -2 }));
   const [nearEnemy, setNearEnemy] = useState(false);
   const [showBattle, setShowBattle] = useState(false);
@@ -140,6 +93,7 @@ export default function PlayDungeon() {
     // leer posición directamente desde el store dentro del intervalo para evitar
     // recrear el efecto en cada cambio de posición (evita render-loop)
     const idt = setInterval(() => {
+      if (useFortalezaEngine) return;
       const p = usePlayerStore.getState().position || { x: 0, y: 0, z: 0 };
       const dx = p.x - enemyPos.x;
       const dz = p.z - enemyPos.z;
@@ -180,7 +134,7 @@ export default function PlayDungeon() {
       const d = await (await fetch(`/api/dungeons/${id}`)).json();
       const mapped: any = {
         id: d._id || d.id || id,
-        name: d.nombre || d.name || 'Dungeon',
+        name: d.nombre || d.name || 'Fortaleza Olvidada',
         description: d.descripcion || d.description || '',
         difficulty: d.dificultad || d.difficulty || 'normal',
         requiredLevel: d.nivelMinimo || d.levelRequired || 1,
@@ -196,18 +150,25 @@ export default function PlayDungeon() {
     } catch (err) {
       console.warn('No se pudo obtener dungeon metadata para iniciar combate', err);
       // fallback mínimo
-      setDungeonForBattle({ id, name: 'Dungeon', description: '', waves: 3, bossName: 'Boss', rewards: { gold: { min: 50, max: 100 }, exp: { min: 10, max: 25 }, items: [] } });
+      setDungeonForBattle({ id, name: 'Fortaleza Olvidada', description: '', waves: 3, bossName: 'Jefe', rewards: { gold: { min: 50, max: 100 }, exp: { min: 10, max: 25 }, items: [] } });
       setShowBattle(true);
     }
   };
 
+  // Detect if this is a Fortaleza-type dungeon (engine scene or backend)
+  const isFortalezaDungeon = id === 'engine-fortaleza' || id?.toLowerCase().includes('fortaleza');
+  // Also check location state for dungeon name (passed by Dungeon.tsx on navigate)
+  const locationState = (useLocation() as any).state;
+  const isFortalezaByName = locationState?.dungeonName?.toLowerCase().includes('fortaleza');
+  const useFortalezaEngine = isFortalezaDungeon || isFortalezaByName;
+
   useEffect(() => {
     if (!id) return;
-    
-    // Engine Scenes Config
-    if (id.startsWith('engine-')) {
+
+    // Engine Scenes Config (includes backend Fortaleza dungeons)
+    if (id.startsWith('engine-') || useFortalezaEngine) {
       // Mock metadata for engine scenes so game logic (spawns, rewards) doesn't break
-      setSceneMeta({ 
+      setSceneMeta({
         spawn: { x: 0, y: 2, z: 0 },
         enemyModel: 'leviatan',
         name: 'Engine Scene Test'
@@ -224,6 +185,7 @@ export default function PlayDungeon() {
 
     // try to load metadata from API; if it fails and we're in DEV (or id hints 'fortaleza'),
     // fallback to the local demo GLB so we can test walking/scene quickly.
+    // Load metadata from API; if it fails, set defaults
     fetch(`/api/scenes/${id}`)
       .then(r => r.ok ? r.json() : Promise.reject())
       .then((data: any) => {
@@ -231,50 +193,36 @@ export default function PlayDungeon() {
         setSceneMeta(data || null);
       })
       .catch(() => {
-        // DEV / convenience fallback so QA can test the scene locally
-        if (import.meta.env.DEV || String(id).toLowerCase().includes('fortaleza')) {
-          setGlbUrl('/assets/dungeons/Fortaleza/castle_low_poly.glb');
-          setSceneMeta({ spawn: { x: 0, y: 0, z: -2 } });
-          console.warn('[PlayDungeon] metadata fetch failed — using local demo GLB fallback');
-        } else {
-          setGlbUrl(null);
-          setSceneMeta(null);
-        }
+        setGlbUrl(null);
+        setSceneMeta(null);
       });
   }, [id]);
 
   return (
-    <div style={{ width: '100%', height: '100vh', position: 'relative' }}>
+    <div style={{ width: '100%', height: '100vh', position: 'relative', backgroundColor: '#000' }}>
       <GameCanvas>
         {/* Basic Lighting - Fallback for GLB/Demo scenes. Engine scenes use UltraSkySystem. */}
-        {!id?.startsWith('engine-') && (
+        {!useFortalezaEngine && (
           <>
             <hemisphereLight intensity={0.6} groundColor="#444444" />
-            <directionalLight 
-              position={[10, 20, 10]} 
-              intensity={1.2} 
-              castShadow 
-              shadow-mapSize={[2048, 2048]} 
+            <directionalLight
+              position={[10, 20, 10]}
+              intensity={1.2}
+              castShadow
+              shadow-mapSize={[2048, 2048]}
             />
             <ambientLight intensity={0.3} />
           </>
         )}
 
-        {/* Engine Scenes — TestLevel y PreviewLevel tienen Player propio, desactivarlo */}
-        {id === 'engine-castle' && <CastleLevel />}
-        {id === 'engine-valley' && <ValleyLevel />}
-        {id === 'engine-canyon' && <CanyonLevel />}
-        {id === 'engine-mining' && <MiningMountainLevel />}
-        {id === 'engine-plain' && <PlainLevel />}
-        {id === 'engine-terrain' && <TerrainTestLevel />}
-        {id === 'engine-test' && <TestLevel showPlayer={false} />}
-        {id === 'engine-preview' && <PreviewLevel showPlayer={false} />}
+        {/* Engine Scenes */}
+        {useFortalezaEngine && <FortalezaLevel />}
 
-        {/* GLB Scene fallback */}
-        {glbUrl && !id?.startsWith('engine-') ? <SceneFromGLB url={glbUrl} /> : null}
-
-        {/* Default ground — cuando no hay GLB ni engine-scene.
-            Directamente en el Physics world de GameCanvas (sin PhysicsWorldProvider anidado). */}
+        {/* 
+            Default ground — cuando no hay GLB ni engine-scene.
+            A desactivar si cargamos la fortaleza
+        */}
+        {/*
         {!glbUrl && !id?.startsWith('engine-') && (
           <RigidBody type="fixed" colliders={false}>
             <CuboidCollider args={[50, 0.5, 50]} position={[0, 0, 0]} />
@@ -285,35 +233,34 @@ export default function PlayDungeon() {
             <gridHelper args={[100, 50, '#666666', '#444444']} position={[0, 0.51, 0]} />
           </RigidBody>
         )}
+        */}
 
         {/* Safety floor — atrapa al jugador si cae por huecos */}
         <RigidBody type="fixed" position={[0, -3, 0]} colliders={false}>
           <CuboidCollider args={[200, 0.5, 200]} />
         </RigidBody>
 
-        {/* Player always mounts (unless preview) so engine/physics can be tested even without the GLB */}
-        {!preview && <Player position={[0, 2, 6]} />}
-
         {/* Enemy trigger - Moved further away for testing to avoid "double character" confusion */}
-        <PhysicsBody
-          type="fixed"
-          collisionGroups={CollisionGroups.TRIGGER}
-          onCollisionEnter={() => { if (!preview) startCombat(); }}
-        >
-          <group position={[ (sceneMeta?.spawnPoints?.enemy?.x ?? sceneMeta?.spawn?.x ?? enemyPos.x), 0, (sceneMeta?.spawnPoints?.enemy?.z ?? sceneMeta?.spawn?.z ?? enemyPos.z) - 5 ]}>
-            <Html position={[0, 2.5, 0]} center distanceFactor={10}>
-              <div style={{ background: 'rgba(255,0,0,0.5)', padding: '2px 6px', borderRadius: '4px', color: 'white', fontSize: '10px' }}>Enemigo</div>
-            </Html>
-            <Suspense fallback={<CharacterPlaceholder />}>
-              <CharacterModel3D
-                personajeId={sceneMeta?.enemyModel || sceneMeta?.enemy?.id || 'leviatan'}
-                characterClass={sceneMeta?.enemy?.class}
-                animation="Idle"
-                withWeapon={false}
-              />
-            </Suspense>
-          </group>
-        </PhysicsBody>
+        {!useFortalezaEngine && (
+          <PhysicsBody
+            type="fixed"
+            collisionGroups={CollisionGroups.TRIGGER}
+            onCollisionEnter={() => { if (!preview) startCombat(); }}
+          >
+            <group position={[(sceneMeta?.spawnPoints?.enemy?.x ?? sceneMeta?.spawn?.x ?? enemyPos.x), 0, (sceneMeta?.spawnPoints?.enemy?.z ?? sceneMeta?.spawn?.z ?? enemyPos.z) - 5]}>
+              <Html position={[0, 2.5, 0]} center distanceFactor={10}>
+                <div style={{ background: 'rgba(255,0,0,0.5)', padding: '2px 6px', borderRadius: '4px', color: 'white', fontSize: '10px' }}>Enemigo</div>
+              </Html>
+              <Suspense fallback={<CharacterPlaceholder />}>
+                <CharacterModel3D
+                  personajeId={sceneMeta?.enemyModel || sceneMeta?.enemy?.id || 'leviatan'}
+                  characterClass={sceneMeta?.enemy?.class}
+                  withWeapon={false}
+                />
+              </Suspense>
+            </group>
+          </PhysicsBody>
+        )}
 
         {preview && (
           <group />
@@ -331,17 +278,17 @@ export default function PlayDungeon() {
 
       {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
 
-  {!glbUrl && (
-    <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
-      <button onClick={() => { setGlbUrl('/assets/dungeons/Fortaleza/castle_low_poly.glb'); setSceneMeta({ spawn: { x: 0, y: 0, z: -2 } }); }} style={{ padding: '8px 12px' }}>Cargar demo GLB</button>
-    </div>
-  )}
+      {!glbUrl && (
+        <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
+          <button onClick={() => { setGlbUrl('/assets/dungeons/Fortaleza/castle_low_poly.glb'); setSceneMeta({ spawn: { x: 0, y: 0, z: -2 } }); }} style={{ padding: '8px 12px' }}>Cargar demo GLB</button>
+        </div>
+      )}
 
-  {nearEnemy && !preview && (
-    <div style={{ position: 'absolute', bottom: 120, left: '50%', transform: 'translateX(-50%)', zIndex: 60 }}>
-      <div style={{ padding: '10px 16px', background: 'rgba(0,0,0,0.6)', borderRadius: 8 }}>Presiona <strong>E</strong> para iniciar combate {startingRemoteSession && '· iniciando sesión...'}</div>
-    </div>
-  )}
+      {nearEnemy && !preview && (
+        <div style={{ position: 'absolute', bottom: 120, left: '50%', transform: 'translateX(-50%)', zIndex: 60 }}>
+          <div style={{ padding: '10px 16px', background: 'rgba(0,0,0,0.6)', borderRadius: 8 }}>Presiona <strong>E</strong> para iniciar combate {startingRemoteSession && '· iniciando sesión...'}</div>
+        </div>
+      )}
 
       {showBattle && dungeonForBattle && (
         <div style={{ position: 'absolute', inset: 0, zIndex: 120 }}>

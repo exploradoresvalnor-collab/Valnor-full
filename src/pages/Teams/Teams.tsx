@@ -37,11 +37,9 @@ import {
   GiStaryu,
   GiSaveArrow,
   GiReturnArrow,
-  GiChart,
   GiHearts,
   GiRuneSword,
   GiShieldBash,
-  GiSpeedometer,
   GiLevelEndFlag,
   GiPowerLightning,
 } from 'react-icons/gi';
@@ -49,7 +47,6 @@ import { FiPlus, FiMinus, FiX, FiCheck, FiAlertTriangle } from 'react-icons/fi';
 
 import { userService, teamService, characterService } from '../../services';
 import { CharacterModel3D } from '../../engine/components/CharacterModel3D';
-import { usePlayerStore } from '../../stores/playerStore';
 import { useTeamStore } from '../../stores/teamStore';
 import {
   CHARACTER_MODEL_MAP,
@@ -326,14 +323,14 @@ export function Teams() {
     setToasts((prev) => prev.filter((t) => t.id !== id));
   }, []);
 
-// ─── Cargar todo del backend o datos demo ───
+  // ─── Cargar todo del backend o datos demo ───
   useEffect(() => {
     let cancelled = false;
 
     const fetchAll = async () => {
       setLoading(true);
 
-          // Detectar Demo a partir del store de sesión en lugar del nombre de personaje
+      // Detectar Demo a partir del store de sesión en lugar del nombre de personaje
       const isDemo = isDemoUser;
 
       if (isDemo) {
@@ -717,47 +714,85 @@ export function Teams() {
   }, [selectedChar, refreshAfterAction, addToast, isDemoUser]);
 
   const handleSave = useCallback(async () => {
-    if (activeTeamIds.length === 0) return;
-    const isDemo = isDemoUser;
-
-    if (isDemo) {
-      // Guardar el equipo en Zustand para poder usarlo en modo demo
-      const localTeamStore = useTeamStore.getState();
-      const newActiveTeam = activeTeamIds.map(id => localTeamStore.ownedCharacters.find(c => c.id === id)).filter(Boolean as any);
-      localTeamStore.setTeam(newActiveTeam as any);
-      addToast('success', 'Equipo Guardado (Modo Demo)');
+    if (activeTeamIds.length === 0) {
+      addToast('error', 'Selecciona al menos 1 personaje para el equipo');
       return;
     }
 
-    // Backend Real
+    // 1) SIEMPRE guardar en Zustand local primero (para dashboard y dungeons)
+    const localTeamStore = useTeamStore.getState();
+    const newActiveTeam = activeTeamIds.map(id => {
+      const char = allCharacters.find(c => c.personajeId === id);
+      if (!char) return null;
+      return {
+        id: char.personajeId,
+        name: (char as any).nombre || char.personajeId,
+        level: char.nivel,
+        class: 'warrior' as const,
+        rarity: 'epic' as const,
+        stats: {
+          attack: char.stats?.atk || 10,
+          defense: char.stats?.defensa || 10,
+          health: char.stats?.vida || 100,
+          speed: 10
+        }
+      };
+    }).filter(Boolean);
+    localTeamStore.setTeam(newActiveTeam as any);
+
+    const teamPwr = calcTeamPower(
+      allCharacters.filter(c => activeTeamIds.includes(c.personajeId)),
+      equipCatalog
+    );
+
+    if (isDemoUser) {
+      addToast('success', `⚔️ Equipo guardado (${activeTeamIds.length} héroe${activeTeamIds.length > 1 ? 's' : ''}) · Poder: ${teamPwr}`);
+      return;
+    }
+
+    // 2) Intentar guardar en backend
     setSaving(true);
     try {
-      await userService.setActiveCharacter(activeTeamIds[0]);
+      // Activar el primer personaje como activo
+      try {
+        await userService.setActiveCharacter(activeTeamIds[0]);
+      } catch (err) {
+        console.warn('[Teams] setActiveCharacter falló (continuando):', err);
+      }
 
+      // Mapear personajeIds a MongoIDs
       const mongoIds = activeTeamIds
         .map(pid => allCharacters.find(c => c.personajeId === pid)?._id)
         .filter(Boolean) as string[];
 
       if (mongoIds.length > 0) {
-        const teams = await teamService.getMyTeams();
-        const active = teams.find((t: any) => t.isActive || t.activo);
-        if (active) {
-          await teamService.updateTeam(active._id, { characters: mongoIds });
-        } else {
-          const newTeam = await teamService.createTeam({ name: 'Equipo Principal', characters: mongoIds });
-          await teamService.activateTeam(newTeam._id);
+        try {
+          const teams = await teamService.getMyTeams();
+          const active = teams.find((t: any) => t.isActive || t.activo);
+          if (active) {
+            await teamService.updateTeam(active._id, { characters: mongoIds });
+          } else {
+            const newTeam = await teamService.createTeam({ name: 'Equipo Principal', characters: mongoIds });
+            await teamService.activateTeam(newTeam._id);
+          }
+          addToast('success', `✅ Equipo guardado (${mongoIds.length} héroe${mongoIds.length > 1 ? 's' : ''}) · Poder: ${teamPwr}`);
+        } catch (apiErr: any) {
+          const msg = apiErr?.name === 'AbortError'
+            ? 'El servidor tardó demasiado. Equipo guardado localmente.'
+            : apiErr?.message || 'Error al sincronizar con servidor. Equipo guardado localmente.';
+          addToast('info', `⚠️ ${msg}`);
+          console.warn('[Teams] Backend save error (team saved locally):', apiErr);
         }
-        addToast('success', 'Equipo guardado correctamente');
       } else {
-        addToast('error', 'No se pudieron mapear los IDs de personajes');
+        addToast('info', '⚠️ No se pudieron mapear IDs. Equipo guardado localmente.');
       }
     } catch (err: any) {
       console.error('[Teams] Error general:', err);
-      addToast('error', 'Error al guardar el equipo');
+      addToast('info', '⚠️ Error de conexión. El equipo está guardado localmente.');
     } finally {
       setSaving(false);
     }
-  }, [activeTeamIds, allCharacters, addToast, isDemoUser]);
+  }, [activeTeamIds, allCharacters, addToast, isDemoUser, equipCatalog]);
 
   // ─── Derived ───
   const selectedConfig = selectedChar ? getCharacterModelConfig(selectedChar.personajeId) : null;
@@ -948,9 +983,9 @@ export function Teams() {
               <div className="viewer-3d">
                 <Canvas
                   shadows
-                  dpr={[1, 2]}
-                  camera={{ position: [0, 1.2, 4], fov: 40 }}
-                  gl={{ antialias: true, alpha: true, stencil: false }}
+                  camera={{ position: [0, 2.5, 6], fov: 45 }}
+                  onCreated={({ gl }) => () => gl.dispose()}
+                  gl={{ preserveDrawingBuffer: true, antialias: true }}
                 >
                   {/* Canvas transparente — el fondo diurno viene del CSS .viewer-3d */}
 
@@ -971,7 +1006,7 @@ export function Teams() {
                     {/* Personaje con leve float para presencia */}
                     <Float speed={1.5} rotationIntensity={0.05} floatIntensity={selectedChar?.stats?.atk > 20 ? 0 : 0.2}>
                       <group position={[0, 0, 0]}>
-                        <CharacterModel3D personajeId={selectedChar.personajeId} animation="Idle" scale={1} />
+                        <CharacterModel3D personajeId={selectedChar.personajeId} scale={1} />
 
                         {/* PANEL ANCLADO AL PERSONAJE: backdrop + ProStats */}
                         <group position={[-1.1, 1.05, 0]}>
@@ -1006,11 +1041,9 @@ export function Teams() {
 
                     <Environment preset="studio" environmentIntensity={0.1} />
 
-
-
                     {/* Bloom selectivo para runa y particles */}
-                    <EffectComposer disableNormalPass>
-                      <Bloom luminanceThreshold={1} mipmapBlur intensity={1.5} radius={0.8} />
+                    <EffectComposer {...({ disableNormalPass: true } as any)}>
+                      <Bloom luminanceThreshold={0.5} mipmapBlur intensity={0.8} />
                     </EffectComposer>
                   </Suspense>
 

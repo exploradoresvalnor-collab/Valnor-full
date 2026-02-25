@@ -7,7 +7,7 @@ import { useRef, useEffect, useCallback } from 'react';
 import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
-export type AnimationState = 
+export type AnimationState =
   | 'idle'
   | 'walk'
   | 'run'
@@ -53,6 +53,16 @@ const DEFAULT_ANIMATIONS: Record<AnimationState, Partial<AnimationConfig>> = {
   block: { loop: true, priority: 2, fadeInTime: 0.1 },
 };
 
+function getAnimConfig(state: string | AnimationState): Partial<AnimationConfig> {
+  return (DEFAULT_ANIMATIONS as any)[state] || {
+    loop: true,
+    clampWhenFinished: false,
+    timeScale: 1,
+    fadeInTime: 0.2,
+    priority: 0,
+  };
+}
+
 interface AnimationSystemState {
   currentState: AnimationState;
   previousState: AnimationState;
@@ -94,12 +104,13 @@ export function useAnimationSystem({
 
     animations.forEach((clip, animState) => {
       const action = mixer.clipAction(clip);
-      const config = DEFAULT_ANIMATIONS[animState];
-      
+      // Fallback for unmapped animation states from GLB files
+      const config = getAnimConfig(animState);
+
       action.loop = config.loop ? THREE.LoopRepeat : THREE.LoopOnce;
       action.clampWhenFinished = config.clampWhenFinished ?? false;
       action.timeScale = config.timeScale ?? 1;
-      
+
       actions.current.set(animState, action);
     });
 
@@ -114,17 +125,17 @@ export function useAnimationSystem({
     const handleFinished = (e: { action: THREE.AnimationAction }) => {
       const finishedState = Array.from(actions.current.entries())
         .find(([_, action]) => action === e.action)?.[0];
-      
+
       if (finishedState) {
         onAnimationComplete?.(finishedState);
-        
+
         // Si hay animación en cola, reproducirla
         if (state.current.queuedState) {
           playAnimation(state.current.queuedState);
           state.current.queuedState = null;
         } else {
           // Volver a idle si no está en loop
-          const config = DEFAULT_ANIMATIONS[finishedState];
+          const config = getAnimConfig(finishedState);
           if (!config.loop) {
             playAnimation('idle');
           }
@@ -133,7 +144,7 @@ export function useAnimationSystem({
     };
 
     mixer.addEventListener('finished', handleFinished);
-    
+
     return () => {
       mixer.removeEventListener('finished', handleFinished);
       actions.current.forEach(action => action.stop());
@@ -147,10 +158,10 @@ export function useAnimationSystem({
     options?: { force?: boolean; queue?: boolean }
   ) => {
     if (!mixer) return;
-    
+
     const { force = false, queue = false } = options ?? {};
     const currentTime = performance.now();
-    
+
     // Verificar si está bloqueado
     if (!force && currentTime < state.current.lockedUntil) {
       if (queue) {
@@ -158,24 +169,24 @@ export function useAnimationSystem({
       }
       return;
     }
-    
+
     // No cambiar si es el mismo estado (a menos que sea forzado)
     if (!force && newState === state.current.currentState) {
       return;
     }
-    
+
     const newAction = actions.current.get(newState);
     const currentAction = state.current.currentAction;
-    const newConfig = DEFAULT_ANIMATIONS[newState];
-    
+    const newConfig = getAnimConfig(newState);
+
     if (!newAction) {
       console.warn(`Animation not found: ${newState}`);
       return;
     }
-    
+
     // Verificar prioridad
     if (!force && currentAction) {
-      const currentConfig = DEFAULT_ANIMATIONS[state.current.currentState];
+      const currentConfig = getAnimConfig(state.current.currentState);
       if (currentConfig.priority && newConfig.priority) {
         if (newConfig.priority < currentConfig.priority) {
           if (queue) state.current.queuedState = newState;
@@ -183,25 +194,25 @@ export function useAnimationSystem({
         }
       }
     }
-    
+
     // Crossfade
     const fadeTime = newConfig.fadeInTime ?? 0.2;
-    
+
     if (currentAction && currentAction !== newAction) {
       newAction.reset();
       newAction.setEffectiveTimeScale(newConfig.timeScale ?? 1);
       newAction.setEffectiveWeight(1);
       newAction.crossFadeFrom(currentAction, fadeTime, true);
     }
-    
+
     newAction.play();
-    
+
     // Actualizar estado
     state.current.previousState = state.current.currentState;
     state.current.currentState = newState;
     state.current.currentAction = newAction;
     state.current.isTransitioning = true;
-    
+
     // Bloquear durante animaciones importantes
     if (!newConfig.loop) {
       const clip = animations.get(newState);
@@ -210,10 +221,10 @@ export function useAnimationSystem({
         state.current.lockedUntil = currentTime + (clip.duration * 1000 * 0.8 / timeScale);
       }
     }
-    
+
     // Marcar fin de transición usando duración real del fade
     state.current.transitionEndTime = performance.now() + fadeTime * 1000;
-    
+
   }, [mixer, animations]);
 
   // Stop all
@@ -254,14 +265,14 @@ export function useAnimationSystem({
     get currentState() { return state.current.currentState; },
     get previousState() { return state.current.previousState; },
     get isTransitioning() { return state.current.isTransitioning; },
-    
+
     // Acciones
     play: playAnimation,
     stop: stopAll,
     pause,
     resume,
     setTimeScale,
-    
+
     // Helper para determinar animación basada en movimiento
     updateFromMovement: useCallback((
       isMoving: boolean,
@@ -269,20 +280,28 @@ export function useAnimationSystem({
       isGrounded: boolean,
       verticalVelocity: number
     ) => {
+      const currentConfig = getAnimConfig(state.current.currentState);
+      const isLocked = performance.now() < state.current.lockedUntil;
+
+      // No interrumpir animaciones de combate/daño si están bloqueadas
+      if (isLocked && currentConfig.priority && currentConfig.priority >= 3) {
+        return;
+      }
+
+      let targetState: AnimationState = 'idle';
+
       if (!isGrounded) {
-        if (verticalVelocity > 0.5) {
-          playAnimation('jump');
-        } else if (verticalVelocity < -1) {
-          playAnimation('fall');
-        }
+        if (verticalVelocity > 0.5) targetState = 'jump';
+        else if (verticalVelocity < -1) targetState = 'fall';
+        else targetState = state.current.currentState === 'jump' ? 'jump' : 'fall';
       } else if (isMoving) {
-        if (isSprinting) {
-          playAnimation('sprint');
-        } else {
-          playAnimation('run');
-        }
+        targetState = isSprinting ? 'sprint' : 'run';
       } else {
-        playAnimation('idle');
+        targetState = 'idle';
+      }
+
+      if (targetState !== state.current.currentState) {
+        playAnimation(targetState, { force: true });
       }
     }, [playAnimation]),
   };

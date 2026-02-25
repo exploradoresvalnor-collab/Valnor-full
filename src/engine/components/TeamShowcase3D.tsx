@@ -15,7 +15,6 @@ import {
   OrbitControls,
   AdaptiveDpr,
   ContactShadows,
-  Environment,
   useGLTF,
   useAnimations,
   Html,
@@ -293,7 +292,7 @@ function ShowcaseScene({
   // Calcular posiciones: 2 filas si hay más de 4 personajes
   const positions = useMemo(() => {
     const count = characters.length;
-    
+
     if (count <= 4) {
       // Una sola fila, bien espaciados
       const spacing = 2.2;
@@ -305,13 +304,13 @@ function ShowcaseScene({
         0,
       ] as [number, number, number]);
     }
-    
+
     // Más de 4: 2 filas (V-formation)
     const frontCount = Math.ceil(count / 2);
     const backCount = count - frontCount;
     const spacing = 2.4;
     const result: [number, number, number][] = [];
-    
+
     // Fila frontal
     const frontWidth = (frontCount - 1) * spacing;
     for (let i = 0; i < frontCount; i++) {
@@ -321,7 +320,7 @@ function ShowcaseScene({
         1.2, // adelante
       ]);
     }
-    
+
     // Fila trasera
     const backWidth = (backCount - 1) * spacing;
     for (let i = 0; i < backCount; i++) {
@@ -331,7 +330,7 @@ function ShowcaseScene({
         -1.2, // atrás
       ]);
     }
-    
+
     return result;
   }, [characters.length]);
 
@@ -401,8 +400,8 @@ function ShowcaseScene({
         </Suspense>
       ))}
 
-      {/* Environment (iluminación basada en imagen) */}
-      <Environment preset="night" />
+      {/* Ambient sky tone (replaces network-dependent <Environment preset="night" />) */}
+      <hemisphereLight args={['#1a1a3e', '#0a0a14', 0.4]} />
     </>
   );
 }
@@ -466,6 +465,10 @@ export function TeamShowcase3D({
         shadows
         dpr={dpr}
         camera={{ position: [0, cameraY, cameraZ], fov: 45 }}
+        onCreated={({ gl }) => {
+          // Force context disposal on unmount to prevent WebGLRenderer Context Lost
+          return () => gl.dispose();
+        }}
         gl={{
           antialias: quality !== 'low',
           alpha: transparent,

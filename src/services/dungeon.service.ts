@@ -11,9 +11,9 @@
  */
 
 import apiService from './api.service';
-import type { 
-  Dungeon, 
-  DungeonResponse, 
+import type {
+  Dungeon,
+  DungeonResponse,
 } from '../types';
 
 class DungeonService {
@@ -25,9 +25,18 @@ class DungeonService {
    * Backend devuelve array plano
    */
   async getDungeons(): Promise<Dungeon[]> {
-    const response = await apiService.get<Dungeon[] | DungeonResponse>(this.basePath);
-    if (Array.isArray(response)) return response;
-    return response.dungeons || [];
+    // Add 5s timeout to prevent infinite hang when backend is unreachable
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 5000);
+    try {
+      const response = await apiService.get<Dungeon[] | DungeonResponse>(this.basePath);
+      clearTimeout(timeout);
+      if (Array.isArray(response)) return response;
+      return response.dungeons || [];
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
   }
 
   /**

@@ -55,12 +55,19 @@ export const authService = {
     const response = await api.post<LoginResponse>('/auth/login', data);
 
     // Guardar usuario y token
-    // NOTA: El backend envía el JWT como cookie HTTP-only (Set-Cookie: token=...)
-    // Por eso response.token puede no existir en el body.
-    // Si el backend SÍ incluye token en el body, lo guardamos como fallback.
+    // El backend puede enviar el JWT de varias formas:
+    // 1. response.token (body)
+    // 2. response.accessToken (body) 
+    // 3. HTTP-only cookie (Set-Cookie)
+    const token = response.token || (response as any).accessToken || (response as any).jwt;
+
     currentUser = response.user;
-    if (response.token) {
-      localStorage.setItem(STORAGE_KEYS.TOKEN, response.token);
+    if (token) {
+      localStorage.setItem(STORAGE_KEYS.TOKEN, token);
+      console.log('🔑 Token guardado en localStorage');
+    } else {
+      console.warn('⚠️ No se encontró token en la respuesta del login. Campos disponibles:', Object.keys(response));
+      console.warn('⚠️ La autenticación dependerá exclusivamente de cookies HTTP-only.');
     }
     if (response.user) {
       localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(response.user));

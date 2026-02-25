@@ -4,7 +4,6 @@ import { useAuth } from '../../hooks/useAuth';
 import { usePlayerStore } from '../../stores/playerStore';
 import { useActiveTeam } from '../../stores/teamStore';
 import type { Dungeon as DungeonType } from '../../stores/dungeonStore';
-import { useTeamStore } from '../../stores/teamStore';
 import { dungeonService } from '../../services';
 import { DungeonBattle } from '../../components/dungeons/DungeonBattle';
 import DungeonModelPreview from '../../engine/components/DungeonModelPreview';
@@ -90,14 +89,8 @@ function mapDungeon(raw: any): DungeonInfo {
 
 
 
-// Engine Scenes for testing/dev
 const ENGINE_DUNGEONS: DungeonInfo[] = [
-  { id: 'engine-castle', nombre: '🏰 DEV: Castle Scene', descripcion: 'Castillo procedural con torres y murallas', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'normal', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
-  { id: 'engine-valley', nombre: '🌲 DEV: Valley Scene', descripcion: 'Valle abierto con vegetación', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'easy', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
-  { id: 'engine-canyon', nombre: '🏜️ DEV: Canyon Scene', descripcion: 'Cañón desértico rocoso', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'hard', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
-  { id: 'engine-mining', nombre: '⛏️ DEV: Mining Scene', descripcion: 'Montaña minera con cuevas', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'expert', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
-  { id: 'engine-plain', nombre: '🌿 DEV: Plain Scene', descripcion: 'Llanura simple para pruebas', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'easy', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
-  { id: 'engine-terrain', nombre: '⛰️ DEV: Terrain Test', descripcion: 'Test de generación de terreno', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'normal', costoEnergia: 0, recompensas: { valMin: 0, valMax: 0, evoMin: 0, evoMax: 0, items: [] }, enemigos: ['Dummy'], boss: 'None', pisos: 1, completado: false },
+  { id: 'engine-fortaleza', nombre: '🏰 Fortaleza Olvidada', descripcion: 'Explora las ruinas de la fortaleza dominada por el Caballero Oscuro.', nivelMinimo: 1, nivelMaximo: 99, dificultad: 'hard', costoEnergia: 0, recompensas: { valMin: 100, valMax: 500, evoMin: 50, evoMax: 200, items: [] }, enemigos: ['Caballero Oscuro'], boss: 'None', pisos: 1, completado: false },
 ];
 
 const Dungeon: React.FC = () => {
@@ -123,25 +116,25 @@ const Dungeon: React.FC = () => {
     const fetchDungeons = async () => {
       setDungeonLoading(true);
       try {
-          console.log('[Dungeon] Loading real dungeons from backend');
-          try {
-            const result = await dungeonService.getDungeons();
-            console.log('[Dungeon] Raw result from backend:', result);
-            if (cancelled) return;
+        console.log('[Dungeon] Loading real dungeons from backend');
+        try {
+          const result = await dungeonService.getDungeons();
+          console.log('[Dungeon] Raw result from backend:', result);
+          if (cancelled) return;
 
-            if (Array.isArray(result) && result.length > 0) {
-              const mappedDungeons = (result as any[]).map(mapDungeon);
-              console.log('[Dungeon] Mapped dungeons:', mappedDungeons);
-              setDungeonsList([...mappedDungeons, ...ENGINE_DUNGEONS]);
-            } else {
-              console.warn('[Dungeon] No dungeons received from backend or empty array');
-              setDungeonsList([...ENGINE_DUNGEONS]);
-            }
-          } catch (serviceError) {
-            console.error('[Dungeon] Error calling dungeonService.getDungeons():', serviceError);
-            // Fallback to empty array but keep engine scenes
+          if (Array.isArray(result) && result.length > 0) {
+            const mappedDungeons = (result as any[]).map(mapDungeon);
+            console.log('[Dungeon] Mapped dungeons:', mappedDungeons);
+            setDungeonsList([...mappedDungeons, ...ENGINE_DUNGEONS]);
+          } else {
+            console.warn('[Dungeon] No dungeons received from backend or empty array');
             setDungeonsList([...ENGINE_DUNGEONS]);
           }
+        } catch (serviceError) {
+          console.error('[Dungeon] Error calling dungeonService.getDungeons():', serviceError);
+          // Fallback to empty array but keep engine scenes
+          setDungeonsList([...ENGINE_DUNGEONS]);
+        }
       } catch (err) {
         console.error('[Dungeon] Error fetching dungeons:', err);
       } finally {
@@ -180,20 +173,20 @@ const Dungeon: React.FC = () => {
 
   const handleEnterDungeon = () => {
     if (!selectedDungeon) return;
-    
+
     // Verificar si hay equipo activo (demo o real)
     const hasTeam = team.length > 0;
     if (!hasTeam) {
       alert('¡Necesitas un equipo para entrar a la dungeon!');
       return;
     }
-    
+
     // Usar energía
     useEnergy(selectedDungeon.costoEnergia);
-    
+
     // Navegar a la pantalla de juego (carga la escena 3D). El combate NO se ejecuta automáticamente; el motor
     // de juego debe gestionar el inicio del combate cuando el jugador alcance al enemigo.
-    navigate(`/dungeon/play/${selectedDungeon.id}`);
+    navigate(`/dungeon/play/${selectedDungeon.id}`, { state: { dungeonName: selectedDungeon.nombre } });
   };
 
   const handleBattleComplete = (result: { victory: boolean; rewards: { gold: number; exp: number; items: string[] } }) => {
@@ -242,7 +235,7 @@ const Dungeon: React.FC = () => {
       <div className="dungeon-container">
         <div className="dungeon-list">
           <div className="list-header">
-            <h2>🗺️ Selecciona una Mazmorra</h2>
+            <h2>Dominios Disponibles</h2>
             <span className="player-level">Tu nivel: {userLevel}</span>
           </div>
 
@@ -255,13 +248,12 @@ const Dungeon: React.FC = () => {
               >
                 <div className="card-media">
                   <img
-                    src={`/assets/dungeons/${dungeon.id}.jpg`}
+                    src={dungeon.id === 'engine-fortaleza' ? '/assets/dungeons/engine-fortaleza.png' : `/assets/dungeons/${dungeon.id}.jpg`}
                     alt={dungeon.nombre}
                     className="dungeon-image"
                   />
                   <div className="card-overlay">
                     <div className="overlay-title">{dungeon.nombre}</div>
-                    <div className="overlay-sub">{dungeon.descripcion}</div>
                   </div>
                   <div className="card-badges">
                     <span className={`badge difficulty ${dungeon.dificultad}`}>{difficultyNames[dungeon.dificultad]}</span>
@@ -276,7 +268,7 @@ const Dungeon: React.FC = () => {
                     <span className="meta-item">Nv.{dungeon.nivelMinimo}-{dungeon.nivelMaximo}</span>
                   </div>
                   <div className="enemies-row">
-                    {dungeon.enemigos.slice(0,4).map((enemy, i) => (
+                    {dungeon.enemigos.slice(0, 4).map((enemy, i) => (
                       <span key={i} className="enemy-chip">{enemy}</span>
                     ))}
                   </div>
@@ -285,7 +277,7 @@ const Dungeon: React.FC = () => {
                       className="dungeon-select-button"
                       onClick={(e) => { e.stopPropagation(); setSelectedDungeon(dungeon); setShowEnterModal(true); }}
                     >
-                      Seleccionar
+                      Explorar
                     </button>
                   </div>
                 </div>
@@ -311,155 +303,169 @@ const Dungeon: React.FC = () => {
       </div>
 
       {/* Enter Modal */}
-      {showEnterModal && selectedDungeon && (
-        <div className="modal-overlay" onClick={() => setShowEnterModal(false)}>
-          <div className="enter-modal" onClick={e => e.stopPropagation()}>
-            <div style={{ position: 'relative', width: '100%', height: 'auto' }}>
-              {/* No renderizar la escena 3D dentro del modal. Usar thumbnail o placeholder. */}
+      {
+        showEnterModal && selectedDungeon && (
+          <div className="modal-overlay" onClick={() => setShowEnterModal(false)}>
+            <div className="enter-modal" onClick={e => e.stopPropagation()}>
+              <div style={{ position: 'relative', width: '100%', height: 'auto' }}>
+                {/* Visual Preview Banner */}
+                <div style={{
+                  width: '100%',
+                  height: '220px',
+                  backgroundImage: `url(${selectedDungeon.id === 'engine-fortaleza' ? '/assets/dungeons/engine-fortaleza.png' : `/assets/dungeons/${selectedDungeon.id}.jpg`})`,
+                  backgroundSize: 'cover',
+                  backgroundPosition: 'center',
+                  borderTopLeftRadius: 8,
+                  borderTopRightRadius: 8,
+                  boxShadow: 'inset 0 -80px 60px -10px var(--modal-bg)'
+                }} />
 
-              <div style={{ position: 'relative', zIndex: 2, padding: 16, background: 'var(--modal-bg)', borderRadius: 8 }}>
-                <h3>⚔️ Entrar a la Dungeon</h3>
-                
-                <div className="modal-dungeon">
-                  <span className="modal-icon">
-                    {selectedDungeon.dificultad === 'easy' && '🏕️'}
-                    {selectedDungeon.dificultad === 'normal' && '🏰'}
-                    {selectedDungeon.dificultad === 'hard' && '🗼'}
-                    {selectedDungeon.dificultad === 'expert' && '🌋'}
-                  </span>
-                  <div className="modal-info">
-                    <span className="modal-name">{selectedDungeon.nombre}</span>
-                    <span 
-                      className="modal-difficulty"
-                      style={{ color: difficultyColors[selectedDungeon.dificultad] }}
+                <div style={{ position: 'relative', zIndex: 2, padding: '0 16px 16px 16px', background: 'var(--modal-bg)', borderRadius: '0 0 8px 8px', borderTop: 'none', marginTop: '-30px' }}>
+                  <h3 style={{ textShadow: '0 2px 4px rgba(0,0,0,0.8)' }}>⚔️ Entrar a la Dungeon</h3>
+
+                  <div className="modal-dungeon">
+                    <span className="modal-icon">
+                      {selectedDungeon.dificultad === 'easy' && '🏕️'}
+                      {selectedDungeon.dificultad === 'normal' && '🏰'}
+                      {selectedDungeon.dificultad === 'hard' && '🗼'}
+                      {selectedDungeon.dificultad === 'expert' && '🌋'}
+                    </span>
+                    <div className="modal-info">
+                      <span className="modal-name">{selectedDungeon.nombre}</span>
+                      <span
+                        className="modal-difficulty"
+                        style={{ color: difficultyColors[selectedDungeon.dificultad] }}
+                      >
+                        {difficultyNames[selectedDungeon.dificultad]} • {selectedDungeon.pisos} pisos
+                      </span>
+                    </div>
+                  </div>
+
+                  <div className="modal-cost">
+                    <span>Costo de energía:</span>
+                    <span className="cost-value">
+                      ⚡ {selectedDungeon.costoEnergia}
+                      <span className="after-energy">
+                        (Quedará: {userEnergy - selectedDungeon.costoEnergia})
+                      </span>
+                    </span>
+                  </div>
+
+                  {/* Requirements visual */}
+                  <div className="requirements-bar" aria-hidden>
+                    <div
+                      className="requirements-fill"
+                      style={{ width: `${Math.min(100, Math.round((userLevel / selectedDungeon.nivelMinimo) * 100))}%` }}
+                    />
+                  </div>
+
+                  <div className="modal-section">
+                    <h4>🎁 Recompensas</h4>
+                    <div className="rewards-grid-modal">
+                      <div className="loot-item-modal">
+                        <div className="loot-icon">💰</div>
+                        <div>
+                          <div>{selectedDungeon.recompensas.valMin}-{selectedDungeon.recompensas.valMax} VAL</div>
+                          <div className="muted">Oro estimado</div>
+                        </div>
+                      </div>
+                      <div className="loot-item-modal">
+                        <div className="loot-icon">⚡</div>
+                        <div>
+                          <div>{selectedDungeon.recompensas.evoMin}-{selectedDungeon.recompensas.evoMax} EVO</div>
+                          <div className="muted">Exp estimada</div>
+                        </div>
+                      </div>
+                      <div className="loot-item-modal">
+                        <div className="loot-icon">🎲</div>
+                        <div>
+                          <div>{selectedDungeon.recompensas.items.length} items</div>
+                          <div className="muted">Posibles drops</div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div style={{ marginTop: 10 }}>
+                    <h4>👹 Enemigos</h4>
+                    <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
+                      {selectedDungeon.enemigos.map((enemy, i) => (
+                        <div key={i} className="enemy-chip">{enemy}</div>
+                      ))}
+                    </div>
+                  </div>
+
+                  {!canEnter(selectedDungeon) && (
+                    <div className="modal-warning not-playable">
+                      ❌ No cumples los requisitos para entrar: {userLevel < selectedDungeon.nivelMinimo ? `Nivel mínimo ${selectedDungeon.nivelMinimo}` : 'Energía insuficiente'}
+                    </div>
+                  )}
+
+                  {(team.length === 0) && (
+                    <div className="modal-warning team-warning">
+                      ⚠️ ¡No tienes equipo activo! Ve al Dashboard para configurar tu equipo.
+                    </div>
+                  )}
+
+                  <div className="modal-warning">
+                    ⚠️ Si abandonas la dungeon, perderás todo el progreso y la energía consumida.
+                  </div>
+
+                  <div className="modal-actions">
+                    <div className="btn-hint">
+                      {(!canEnter(selectedDungeon) && userLevel < selectedDungeon.nivelMinimo) ? `Necesitas nivel ${selectedDungeon.nivelMinimo}` : ''}
+                    </div>
+                    <button className="cancel-btn" onClick={() => setShowEnterModal(false)}>
+                      Cancelar
+                    </button>
+                    <button
+                      className="preview-btn"
+                      onClick={() => { setShowEnterModal(false); navigate(`/dungeon/play/${selectedDungeon.id}?preview=true`); }}
+                      style={{ marginRight: 8 }}
                     >
-                      {difficultyNames[selectedDungeon.dificultad]} • {selectedDungeon.pisos} pisos
-                    </span>
+                      Ver Previa
+                    </button>
+                    <button
+                      className="confirm-btn"
+                      onClick={handleEnterDungeon}
+                      disabled={team.length === 0 || !canEnter(selectedDungeon)}
+                      title={team.length === 0 ? 'No tienes equipo activo' : (!canEnter(selectedDungeon) ? 'Requisitos no cumplidos' : '')}
+                    >
+                      ⚔️ ¡Adelante!
+                    </button>
                   </div>
-                </div>
-
-                <div className="modal-cost">
-                  <span>Costo de energía:</span>
-                  <span className="cost-value">
-                    ⚡ {selectedDungeon.costoEnergia}
-                    <span className="after-energy">
-                      (Quedará: {userEnergy - selectedDungeon.costoEnergia})
-                    </span>
-                  </span>
-                </div>
-
-                {/* Requirements visual */}
-                <div className="requirements-bar" aria-hidden>
-                  <div
-                    className="requirements-fill"
-                    style={{ width: `${Math.min(100, Math.round((userLevel / selectedDungeon.nivelMinimo) * 100))}%` }}
-                  />
-                </div>
-
-                <div className="modal-section">
-                  <h4>🎁 Recompensas</h4>
-                  <div className="rewards-grid-modal">
-                    <div className="loot-item-modal">
-                      <div className="loot-icon">💰</div>
-                      <div>
-                        <div>{selectedDungeon.recompensas.valMin}-{selectedDungeon.recompensas.valMax} VAL</div>
-                        <div className="muted">Oro estimado</div>
-                      </div>
-                    </div>
-                    <div className="loot-item-modal">
-                      <div className="loot-icon">⚡</div>
-                      <div>
-                        <div>{selectedDungeon.recompensas.evoMin}-{selectedDungeon.recompensas.evoMax} EVO</div>
-                        <div className="muted">Exp estimada</div>
-                      </div>
-                    </div>
-                    <div className="loot-item-modal">
-                      <div className="loot-icon">🎲</div>
-                      <div>
-                        <div>{selectedDungeon.recompensas.items.length} items</div>
-                        <div className="muted">Posibles drops</div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-
-                <div style={{ marginTop: 10 }}>
-                  <h4>👹 Enemigos</h4>
-                  <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                    {selectedDungeon.enemigos.map((enemy, i) => (
-                      <div key={i} className="enemy-chip">{enemy}</div>
-                    ))}
-                  </div>
-                </div>
-
-                {!canEnter(selectedDungeon) && (
-                  <div className="modal-warning not-playable">
-                    ❌ No cumples los requisitos para entrar: {userLevel < selectedDungeon.nivelMinimo ? `Nivel mínimo ${selectedDungeon.nivelMinimo}` : 'Energía insuficiente'}
-                  </div>
-                )}
-
-                {(team.length === 0) && (
-                  <div className="modal-warning team-warning">
-                    ⚠️ ¡No tienes equipo activo! Ve al Dashboard para configurar tu equipo.
-                  </div>
-                )}
-
-                <div className="modal-warning">
-                  ⚠️ Si abandonas la dungeon, perderás todo el progreso y la energía consumida.
-                </div>
-
-                <div className="modal-actions">
-                  <div className="btn-hint">
-                    {(!canEnter(selectedDungeon) && userLevel < selectedDungeon.nivelMinimo) ? `Necesitas nivel ${selectedDungeon.nivelMinimo}` : ''}
-                  </div>
-                  <button className="cancel-btn" onClick={() => setShowEnterModal(false)}>
-                    Cancelar
-                  </button>
-                  <button
-                    className="preview-btn"
-                    onClick={() => { setShowEnterModal(false); navigate(`/dungeon/play/${selectedDungeon.id}?preview=true`); }}
-                    style={{ marginRight: 8 }}
-                  >
-                    Ver Previa
-                  </button>
-                  <button 
-                    className="confirm-btn" 
-                    onClick={handleEnterDungeon}
-                    disabled={team.length === 0 || !canEnter(selectedDungeon)}
-                    title={team.length === 0 ? 'No tienes equipo activo' : (!canEnter(selectedDungeon) ? 'Requisitos no cumplidos' : '')}
-                  >
-                    ⚔️ ¡Adelante!
-                  </button>
                 </div>
               </div>
             </div>
           </div>
-        </div>
-      )}
+        )
+      }
 
       {/* Battle Screen */}
-      {showBattle && battleDungeon && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 900, display: 'flex', alignItems: 'stretch', justifyContent: 'center' }}>
-          <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
-            <DungeonModelPreview
-              sceneId={battleDungeon.id}
-              apiBase={'http://localhost:8080/api/scenes'}
-              height={'100vh'}
-              teamCount={team.length}
-              directGlbUrl={battleDungeon.id.startsWith('demo-') ? '/assets/dungeons/Fortaleza/castle_low_poly.glb' : undefined}
-              interactive={true}
-            />
+      {
+        showBattle && battleDungeon && (
+          <div style={{ position: 'fixed', inset: 0, zIndex: 900, display: 'flex', alignItems: 'stretch', justifyContent: 'center' }}>
+            <div style={{ position: 'absolute', inset: 0, zIndex: 0 }}>
+              <DungeonModelPreview
+                sceneId={battleDungeon.id}
+                apiBase={'http://localhost:8080/api/scenes'}
+                height={'100vh'}
+                teamCount={team.length}
+                directGlbUrl={battleDungeon.id.startsWith('demo-') ? '/assets/dungeons/Fortaleza/castle_low_poly.glb' : undefined}
+                interactive={true}
+              />
+            </div>
+            <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: 1200, margin: 'auto', padding: 24 }}>
+              <DungeonBattle
+                dungeon={battleDungeon}
+                onComplete={handleBattleComplete}
+                onExit={handleBattleExit}
+              />
+            </div>
           </div>
-          <div style={{ position: 'relative', zIndex: 2, width: '100%', maxWidth: 1200, margin: 'auto', padding: 24 }}>
-            <DungeonBattle
-              dungeon={battleDungeon}
-              onComplete={handleBattleComplete}
-              onExit={handleBattleExit}
-            />
-          </div>
-        </div>
-      )}
-    </div>
+        )
+      }
+    </div >
   );
 };
 

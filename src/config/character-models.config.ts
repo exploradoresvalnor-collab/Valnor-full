@@ -35,7 +35,7 @@ export interface CharacterModelConfig {
     slash?: string;     // nombres alternativos para ataques
     death?: string;
     hit?: string;
-  }; 
+  };
 }
 
 /**
@@ -95,16 +95,17 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
   },
   'draco-igneo': {
     modelPath: '/assets/models/characters/Character Soldier.glb',
-    displayName: 'Draco Ígneo',
-    scale: 1,
+    displayName: 'Draco Ígneo (Demo)',
+    scale: 1.6,
     yOffset: 0,
     animations: {
       idle: 'Idle',
       walk: 'Walk',
       run: 'Run',
-      attack: 'SwordSlash',
+      jump: 'Jump',
+      attack: 'Punch',
       death: 'Death',
-      hit: 'RecieveHit',
+      hit: 'HitReact',
     },
   },
   'tenebris': {

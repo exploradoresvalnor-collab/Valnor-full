@@ -38,7 +38,8 @@ export interface PlayerState {
   level: number;
   experience: number;
   experienceToNextLevel: number;
-  
+  orbsCollected: number;
+
   // Stats actuales (in-game)
   currentHealth: number;
   maxHealth: number;
@@ -46,27 +47,27 @@ export interface PlayerState {
   maxMana: number;
   currentStamina: number;
   maxStamina: number;
-  
+
   // Stats base
   stats: CharacterStats;
-  
+
   // Posición en el mundo
   position: { x: number; y: number; z: number };
   rotation: { x: number; y: number; z: number };
-  
+
   // Estado de movimiento
   isGrounded: boolean;
   isMoving: boolean;
-  
+
   // Estado de combate
   isInCombat: boolean;
   targetId: string | null;
-  
+
   // Inventario equipado (IDs)
   equippedWeapon: string | null;
   equippedArmor: string | null;
   equippedAccessory: string | null;
-  
+
   // Recursos
   gold: number;
   gems: number;
@@ -91,7 +92,7 @@ export interface PlayerActions {
   // Inicialización
   initPlayer: (data: Partial<PlayerState>) => void;
   resetPlayer: () => void;
-  
+
   // Stats
   setHealth: (current: number, max?: number) => void;
   setMana: (current: number, max?: number) => void;
@@ -100,29 +101,29 @@ export interface PlayerActions {
   takeDamage: (amount: number) => void;
   useMana: (amount: number) => boolean;
   useStamina: (amount: number) => boolean;
-  
+
   // Experiencia y nivel
   addExperience: (amount: number) => void;
   levelUp: () => void;
-  
+
   // Posición
   setPosition: (pos: { x: number; y: number; z: number }) => void;
   setRotation: (rot: { x: number; y: number; z: number }) => void;
-  
+
   // Estado de movimiento
   setIsGrounded: (grounded: boolean) => void;
   setIsMoving: (moving: boolean) => void;
-  
+
   // Combate
   enterCombat: (targetId?: string) => void;
   exitCombat: () => void;
   setTarget: (targetId: string | null) => void;
-  
+
   // Equipamiento
   equipWeapon: (itemId: string | null) => void;
   equipArmor: (itemId: string | null) => void;
   equipAccessory: (itemId: string | null) => void;
-  
+
   // Recursos
   addGold: (amount: number) => void;
   removeGold: (amount: number) => boolean;
@@ -133,9 +134,12 @@ export interface PlayerActions {
   addEnergy: (amount: number) => void;
   useEnergy: (amount: number) => boolean;
   updateEnergyRegen: () => void; // calcula y aplica regeneración
-  
+
   // Salud (para actualizaciones en tiempo real)
   setCurrentHealth: (health: number) => void;
+
+  // Dungeon Progreso
+  setOrbsCollected: (amount: number) => void;
 }
 
 const defaultStats: CharacterStats = {
@@ -162,29 +166,30 @@ const initialState: PlayerState = {
   level: 1,
   experience: 0,
   experienceToNextLevel: 100,
-  
+  orbsCollected: 0,
+
   currentHealth: 100,
   maxHealth: 100,
   currentMana: 50,
   maxMana: 50,
   currentStamina: 100,
   maxStamina: 100,
-  
+
   stats: defaultStats,
-  
+
   position: { x: 0, y: 0, z: 0 },
   rotation: { x: 0, y: 0, z: 0 },
-  
+
   isGrounded: true,
   isMoving: false,
-  
+
   isInCombat: false,
   targetId: null,
-  
+
   equippedWeapon: null,
   equippedArmor: null,
   equippedAccessory: null,
-  
+
   gold: 0,
   gems: 0,
   tickets: 10, // boletos iniciales
@@ -214,46 +219,47 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
     persist(
       (set, get) => ({
         ...initialState,
-        
+
         // Inicialización
         initPlayer: (data) => set((state) => {
           // Si los datos parecen del backend (tienen campos ES), mapearlos
-          const mappedData = data.val !== undefined || data.evo !== undefined || data.boletos !== undefined 
-            ? mapBackendPlayerData(data) 
+          const dataAny = data as any;
+          const mappedData = dataAny.val !== undefined || dataAny.evo !== undefined || dataAny.boletos !== undefined
+            ? mapBackendPlayerData(data)
             : data;
-          
+
           return {
             ...state,
             ...mappedData,
           };
         }),
-        
+
         resetPlayer: () => set(initialState),
-        
+
         // Stats
         setHealth: (current, max) => set((state) => ({
           currentHealth: Math.max(0, Math.min(current, max ?? state.maxHealth)),
           ...(max !== undefined && { maxHealth: max }),
         })),
-        
+
         setMana: (current, max) => set((state) => ({
           currentMana: Math.max(0, Math.min(current, max ?? state.maxMana)),
           ...(max !== undefined && { maxMana: max }),
         })),
-        
+
         setStamina: (current, max) => set((state) => ({
           currentStamina: Math.max(0, Math.min(current, max ?? state.maxStamina)),
           ...(max !== undefined && { maxStamina: max }),
         })),
-        
+
         heal: (amount) => set((state) => ({
           currentHealth: Math.min(state.currentHealth + amount, state.maxHealth),
         })),
-        
+
         takeDamage: (amount) => set((state) => ({
           currentHealth: Math.max(0, state.currentHealth - amount),
         })),
-        
+
         useMana: (amount) => {
           const state = get();
           if (state.currentMana >= amount) {
@@ -262,7 +268,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           }
           return false;
         },
-        
+
         useStamina: (amount) => {
           const state = get();
           if (state.currentStamina >= amount) {
@@ -271,33 +277,36 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           }
           return false;
         },
-        
+
         // Experiencia y nivel
         addExperience: (amount) => {
           const state = get();
           let newExp = state.experience + amount;
           let newLevel = state.level;
           let expRequired = state.experienceToNextLevel;
-          
+
           // Level up loop
           while (newExp >= expRequired) {
             newExp -= expRequired;
             newLevel++;
             expRequired = calculateExpRequired(newLevel);
           }
-          
+
           set({
             experience: newExp,
             level: newLevel,
             experienceToNextLevel: expRequired,
           });
-          
+
           // Si subió de nivel, actualizar stats
           if (newLevel > state.level) {
             get().levelUp();
           }
         },
-        
+
+        // Dungeons
+        setOrbsCollected: (amount) => set({ orbsCollected: amount }),
+
         levelUp: () => set((state) => {
           const multiplier = 1.1;
           return {
@@ -316,38 +325,38 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
             },
           };
         }),
-        
+
         // Posición
         setPosition: (position) => set({ position }),
         setRotation: (rotation) => set({ rotation }),
-        
+
         // Estado de movimiento
         setIsGrounded: (isGrounded) => set({ isGrounded }),
         setIsMoving: (isMoving) => set({ isMoving }),
-        
+
         // Combate
         enterCombat: (targetId = undefined) => set({
           isInCombat: true,
           targetId,
         }),
-        
+
         exitCombat: () => set({
           isInCombat: false,
           targetId: null,
         }),
-        
+
         setTarget: (targetId) => set({ targetId }),
-        
+
         // Equipamiento
         equipWeapon: (itemId) => set({ equippedWeapon: itemId }),
         equipArmor: (itemId) => set({ equippedArmor: itemId }),
         equipAccessory: (itemId) => set({ equippedAccessory: itemId }),
-        
+
         // Recursos
         addGold: (amount) => set((state) => ({
           gold: state.gold + amount,
         })),
-        
+
         removeGold: (amount) => {
           const state = get();
           if (state.gold >= amount) {
@@ -356,11 +365,11 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           }
           return false;
         },
-        
+
         addGems: (amount) => set((state) => ({
           gems: state.gems + amount,
         })),
-        
+
         removeGems: (amount) => {
           const state = get();
           if (state.gems >= amount) {
@@ -369,11 +378,11 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           }
           return false;
         },
-        
+
         addTickets: (amount) => set((state) => ({
           tickets: state.tickets + amount,
         })),
-        
+
         useTickets: (amount) => {
           const state = get();
           if (state.tickets >= amount) {
@@ -382,11 +391,11 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           }
           return false;
         },
-        
+
         addEnergy: (amount) => set((state) => ({
           energy: Math.min(state.energy + amount, state.maxEnergy),
         })),
-        
+
         useEnergy: (amount) => {
           const state = get();
           if (state.energy >= amount) {
@@ -395,7 +404,7 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
           }
           return false;
         },
-        
+
         updateEnergyRegen: () => {
           const state = get();
           if (state.energy >= state.maxEnergy) {
@@ -403,22 +412,22 @@ export const usePlayerStore = create<PlayerState & PlayerActions>()(
             set({ lastEnergyUpdate: Date.now() });
             return;
           }
-          
+
           const now = Date.now();
           const elapsed = now - state.lastEnergyUpdate;
           const regenInterval = state.energyRegenMinutes * 60 * 1000; // en ms
           const energyToAdd = Math.floor(elapsed / regenInterval);
-          
+
           if (energyToAdd > 0) {
             const newEnergy = Math.min(state.energy + energyToAdd, state.maxEnergy);
             const remainder = elapsed % regenInterval;
-            set({ 
-              energy: newEnergy, 
+            set({
+              energy: newEnergy,
               lastEnergyUpdate: now - remainder // mantener el tiempo sobrante
             });
           }
         },
-        
+
         // Salud (para actualizaciones en tiempo real)
         setCurrentHealth: (health) => set((state) => ({
           currentHealth: Math.max(0, Math.min(health, state.maxHealth)),

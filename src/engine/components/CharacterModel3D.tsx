@@ -122,22 +122,44 @@ export function CharacterModel3D({
         reverseAnimMap.set(animNameInFile, animState);
       }
     }
-    
+
     // Mapear cada animación del GLTF a nuestro AnimationState estándar
     gltfAnimations.forEach(clip => {
-      // 1. Buscar en el config
-      if(reverseAnimMap.has(clip.name)) {
+      // Remover prefijos del FBX importer type "mixamorig|Jump" o "characterarmature|Idle"
+      const parts = clip.name.split('|');
+      const cleanName = parts.length > 1 ? parts.slice(1).join('|') : clip.name;
+
+      // 1. Buscar en el config con el cleanName
+      if (reverseAnimMap.has(cleanName)) {
+        const animState = reverseAnimMap.get(cleanName)!;
+        processedAnimations.set(animState, clip);
+        return;
+      }
+
+      // Intentar también con el original entero
+      if (reverseAnimMap.has(clip.name)) {
         const animState = reverseAnimMap.get(clip.name)!;
         processedAnimations.set(animState, clip);
         return;
       }
 
-      // 2. Fallback por nombre (si no está en el config)
-      const animStateKey = clip.name.toLowerCase() as AnimationState;
+      // 2. Fallback por nombre (si no está explícito en la configuración)
+      const animStateKey = cleanName.toLowerCase() as AnimationState;
       if (!processedAnimations.has(animStateKey)) {
         processedAnimations.set(animStateKey, clip);
       }
     });
+
+    // 3. Fallbacks garantizados para evitar congelamientos si el GLB no tiene animaciones específicas
+    if (!processedAnimations.has('sprint' as AnimationState) && processedAnimations.has('run' as AnimationState)) {
+      processedAnimations.set('sprint' as AnimationState, processedAnimations.get('run' as AnimationState)!);
+    }
+    if (!processedAnimations.has('fall' as AnimationState) && processedAnimations.has('jump' as AnimationState)) {
+      processedAnimations.set('fall' as AnimationState, processedAnimations.get('jump' as AnimationState)!);
+    }
+    if (!processedAnimations.has('triple_jump' as AnimationState) && processedAnimations.has('jump' as AnimationState)) {
+      processedAnimations.set('triple_jump' as AnimationState, processedAnimations.get('jump' as AnimationState)!);
+    }
 
     if (import.meta.env.DEV) {
       console.log(
@@ -145,9 +167,9 @@ export function CharacterModel3D({
         Array.from(processedAnimations.keys()),
       );
     }
-    
+
     onAnimationsReady?.(mixer, processedAnimations);
-  
+
   }, [mixer, gltfAnimations, config, onAnimationsReady, personajeId]);
 
 

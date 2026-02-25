@@ -24,7 +24,7 @@ class ApiService {
   private buildUrl(endpoint: string, params?: Record<string, string>): string {
     // Si baseUrl está vacío (proxy de Vite), usar ruta relativa
     const fullPath = `${this.baseUrl}${endpoint}`;
-    
+
     if (params && Object.keys(params).length > 0) {
       const searchParams = new URLSearchParams();
       Object.keys(params).forEach(key => {
@@ -34,7 +34,7 @@ class ApiService {
       });
       return `${fullPath}?${searchParams.toString()}`;
     }
-    
+
     return fullPath;
   }
 
@@ -71,11 +71,11 @@ class ApiService {
         ...errorBody,
       };
     }
-    
+
     // Si la respuesta está vacía, retornar undefined
     const text = await response.text();
     if (!text) return undefined as T;
-    
+
     return JSON.parse(text);
   }
 
@@ -84,12 +84,21 @@ class ApiService {
    */
   async get<T>(endpoint: string, params?: Record<string, string>, options?: RequestOptions): Promise<T> {
     const url = this.buildUrl(endpoint, params);
-    const response = await fetch(url, {
-      method: 'GET',
-      headers: this.getHeaders(options?.headers),
-      credentials: 'include', // Enviar cookies
-    });
-    return this.handleResponse<T>(response);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(url, {
+        method: 'GET',
+        headers: this.getHeaders(options?.headers),
+        credentials: 'include',
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      return this.handleResponse<T>(response);
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
   }
 
   /**
@@ -101,19 +110,29 @@ class ApiService {
     console.log('[API] POST body:', JSON.stringify(body, null, 2));
 
     const headers = this.getHeaders(options?.headers);
-    console.log('[API] Headers:', { ...headers, Authorization: headers.Authorization ? '[PRESENT]' : '[MISSING]' });
+    const hasAuth = (headers as Record<string, string>)['Authorization'];
+    console.log('[API] Headers:', { ...headers as any, Authorization: hasAuth ? '[BEARER TOKEN]' : '[COOKIE-ONLY]' });
 
-    const response = await fetch(url, {
-      method: 'POST',
-      headers,
-      credentials: 'include',
-      body: JSON.stringify(body),
-    });
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers,
+        credentials: 'include',
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
 
-    console.log('[API] Response status:', response.status);
-    console.log('[API] Response url:', response.url);
+      console.log('[API] Response status:', response.status);
+      console.log('[API] Response url:', response.url);
 
-    return this.handleResponse<T>(response);
+      return this.handleResponse<T>(response);
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
   }
 
   /**
@@ -121,13 +140,22 @@ class ApiService {
    */
   async put<T>(endpoint: string, body: any, options?: RequestOptions): Promise<T> {
     const url = this.buildUrl(endpoint);
-    const response = await fetch(url, {
-      method: 'PUT',
-      headers: this.getHeaders(options?.headers),
-      credentials: 'include',
-      body: JSON.stringify(body),
-    });
-    return this.handleResponse<T>(response);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(url, {
+        method: 'PUT',
+        headers: this.getHeaders(options?.headers),
+        credentials: 'include',
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      return this.handleResponse<T>(response);
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
   }
 
   /**
@@ -135,13 +163,22 @@ class ApiService {
    */
   async patch<T>(endpoint: string, body: any, options?: RequestOptions): Promise<T> {
     const url = this.buildUrl(endpoint);
-    const response = await fetch(url, {
-      method: 'PATCH',
-      headers: this.getHeaders(options?.headers),
-      credentials: 'include',
-      body: JSON.stringify(body),
-    });
-    return this.handleResponse<T>(response);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(url, {
+        method: 'PATCH',
+        headers: this.getHeaders(options?.headers),
+        credentials: 'include',
+        body: JSON.stringify(body),
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      return this.handleResponse<T>(response);
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
   }
 
   /**
@@ -149,12 +186,21 @@ class ApiService {
    */
   async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
     const url = this.buildUrl(endpoint);
-    const response = await fetch(url, {
-      method: 'DELETE',
-      headers: this.getHeaders(options?.headers),
-      credentials: 'include',
-    });
-    return this.handleResponse<T>(response);
+    const controller = new AbortController();
+    const timeout = setTimeout(() => controller.abort(), 10000);
+    try {
+      const response = await fetch(url, {
+        method: 'DELETE',
+        headers: this.getHeaders(options?.headers),
+        credentials: 'include',
+        signal: controller.signal,
+      });
+      clearTimeout(timeout);
+      return this.handleResponse<T>(response);
+    } catch (err) {
+      clearTimeout(timeout);
+      throw err;
+    }
   }
 }
 
