@@ -48,7 +48,7 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
   'sir-nocturno': {
     modelPath: '/assets/models/characters/Caballero root.gltf',
     displayName: 'Sir Nocturno',
-    scale: 1,
+    scale: 2.2,
     yOffset: 0,
     animations: {
       idle: 'Idle_Sword',
@@ -64,7 +64,7 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
   'vision-espectral': {
     modelPath: '/assets/models/characters/Characters_Lis.gltf',
     displayName: 'Visión Espectral',
-    scale: 1,
+    scale: 1.1,
     yOffset: 0,
     animations: {
       idle: 'Idle',
@@ -80,7 +80,7 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
   'arcanis': {
     modelPath: '/assets/models/characters/Characters_Sam.gltf',
     displayName: 'Arcanis',
-    scale: 1,
+    scale: 1.1,
     yOffset: 0,
     animations: {
       idle: 'Idle',
@@ -96,7 +96,7 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
   'draco-igneo': {
     modelPath: '/assets/models/characters/Character Soldier.glb',
     displayName: 'Draco Ígneo (Demo)',
-    scale: 1.6,
+    scale: 0.9,
     yOffset: 0,
     animations: {
       idle: 'Idle',
@@ -111,7 +111,7 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
   'tenebris': {
     modelPath: '/assets/models/characters/Characters_Shaun.gltf',
     displayName: 'Tenebris',
-    scale: 1,
+    scale: 1.8,
     yOffset: 0,
     animations: {
       idle: 'Idle',
@@ -127,7 +127,7 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
   'fenix-solar': {
     modelPath: '/assets/models/characters/Characters_Matt.gltf',
     displayName: 'Fénix Solar',
-    scale: 1,
+    scale: 1.8,
     yOffset: 0,
     animations: {
       idle: 'Idle',
@@ -143,7 +143,7 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
   'leviatan': {
     modelPath: '/assets/models/characters/BlueSoldier_Male.gltf',
     displayName: 'Leviatán',
-    scale: 1,
+    scale: 1.8,
     yOffset: 0,
     animations: {
       idle: 'Idle',
@@ -158,7 +158,7 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
   'arbol-caos': {
     modelPath: '/assets/models/characters/Characters_GermanShepherd.gltf',
     displayName: 'Árbol del Caos',
-    scale: 1,
+    scale: 1.8,
     yOffset: 0,
     animations: {
       idle: 'Idle',
@@ -252,7 +252,7 @@ export function getCharacterModelConfig(personajeId?: string | null): CharacterM
   return {
     modelPath: PLACEHOLDER_MODEL,
     displayName: 'Aventurero',
-    scale: 1,
+    scale: 1.8,
     yOffset: 0,
   };
 }

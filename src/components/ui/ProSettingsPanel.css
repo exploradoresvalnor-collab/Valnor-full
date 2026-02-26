@@ -1,0 +1,387 @@
+/* ============================================================
+   ProSettingsPanel — Menú de Configuración Profesional RPG
+   ============================================================ */
+
+.pro-settings-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.65);
+    backdrop-filter: blur(6px);
+    animation: settingsOverlayIn 0.25s ease-out;
+}
+
+@keyframes settingsOverlayIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+.pro-settings-panel {
+    width: 460px;
+    max-height: 85vh;
+    overflow-y: auto;
+    background: linear-gradient(165deg, rgba(18, 18, 32, 0.97), rgba(10, 10, 20, 0.99));
+    border: 1px solid rgba(200, 170, 80, 0.35);
+    border-radius: 16px;
+    box-shadow:
+        0 0 40px rgba(200, 170, 80, 0.12),
+        0 20px 60px rgba(0, 0, 0, 0.5),
+        inset 0 1px 0 rgba(255, 255, 255, 0.05);
+    color: #e0ddd5;
+    animation: settingsPanelSlideIn 0.3s ease-out;
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+@keyframes settingsPanelSlideIn {
+    from {
+        transform: translateY(20px) scale(0.97);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0) scale(1);
+        opacity: 1;
+    }
+}
+
+/* ─── Header ───────────────────────────────────────── */
+
+.pro-settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 20px 24px 16px;
+    border-bottom: 1px solid rgba(200, 170, 80, 0.2);
+}
+
+.pro-settings-header h2 {
+    margin: 0;
+    font-size: 1.25rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    background: linear-gradient(135deg, #ffd700, #c8aa50);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.pro-settings-close {
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 8px;
+    color: #aaa;
+    font-size: 1.2rem;
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.pro-settings-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.4);
+    color: #ef4444;
+}
+
+/* ─── Sections ─────────────────────────────────────── */
+
+.pro-settings-section {
+    padding: 18px 24px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.pro-settings-section:last-child {
+    border-bottom: none;
+}
+
+.pro-settings-section-title {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 14px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+    color: #c8aa50;
+}
+
+.pro-settings-section-title .section-icon {
+    font-size: 1rem;
+}
+
+/* ─── Quality Buttons ──────────────────────────────── */
+
+.quality-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 8px;
+}
+
+.quality-btn {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 4px;
+    padding: 12px 6px 10px;
+    background: rgba(255, 255, 255, 0.04);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+    border-radius: 10px;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.25s;
+    font-family: inherit;
+}
+
+.quality-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    border-color: rgba(200, 170, 80, 0.3);
+    color: #ccc;
+}
+
+.quality-btn.active {
+    background: linear-gradient(135deg, rgba(200, 170, 80, 0.15), rgba(200, 170, 80, 0.08));
+    border-color: rgba(200, 170, 80, 0.6);
+    color: #ffd700;
+    box-shadow: 0 0 12px rgba(200, 170, 80, 0.15);
+}
+
+.quality-btn .quality-icon {
+    font-size: 1.4rem;
+}
+
+.quality-btn .quality-label {
+    font-size: 0.7rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.quality-btn .quality-desc {
+    font-size: 0.6rem;
+    color: #666;
+    font-weight: 400;
+}
+
+.quality-btn.active .quality-desc {
+    color: #a89645;
+}
+
+/* ─── Volume Sliders ───────────────────────────────── */
+
+.volume-control {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin-bottom: 14px;
+}
+
+.volume-control:last-child {
+    margin-bottom: 0;
+}
+
+.volume-icon {
+    font-size: 1.2rem;
+    width: 28px;
+    text-align: center;
+    flex-shrink: 0;
+}
+
+.volume-info {
+    flex: 1;
+    min-width: 0;
+}
+
+.volume-label {
+    display: flex;
+    align-items: baseline;
+    justify-content: space-between;
+    margin-bottom: 6px;
+    font-size: 0.78rem;
+    color: #bbb;
+}
+
+.volume-value {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #ffd700;
+    font-variant-numeric: tabular-nums;
+}
+
+/* Custom Range Slider */
+.volume-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 100%;
+    height: 6px;
+    background: rgba(255, 255, 255, 0.08);
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.volume-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700, #c8aa50);
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 8px rgba(200, 170, 80, 0.3);
+    cursor: grab;
+    transition: transform 0.15s, box-shadow 0.15s;
+}
+
+.volume-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 12px rgba(200, 170, 80, 0.5);
+}
+
+.volume-slider::-webkit-slider-thumb:active {
+    cursor: grabbing;
+    transform: scale(1.1);
+}
+
+.volume-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: linear-gradient(135deg, #ffd700, #c8aa50);
+    border: 2px solid rgba(0, 0, 0, 0.3);
+    box-shadow: 0 0 8px rgba(200, 170, 80, 0.3);
+    cursor: grab;
+}
+
+.volume-mute-btn {
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 6px;
+    color: #888;
+    font-size: 0.9rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    transition: all 0.2s;
+}
+
+.volume-mute-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+    color: #ffd700;
+}
+
+.volume-mute-btn.muted {
+    color: #ef4444;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+/* ─── Stats Row ────────────────────────────────────── */
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 8px;
+}
+
+.stat-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    padding: 10px 6px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 1px solid rgba(255, 255, 255, 0.06);
+    border-radius: 8px;
+}
+
+.stat-card .stat-value {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #ffd700;
+    font-variant-numeric: tabular-nums;
+}
+
+.stat-card .stat-label {
+    font-size: 0.6rem;
+    color: #777;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* ─── Footer ───────────────────────────────────────── */
+
+.pro-settings-footer {
+    padding: 14px 24px 20px;
+    display: flex;
+    gap: 10px;
+}
+
+.pro-settings-footer button {
+    flex: 1;
+    padding: 10px;
+    border-radius: 8px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    font-family: inherit;
+    letter-spacing: 0.03em;
+}
+
+.btn-reset {
+    background: rgba(255, 255, 255, 0.06);
+    border: 1px solid rgba(255, 255, 255, 0.12);
+    color: #999;
+}
+
+.btn-reset:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: #ccc;
+}
+
+.btn-close-settings {
+    background: linear-gradient(135deg, rgba(200, 170, 80, 0.25), rgba(200, 170, 80, 0.12));
+    border: 1px solid rgba(200, 170, 80, 0.5);
+    color: #ffd700;
+}
+
+.btn-close-settings:hover {
+    background: linear-gradient(135deg, rgba(200, 170, 80, 0.35), rgba(200, 170, 80, 0.2));
+    box-shadow: 0 0 15px rgba(200, 170, 80, 0.15);
+}
+
+/* ─── Scrollbar ────────────────────────────────────── */
+
+.pro-settings-panel::-webkit-scrollbar {
+    width: 6px;
+}
+
+.pro-settings-panel::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.pro-settings-panel::-webkit-scrollbar-thumb {
+    background: rgba(200, 170, 80, 0.25);
+    border-radius: 3px;
+}
+
+.pro-settings-panel::-webkit-scrollbar-thumb:hover {
+    background: rgba(200, 170, 80, 0.4);
+}

@@ -16,7 +16,16 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
     const meshRef = useRef<THREE.Group>(null);
     const tiltContainerRef = useRef<THREE.Group>(null);
 
-    const { characterId, characterClass, isInCombat, orbsCollected, setPosition, setIsGrounded, setIsMoving } = usePlayerStore();
+    const characterId = usePlayerStore(s => s.characterId);
+    const characterClass = usePlayerStore(s => s.characterClass);
+    const isInCombat = usePlayerStore(s => s.isInCombat);
+    const orbsCollected = usePlayerStore(s => s.orbsCollected);
+
+    // Actions are stable in Zustand, they don't trigger re-renders
+    const setPosition = usePlayerStore(s => s.setPosition);
+    const setIsGrounded = usePlayerStore(s => s.setIsGrounded);
+    const setIsMoving = usePlayerStore(s => s.setIsMoving);
+
     const teamLeader = useTeamLeader();
 
     // Resolve which character model to spawn based on active team
@@ -216,7 +225,9 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
             ];
             // Si collidables está vacío, saltará este paso
             if (collidables.length > 0) {
-                [s.playerPos.y - 0.2, s.playerPos.y + 0.8].forEach(yPos => {
+                // RAYCAST ORIGIN FIX: Modificado a s.playerPos.y + 0.2 para evitar chocar 
+                // con las caras internas de pisos solapados (lo que creaba paredes invisibles)
+                [s.playerPos.y + 0.2, s.playerPos.y + 0.8].forEach(yPos => {
                     const origin = new THREE.Vector3(s.playerPos.x, yPos, s.playerPos.z);
                     directions.forEach(dirVec => {
                         raycaster.current.set(origin, dirVec);

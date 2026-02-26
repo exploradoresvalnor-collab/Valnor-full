@@ -1,6 +1,6 @@
 // src/services/guest.service.ts
 
-const generateId = () => `guest_${Math.random().toString(36).slice(2,9)}_${Date.now().toString(36)}`;
+const generateId = () => `guest_${Math.random().toString(36).slice(2, 9)}_${Date.now().toString(36)}`;
 import { User } from '../types/user.types';
 import { STORAGE_KEYS } from '../utils/constants';
 import { authService } from './auth.service';
@@ -44,10 +44,8 @@ export const clearGuestUser = () => {
 export const startDemoSession = (): void => {
   const guest = createGuestUser();
 
-  // Mantener comportamiento síncrono mínimo (compatibilidad con tests):
-  // persistir usuario base para que useAuth detecte sesión inmediatamente.
-  localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(guest));
-  authService.loadFromStorage();
+  // Inyectar en memoria sin tocar la capa persistente de autenticacion real
+  authService.setGuestUser(guest);
 
   // Inyectar entorno demo completo (stores + localStorage) — import dinámico
   // (enriquecerá el user y poblará stores; es OK que sea async)

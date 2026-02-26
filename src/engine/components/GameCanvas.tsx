@@ -22,6 +22,7 @@ interface GameCanvasProps {
   showStats?: boolean;
   enablePhysics?: boolean;
   onReady?: () => void;
+  backgroundColor?: string | null;
 }
 
 /**
@@ -131,9 +132,10 @@ function GlobalLoaderOverlay() {
  */
 export function GameCanvas({
   children,
-  showStats = false,
-  enablePhysics = true,
+  showStats = process.env.NODE_ENV === 'development',
+  enablePhysics = false,
   onReady,
+  backgroundColor = '#202020',
 }: GameCanvasProps) {
   const canvasRef = useRef<HTMLCanvasElement>(null);
   const { quality } = useGameStore();
@@ -215,7 +217,7 @@ export function GameCanvas({
         }}
       >
         {/* Performance adapters */}
-        <color attach="background" args={['#202020']} />
+        {backgroundColor && <color attach="background" args={[backgroundColor]} />}
 
         <AdaptiveDpr pixelated />
         <AdaptiveEvents />

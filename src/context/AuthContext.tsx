@@ -8,6 +8,7 @@ import { socketService } from '../services/socket.service';
 import { STORAGE_KEYS } from '../utils/constants';
 import { useSessionStore } from '../stores/sessionStore';
 import { User } from '../types';
+import { getGuestUser, createGuestUser } from '../services/guest.service';
 
 interface AuthContextType {
   user: User | null;
@@ -28,7 +29,7 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     const checkAuth = async () => {
       const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
       const storedUser = localStorage.getItem(STORAGE_KEYS.USER);
-      
+
       // Si la sesión actual es Guest ya persistida, evitar llamadas al backend
       const session = useSessionStore.getState();
 
@@ -46,12 +47,12 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       })();
 
       if (session.isGuest || persistedIsGuest) {
-        if (storedUser) {
-          try {
-            const parsed = JSON.parse(storedUser);
-            setUser(parsed);
-          } catch { /* parse failed */ }
+        let guest = getGuestUser();
+        if (!guest) {
+          guest = createGuestUser();
         }
+        authService.setGuestUser(guest);
+        setUser(guest);
         setLoading(false);
         return;
       }

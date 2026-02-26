@@ -10,62 +10,11 @@ import { dungeonService } from '../../services';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Html } from '@react-three/drei';
 import FortalezaLevel from '../../engine/scenes/FortalezaLevel';
-import { useEngineStore, QualityLevel } from '../../engine/stores/engineStore';
+import { ProSettingsPanel } from '../../components/ui/ProSettingsPanel';
+import { SceneAudioManager } from '../../engine/systems/SceneAudioManager';
 
-// Settings Modal Component
-function SettingsModal({ onClose }: { onClose: () => void }) {
-  const { quality, setQuality, viewDistance, fps } = useEngineStore();
-
-  return (
-    <div style={{
-      position: 'absolute', top: '50%', left: '50%', transform: 'translate(-50%, -50%)',
-      background: 'rgba(20, 20, 30, 0.95)', padding: '24px', borderRadius: '12px',
-      border: '1px solid #444', color: 'white', minWidth: '300px', zIndex: 1000
-    }}>
-      <h2 style={{ marginTop: 0, marginBottom: '20px', fontSize: '1.5rem' }}>Configuración</h2>
-
-      <div style={{ marginBottom: '16px' }}>
-        <label style={{ display: 'block', marginBottom: '8px', fontWeight: 'bold' }}>Calidad Gráfica</label>
-        <div style={{ display: 'flex', gap: '8px' }}>
-          {(['low', 'medium', 'high', 'ultra'] as QualityLevel[]).map(q => (
-            <button
-              key={q}
-              onClick={() => setQuality(q)}
-              style={{
-                flex: 1, padding: '8px', borderRadius: '6px',
-                background: quality === q ? '#3b82f6' : '#333',
-                border: 'none', color: 'white', cursor: 'pointer',
-                textTransform: 'capitalize'
-              }}
-            >
-              {q}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div style={{ marginBottom: '16px' }}>
-        <p style={{ margin: '4px 0', fontSize: '0.9rem', color: '#aaa' }}>
-          Distancia de Visión: {viewDistance}m
-        </p>
-        <p style={{ margin: '4px 0', fontSize: '0.9rem', color: '#aaa' }}>
-          FPS Actuales: {fps}
-        </p>
-      </div>
-
-      <button
-        onClick={onClose}
-        style={{
-          width: '100%', padding: '10px', borderRadius: '6px',
-          background: '#ef4444', border: 'none', color: 'white',
-          fontWeight: 'bold', cursor: 'pointer'
-        }}
-      >
-        Cerrar
-      </button>
-    </div>
-  );
-}
+// Background music path
+const SCENE_MUSIC_URL = '/assets/audio/music/Valnor sountrac.mp3';
 
 // Legacy scenes removed
 
@@ -74,7 +23,6 @@ export default function PlayDungeon() {
   const navigate = useNavigate();
   const { search } = useLocation();
   const preview = new URLSearchParams(search).get('preview') === 'true';
-  const [glbUrl, setGlbUrl] = useState<string | null>(null);
   const [sceneMeta, setSceneMeta] = useState<any>(null);
   const [enemyPos] = useState(() => ({ x: 0, y: 0, z: -2 }));
   const [nearEnemy, setNearEnemy] = useState(false);
@@ -84,6 +32,22 @@ export default function PlayDungeon() {
   const [sessionId, setSessionId] = useState<string | null>(null);
   const [startingRemoteSession, setStartingRemoteSession] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
+  const [showInGameMenu, setShowInGameMenu] = useState(false);
+
+  // ─── Background Music & Pointer Lock ──────────────────────────────
+  useEffect(() => {
+    // Volúmenes se sincronizan automáticamente via settingsStore.subscribe
+    SceneAudioManager.playMusic(SCENE_MUSIC_URL);
+
+    // Escuchar ESC para mostrar el menú de pausa in-game (ya que FortalezaPlayer no usa pointerLock)
+    const handleKeyDown = (e: KeyboardEvent) => {
+      if (e.key === 'Escape') {
+        setShowInGameMenu(prev => !prev);
+      }
+    };
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
+  }, []);
 
   // distancia umbral para iniciar combate
   const TRIGGER_DISTANCE = 2.2;
@@ -173,12 +137,10 @@ export default function PlayDungeon() {
         enemyModel: 'leviatan',
         name: 'Engine Scene Test'
       });
-      setGlbUrl(null); // Ensure no GLB loads
       return;
     }
 
     if (id.startsWith('demo-')) {
-      setGlbUrl('/assets/dungeons/Fortaleza/castle_low_poly.glb');
       setSceneMeta({ spawn: { x: 0, y: 0, z: -2 } });
       return;
     }
@@ -189,18 +151,16 @@ export default function PlayDungeon() {
     fetch(`/api/scenes/${id}`)
       .then(r => r.ok ? r.json() : Promise.reject())
       .then((data: any) => {
-        setGlbUrl(data.glbPath || null);
         setSceneMeta(data || null);
       })
       .catch(() => {
-        setGlbUrl(null);
         setSceneMeta(null);
       });
   }, [id]);
 
   return (
     <div style={{ width: '100%', height: '100vh', position: 'relative', backgroundColor: '#000' }}>
-      <GameCanvas>
+      <GameCanvas enablePhysics={true} backgroundColor={useFortalezaEngine ? null : '#202020'}>
         {/* Basic Lighting - Fallback for GLB/Demo scenes. Engine scenes use UltraSkySystem. */}
         {!useFortalezaEngine && (
           <>
@@ -267,20 +227,39 @@ export default function PlayDungeon() {
         )}
       </GameCanvas>
 
-      <div style={{ position: 'absolute', top: 12, left: 12, zIndex: 50, display: 'flex', gap: '10px' }}>
-        <button onClick={() => navigate('/dungeon')} style={{ padding: '8px 12px', background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer' }}>
-          Salir
-        </button>
-        <button onClick={() => setShowSettings(true)} style={{ padding: '8px 12px', background: '#333', color: '#fff', border: '1px solid #555', borderRadius: '4px', cursor: 'pointer' }}>
-          ⚙️ Ajustes
-        </button>
-      </div>
+      {showSettings && <ProSettingsPanel onClose={() => setShowSettings(false)} />}
 
-      {showSettings && <SettingsModal onClose={() => setShowSettings(false)} />}
-
-      {!glbUrl && (
-        <div style={{ position: 'absolute', top: 12, right: 12, zIndex: 50 }}>
-          <button onClick={() => { setGlbUrl('/assets/dungeons/Fortaleza/castle_low_poly.glb'); setSceneMeta({ spawn: { x: 0, y: 0, z: -2 } }); }} style={{ padding: '8px 12px' }}>Cargar demo GLB</button>
+      {/* IN-GAME PAUSE MENU (Activado al presionar ESC y perder PointerLock) */}
+      {showInGameMenu && !showSettings && !showBattle && (
+        <div style={{ position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+          <h2 style={{ fontFamily: '"Cinzel", "Trajan Pro", serif', color: '#cfa144', fontSize: '36px', marginBottom: '30px', textShadow: '0 0 15px rgba(207,161,68,0.5)', letterSpacing: '2px' }}>El Juego está Pausado</h2>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '320px' }}>
+            <button
+              onClick={() => { setShowInGameMenu(false); document.body.requestPointerLock?.(); }}
+              style={{ padding: '16px 20px', background: 'rgba(30, 25, 40, 0.95)', color: '#fff', border: '1px solid rgba(207,161,68,0.3)', borderRadius: '8px', cursor: 'pointer', fontFamily: '"Cinzel", serif', fontSize: '18px', display: 'flex', justifySelf: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}
+              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(207, 161, 68, 0.15)'; e.currentTarget.style.borderColor = '#cfa144'; e.currentTarget.style.boxShadow = '0 0 15px rgba(207,161,68,0.4)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(30, 25, 40, 0.95)'; e.currentTarget.style.borderColor = 'rgba(207,161,68,0.3)'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)'; }}
+            >
+              Reanudar Partida
+            </button>
+            <button
+              onClick={() => setShowSettings(true)}
+              style={{ padding: '16px 20px', background: 'rgba(30, 25, 40, 0.95)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', cursor: 'pointer', fontFamily: '"Cinzel", serif', fontSize: '18px', display: 'flex', justifySelf: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}
+              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(30, 25, 40, 0.95)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
+            >
+              ⚙️ Ajustes de Sistema
+            </button>
+            <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', margin: '15px 0' }} />
+            <button
+              onClick={() => navigate('/dungeon')}
+              style={{ padding: '16px 20px', background: 'rgba(50, 15, 15, 0.95)', color: '#ffaaaa', border: '1px solid rgba(255,100,100,0.3)', borderRadius: '8px', cursor: 'pointer', fontFamily: '"Cinzel", serif', fontSize: '18px', display: 'flex', justifySelf: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}
+              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(100, 20, 20, 0.95)'; e.currentTarget.style.borderColor = '#ff4444'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.boxShadow = '0 0 15px rgba(255,68,68,0.4)'; }}
+              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(50, 15, 15, 0.95)'; e.currentTarget.style.borderColor = 'rgba(255,100,100,0.3)'; e.currentTarget.style.color = '#ffaaaa'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)'; }}
+            >
+              Abandonar al Dashboard
+            </button>
+          </div>
         </div>
       )}
 

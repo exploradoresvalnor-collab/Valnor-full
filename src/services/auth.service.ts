@@ -226,6 +226,15 @@ export const authService = {
   },
 
   /**
+   * Inyectar usuario invitado en memoria sin tocar localStorage de produccion
+   */
+  setGuestUser(user: User): void {
+    currentUser = user;
+    notifyListeners(user);
+    console.log('🎭 Usuario Demo inyectado en authService (memoria)');
+  },
+
+  /**
    * Suscribirse a cambios de autenticación
    */
   subscribe(listener: (user: User | null) => void): () => void {

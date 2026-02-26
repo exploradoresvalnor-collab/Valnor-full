@@ -20,6 +20,8 @@ import { mapToShowcase, mapToTeamMember, mapActivity, findActiveCharacter, mapSt
 import { EnergyBar, InventorySummary } from '../../components/ui';
 import { NotificationBell } from '../../components/notifications';
 import { TeamShowcase3D, type ShowcaseCharacter } from '../../engine/components/TeamShowcase3D';
+import { SceneAudioManager } from '../../engine/systems/SceneAudioManager';
+import { ProSettingsPanel } from '../../components/ui/ProSettingsPanel';
 
 // ── react-icons ────────────────────────────────────────────
 import {
@@ -64,10 +66,10 @@ import './Dashboard.css';
 function getClassIcon(cls: string, size = 22) {
   switch (cls) {
     case 'warrior': return <GiSwordman size={size} />;
-    case 'mage':    return <GiWizardStaff size={size} />;
-    case 'archer':  return <GiHighShot size={size} />;
+    case 'mage': return <GiWizardStaff size={size} />;
+    case 'archer': return <GiHighShot size={size} />;
     case 'paladin': return <GiKnightBanner size={size} />;
-    default:        return <FiUser size={size} />;
+    default: return <FiUser size={size} />;
   }
 }
 
@@ -162,6 +164,7 @@ const Dashboard = () => {
 
   const [showProfile, setShowProfile] = useState(false);
   const [, setDashboardLoading] = useState(false);
+  const [showSettings, setShowSettings] = useState(false);
 
   const playerName = characterName || 'Aventurero';
   const playerClass = characterClass || 'warrior';
@@ -349,9 +352,9 @@ const Dashboard = () => {
 
   const activityIcon = (type: string) => {
     switch (type) {
-      case 'loot':    return <GiOpenTreasureChest size={14} />;
+      case 'loot': return <GiOpenTreasureChest size={14} />;
       case 'levelup': return <GiUpgrade size={14} />;
-      default:        return <GiCrossedSwords size={14} />;
+      default: return <GiCrossedSwords size={14} />;
     }
   };
 
@@ -378,6 +381,12 @@ const Dashboard = () => {
     };
     document.addEventListener('click', handler);
     return () => document.removeEventListener('click', handler);
+  }, []);
+
+  // ── Background Music ───────────────────────────────────────
+  useEffect(() => {
+    // Volúmenes se sincronizan automáticamente via settingsStore.subscribe en SceneAudioManager
+    SceneAudioManager.playMusic('/assets/audio/music/Valnor sountrac.mp3');
   }, []);
 
   // ── RENDER ────────────────────────────────────────────────
@@ -479,7 +488,7 @@ const Dashboard = () => {
             </div>
           )}
 
-          <button className="hdr-btn" onClick={() => navigate('/settings')} title="Configuración">
+          <button className="hdr-btn" onClick={() => setShowSettings(true)} title="Configuración">
             <FiSettings size={18} />
           </button>
           <button className="hdr-btn hdr-btn--danger" onClick={handleLogout} title="Salir" data-testid="dash-logout">
@@ -687,7 +696,7 @@ const Dashboard = () => {
               Estadísticas
             </h4>
             <StatBar label="Vida" current={hp} max={maxHp} color="#e74c3c" icon={<GiHealthNormal size={14} />} />
-            <StatBar label="EXP"  current={exp} max={expRequired} color="#2ecc71" icon={<GiStarFormation size={14} />} />
+            <StatBar label="EXP" current={exp} max={expRequired} color="#2ecc71" icon={<GiStarFormation size={14} />} />
             <div className="mini-stats">
               <div className="mini-stat"><span>ATK</span><strong>{stats.attack}</strong></div>
               <div className="mini-stat"><span>DEF</span><strong>{stats.defense}</strong></div>
@@ -713,6 +722,9 @@ const Dashboard = () => {
         </div>
         <span className="dash-footer__ver">v1.0.0</span>
       </footer>
+
+      {/* Settings Panel Modal */}
+      {showSettings && <ProSettingsPanel onClose={() => setShowSettings(false)} />}
 
     </div>
   );

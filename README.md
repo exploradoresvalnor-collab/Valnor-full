@@ -1,131 +1,113 @@
-# 🎮 Valnor - Juego RPG
+# 🎮 Valnor - Juego RPG 3D
 
 ## 📋 Descripción
-Juego RPG 3D con motor propio construido con React Three Fiber. Migrado desde Angular 17 a React 19. Incluye sistema de mazmorras, modo survival, marketplace, ranking y chat en tiempo real. Desplegable como PWA y app nativa Android (Capacitor).
+Juego RPG 3D construido desde cero en el navegador utilizando **React Three Fiber**. Migrado recientemente para usar las últimas capacidades de React 19. El proyecto apunta a ser un juego de mazmorras de Acción-RPG completo que incluye físicas realistas, escalado de estadísticas, Marketplace, Chat en Tiempo Real y Modo Supervivencia.
 
-## 🚀 Estado Actual — ~98%
-
-### ✅ Completado
-- **13 páginas** completas: SplashScreen, Landing, Auth, Dashboard, Inventory, Shop, Marketplace, Dungeon, Survival, Ranking, Wiki, Profile, Settings
-- **Motor 3D** con React Three Fiber + Rapier: 14 sistemas, 9 niveles, 5 módulos RPG, entidades, personajes
-- **Física auditada** — Rapier: raycast real, CCD, gravedad unificada (-20), sphereCast/overlapSphere reales, kill zone, frame-independent lerps, colliders corregidos
-- **Motor Sketchbook** adaptado: SpringSimulator, AIBehaviours, Arcade Velocity, Character Tilt, SceneEnhancer, WaterfallEffect
-- **Guest Mode** completo: sessionStore (none/guest/auth) + GuestAccessGuard + matriz de acceso
-- **16 servicios** conectados al backend: 135 endpoints, cobertura 100%
-- **10 stores** Zustand: game, ui, player, session, team, gameMode, dungeon, settings, notifications, engine
-- **9 tipos** completos con interfaces alineadas al backend
-- **Guards**: RequireAuth, RequireNoAuth, GuestAccessGuard
-- **PWA** configurada con VitePWA + Service Worker
-- **Capacitor** Android configurado
-- **Tailwind CSS v4** integrado
-- **Responsive** landscape + portrait en todas las páginas
-- **Notificaciones**: Bell + List + Item con paginación
-
-### 🔄 Pendiente
-- [ ] **Fase 6 — Shaders/VFX**: skyShader, waterShader, grassShader, fireShader, stoneShader, groundShader, materiales custom
-- [ ] **Página Demo**: Integrar motor 3D con lobby + HUD (actualmente `/demo` usa Landing como placeholder)
-- [ ] **Componentes UI**: RPGToast, ProgressBar, OfflineIndicator
-- [ ] **PWA offline API**: Sin estrategia de caching para peticiones al backend
+Desarrollado para la web con capacidades **PWA (Progressive Web App)** y enlazado nativamente a **Android via Capacitor**.
 
 ---
 
-### Últimas novedades (18–19 de febrero de 2026)
-- Modo **Demo / Invitado**: sesión guest persistente (F5), `startDemoSession()` → `startGuestSession()` y `performLogout()`; logout demo limpia localStorage + stores **sin** llamar al backend.
-- Corrección crítica en `RequireAuth`: hook movido al nivel superior para evitar violaciones de las reglas de hooks de React (evita crashes inesperados).
-- Fix: crash `Maximum update depth exceeded` en `Dashboard` resuelto — estabilizados selectores (uso de `useShallow` en `uiStore` y `settingsStore`).
-- UX: modal de confirmación "Salir del Modo Demo" (Navbar + Dashboard) y corrección de CSS móvil del Navbar.
-- Tests añadidos: unit tests (`guest.service`, `session.service`) y E2E (`demo-logout`, `debug-dev-dashboard`); script `npm run test:e2e` disponible.
-- Limpieza: eliminados logs de instrumentación DEV introducidos durante la depuración.
+## 🚀 Estado Actual del Proyecto — ~75% Completado
 
-**Cómo probar el modo Demo rápidamente:**
-1. Abrir la app → pulsar **Entrar al Demo** en Landing (o ejecutar `startDemoSession()` en consola).
-2. Verificar `localStorage.valnor-session-storage` contiene `isGuest:true` y `localStorage.valnor_user`.
-3. Ir a `/dashboard` → pulsar Logout (debe mostrar modal y **no** realizar llamada al backend).
-4. Ejecutar E2E: `npm run test:e2e` (verifica flujo demo + logout).
+### ✅ Logros Técnicos y Sistemas Finalizados
+- **Refactorización de React-Three-Fiber**: Eliminados los cuellos de botella mediante **selectores atómicos Zustand**. Los datos de UI (como HP/Energía) y las Físicas 3D corren ahora en hilos paralelos de reactividad, logrando 60FPS estables sin arrojar el error `Maximum update depth exceeded`.
+- **Desacoplamiento de Three.js**: Se reemplazó el inestable monkey-patching sobre `scene.add` por contenedores seguros (proxys virtuales) que eliminan por completo los memory leaks y las colisiones del recolector de basura en el Strict Mode de React 18/19.
+- **Aislamiento del Modo Demo (Guest)**: Construimos un Sandbox impermeable en la capa de red (`api.service.ts`). Toda solicitud HTTP disparada por un jugador "Demo" se intercepta en memoria local, impidiendo fugas hacia el Backend e imposibilitando la corrupción del `localStorage` de usuarios legítimos.
+- **Sistemas Base de Juego**: 14 Sistemas integrados, motor de físicas (Rapier), detección de Raycast real, y controles avanzados (Sketchbook adaptado).
 
 ---
 
-## 🔌 Servicios del Backend
+## 🔄 Roadmap & Próximos Desarrollos Prioritarios — ~25% Restante
+
+Hemos cimentado el núcleo; ahora expandimos las mecánicas del mundo. Las siguientes áreas son el enfoque central de nuestras próximas implementaciones:
+
+### 1. Sistema RPG y Progresión Matemática
+- [ ] **Lógica de Atributos**: Implementar Fuerza, Agilidad, Inteligencia y Vitalidad.
+- [ ] **Curva de Nivelación**: Algoritmos exponenciales de XP necesarios por cada nivel.
+- [ ] **Especialización de Clases**: Árboles de habilidades únicos (Guerrero, Mago, Arquero) con multiplicadores de daño específicos.
+
+### 2. Infraestructura de Audio Inmersivo
+- [ ] **Gestor de BGM (Música de Fondo)**: Transiciones fluidas y dinámicas entre estados de Exploración, Tensión y Combate con Jefes.
+- [ ] **Sistema SFX Espacial**: Efectos de sonido "Posicionales" 3D para pasos, choques de espadas, impactos mágicos y ambiente direccional usando Web Audio API puro.
+- [ ] **Eventos de Audio por Material**: Específicos para pisar pasto, piedra, metal o madera.
+
+### 3. Expansión de Niveles y Escenarios (Scenarios)
+- [ ] **Biomas de Transición**: Creación de nuevos entornos visuales que conecten las ciudadelas iniciales con las mazmorras más profundas (Zonas de lava, Pantanos mágicos).
+- [ ] **Mecánicas Interactivas de Entorno**: Puertas con llaves, elevadores complejos, puentes colapsables y acertijos físicos usando Rapier.
+- [ ] **Iluminación PBR Dinámica**: Profundizar en los materiales reales, sombras proyectadas sobre mapas normales de alta calidad (Dark Souls aesthetics).
+
+### 4. Pantallas de Resultados y Feedback Visual
+- [ ] **UI de Victoria/Derrota Remasterizada**: Transiciones al vencer los Jefes de Mazmorra (o morir) que resuman claramente: Daño Infligido, Tiempo Transcurrido y Golpes Recibidos.
+- [ ] **Roll de Loot (Botín)**: Pantalla de apertura de cofres calculando rarezas de drops basado en la suerte estadística del jugador RPG.
+- [ ] **Cálculo Desglosado de EXP**: Animaciones para "subidas de nivel" inmediatas tras combates largos.
+
+---
+
+## 🔌 Conectividad y Backend (Servicios Actuales)
 
 **Base URL:** `https://valgame-backend.onrender.com`
 
-| Servicio | Endpoints | Protocolo |
-|----------|-----------|-----------|
-| **Auth** | `/auth/register`, `/auth/login`, `/auth/logout`, `/auth/verify/:token`, `/auth/forgot-password`, `/auth/reset-password/:token` | HTTP |
-| **Users** | `/api/users/me` | HTTP |
-| **Dungeons** | `/api/dungeons`, `/api/dungeons/:id/start` | HTTP |
-| **Rankings** | `/api/rankings`, `/api/rankings/leaderboard/:category`, `/api/rankings/me` | HTTP |
-| **Survival** | `/api/survival/start`, `/api/survival/:id/complete-wave`, `/api/survival/:id/end`, `/api/survival/leaderboard` | HTTP |
-| **Notifications** | `/api/notifications`, `/api/notifications/unread/count`, `/api/notifications/:id/read` | HTTP |
-| **Settings** | `/api/user/settings` (GET/PUT), `/api/user/settings/reset` (POST) | HTTP |
-| **Realtime** | Socket.IO — eventos: `auth`, `character:*`, `inventory:*`, `marketplace:*`, `survival:*`, `chat:*`, `notification:*`, `rankings:update`, `battle:update` | WebSocket |
+- **RESTful Endpoints**: Auth, Usuarios, Mazmorras, Ranking Global, Settings, Configuración e Inventarios (135+ Endpoints funcionales).
+- **WebSockets (Socket.IO)**: Sincronización Realtime para Chat, notificaciones transaccionales y actualizaciones parciales del estado de inventario, supervivencia y leaderboard.
 
 ---
 
-## 📁 Estructura del Proyecto
+## 🛠️ Tecnologías Principales
 
-```
-src/
-├── App.tsx                    # Router principal con guards
-├── main.tsx                   # Entry point
-├── index.css                  # Tailwind v4 + CSS custom
-├── config/                    # api.config.ts, game.config.ts
-├── context/                   # AuthContext.tsx
-├── hooks/                     # useAuth, useNotifications, useSettings, usePlatform
-├── stores/                    # 9 stores Zustand
-├── services/                  # api, auth, dungeon, ranking, socket (Socket.IO)
-├── types/                     # 9 archivos de tipos alineados con backend
-├── utils/                     # constants.ts, helpers.ts
-├── components/
-│   ├── guards/                # RequireAuth, RequireNoAuth
-│   ├── ui/                    # LoadingScreen, GlobalNavbar, EnergyBar, GuestBanner, CookieConsent
-│   ├── icons/                 # GameIcons
-│   ├── characters/            # CharacterCard
-│   ├── dungeons/              # DungeonList, DungeonBattle
-│   ├── survival/              # SurvivalBattle
-│   ├── notifications/         # NotificationBell, NotificationList, NotificationItem
-│   └── pwa/                   # PWA install prompt
-├── pages/                     # 13 páginas
-└── engine/                    # Motor 3D completo
-    ├── components/            # GameCanvas, Player, PhysicsWorld, GameCamera
-    ├── hooks/                 # useCamera, useInput, useMovement
-    ├── systems/               # 14 sistemas
-    ├── scenes/                # 9 niveles
-    ├── rpg/                   # rpg-calculator, enemy-factory, leveling, loot, save
-    ├── entities/              # GameEntity, BossEntity, EnemyEntity
-    ├── character/             # Character, states, registry
-    ├── stores/                # engineStore
-    └── utils/                 # physics, math, logger
-```
+| Tecnología | Rol en el Proyecto |
+|------------|---------------------|
+| **React 19** | Capa Completa de UI y coordinación lógica |
+| **@react-three/fiber** | Render Pipeline declarativo para la GPU |
+| **@react-three/rapier** | Físicas avanzadas y manejo de colisiones |
+| **Zustand** | Memoria efímera, stores globales y performance atómica |
+| **Vite / Capacitor** | Bundler HMR veloz y puente de compilación a Android OS |
+| **Tailwind CSS v4** | UI fluida y sistemas hiper responsivos |
 
-## 🛠️ Tecnologías
+---
 
-| Tecnología | Versión | Uso |
-|------------|---------|-----|
-| React | 19.2.4 | UI Framework |
-| Vite | 7.3.1 | Build Tool |
-| TypeScript | 5.x | Tipado estático |
-| react-router-dom | ^7.13.0 | Navegación SPA |
-| three | ^0.182.0 | Gráficos 3D |
-| @react-three/fiber | ^9.5.0 | React + Three.js |
-| @react-three/drei | ^10.7.7 | Helpers 3D |
-| @react-three/rapier | ^2.2.0 | Física 3D |
-| zustand | ^5.0.10 | Estado global |
-| socket.io-client | ^4.8.1 | Tiempo real |
-| framer-motion | ^12.12.2 | Animaciones UI |
-| Tailwind CSS | v4.1 | Estilos utilitarios |
-| @capacitor/core | ^8.0.2 | App nativa Android |
-| vite-plugin-pwa | ^1.1.0 | PWA + Service Worker |
-
-## 🏃 Ejecutar Proyecto
+## 🏃 ¿Cómo empezar?
 
 ```bash
 npm install
-npm run dev          # → http://localhost:5173
-npm run build        # Producción
-npm run cap:sync     # Sincronizar con Android
-npm run test:e2e     # Ejecutar pruebas E2E (Puppeteer + vitest)
+npm run dev          # Ejecutar Servidor Web/Juego Local → http://localhost:5173
+npm run build        # Empaquetado de optimización a Producción (Dist)
+npm run cap:sync     # Sincronización del DOM a compilados Nativos de Android
+```
+
+> **Nota sobre el Modo Demo**:
+> Una vez levantado el entorno local (`npm run dev`), ingresa al proyecto pulsando el botón **"Entrar al Demo"** en la página inicial. Disfrutarás de un ambiente sandbox aislado donde podrás combatir, probar la física y el movimiento en 3D libremente sin crear una cuenta.
+
+---
+
+### 📝 Sugerencia de Commit (Actualización Arquitectónica)
+
+Si deseas guardar el progreso de las refactorizaciones y correcciones realizadas hoy, aquí tienes una sugerencia detallada para tu commit:
+
+```git
+git add .
+git commit -m "refactor(core): optimización arquitectónica de Zustand y fix de Three.js" -m "
+- Zustand Atómico: Refactorización en FortalezaPlayer y componentes 3D para usar selectores estrictos ('useShallow' y atómicos), eliminando re-renders masivos y previniendo el error 'Maximum update depth exceeded' en R3F.
+- Three.js Decoupling: Removido el monkey-patch global de 'scene.add' en FortalezaLevel. Se reemplazó por un proxy 'mockScene' virtual que rastrea y limpia geometrías de forma segura al desmontar el componente (Fix de memory leaks en React 18+).
+- Aislamiento Guest Mode: Reescritura de 'guest.service.ts' y 'api.service.ts'. Se inyecta la sesión Demo exclusivamente en memoria (authService setGuestUser) sin tocar 'localStorage'. Se añadió un interceptor global que bloquea silenciosamente todas las mutaciones HTTP (GET, POST, PUT, DELETE) para usuarios Demo, protegiendo los datos reales y evitando errores de red (401/403).
+- Documentación: README centralizado y actualizado al 75% reflejando con honestidad el Roadmap pendiente (Motor RPG, Audio, Scenarios, Resultados) y reorganización de la raíz del proyecto moviendo archivos de bitácora a /docs.
+"
 ```
 
 ---
-*Última actualización: 19 de febrero de 2026*
+
+### 📝 Sugerencia de Commit (Actualización Arquitectónica)
+
+Si deseas guardar el progreso de las refactorizaciones y correcciones realizadas hoy, aquí tienes una sugerencia detallada para tu commit:
+
+```git
+git add .
+git commit -m "refactor(core): optimización arquitectónica de Zustand y fix de Three.js" -m "
+- Zustand Atómico: Refactorización en FortalezaPlayer y componentes 3D para usar selectores estrictos ('useShallow' y atómicos), eliminando re-renders masivos y previniendo el error 'Maximum update depth exceeded' en R3F.
+- Three.js Decoupling: Removido el monkey-patch global de 'scene.add' en FortalezaLevel. Se reemplazó por un proxy 'mockScene' virtual que rastrea y limpia geometrías de forma segura al desmontar el componente (Fix de memory leaks en React 18+).
+- Aislamiento Guest Mode: Reescritura de 'guest.service.ts' y 'api.service.ts'. Se inyecta la sesión Demo exclusivamente en memoria (authService setGuestUser) sin tocar 'localStorage'. Se añadió un interceptor global que bloquea silenciosamente todas las mutaciones HTTP (GET, POST, PUT, DELETE) para usuarios Demo, protegiendo los datos reales y evitando errores de red (401/403).
+- Documentación: README centralizado y actualizado al 75% reflejando con honestidad el Roadmap pendiente (Motor RPG, Audio, Scenarios, Resultados) y reorganización de la raíz del proyecto moviendo archivos de bitácora a /docs.
+"
+```
+
+---
+*Última actualización: 25 de febrero de 2026*

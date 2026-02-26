@@ -5,6 +5,7 @@
 
 import { API_CONFIG, DEFAULT_HEADERS } from '../config/api.config';
 import { STORAGE_KEYS } from '../utils/constants';
+import { useSessionStore } from '../stores/sessionStore';
 
 interface RequestOptions {
   headers?: Record<string, string>;
@@ -80,9 +81,23 @@ class ApiService {
   }
 
   /**
+   * Comprueba si estamos en modo Guest para interceptar y no golpear la red.
+   */
+  private checkGuestMode<T>(method: string, endpoint: string): T | null {
+    if (useSessionStore.getState().isGuest) {
+      console.info(`[Demo/Guest] Red bloqueada: ${method} ${endpoint}`);
+      return {} as T;
+    }
+    return null;
+  }
+
+  /**
    * GET request
    */
   async get<T>(endpoint: string, params?: Record<string, string>, options?: RequestOptions): Promise<T> {
+    const guestIntercept = this.checkGuestMode<T>('GET', endpoint);
+    if (guestIntercept) return guestIntercept;
+
     const url = this.buildUrl(endpoint, params);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -105,6 +120,9 @@ class ApiService {
    * POST request
    */
   async post<T>(endpoint: string, body: any, options?: RequestOptions): Promise<T> {
+    const guestIntercept = this.checkGuestMode<T>('POST', endpoint);
+    if (guestIntercept) return guestIntercept;
+
     const url = this.buildUrl(endpoint);
     console.log('[API] POST request to:', url);
     console.log('[API] POST body:', JSON.stringify(body, null, 2));
@@ -139,6 +157,9 @@ class ApiService {
    * PUT request
    */
   async put<T>(endpoint: string, body: any, options?: RequestOptions): Promise<T> {
+    const guestIntercept = this.checkGuestMode<T>('PUT', endpoint);
+    if (guestIntercept) return guestIntercept;
+
     const url = this.buildUrl(endpoint);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -162,6 +183,9 @@ class ApiService {
    * PATCH request
    */
   async patch<T>(endpoint: string, body: any, options?: RequestOptions): Promise<T> {
+    const guestIntercept = this.checkGuestMode<T>('PATCH', endpoint);
+    if (guestIntercept) return guestIntercept;
+
     const url = this.buildUrl(endpoint);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);
@@ -185,6 +209,9 @@ class ApiService {
    * DELETE request
    */
   async delete<T>(endpoint: string, options?: RequestOptions): Promise<T> {
+    const guestIntercept = this.checkGuestMode<T>('DELETE', endpoint);
+    if (guestIntercept) return guestIntercept;
+
     const url = this.buildUrl(endpoint);
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 10000);

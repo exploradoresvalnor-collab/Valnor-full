@@ -14,8 +14,6 @@ import {
     createStartingFortress, createPenumbraRuins
 } from './fortaleza-modules/environment';
 import { createDoor } from './fortaleza-modules/door';
-
-// Inner component that actually uses the hook
 function FortalezaScene() {
     const { scene, camera } = useThree();
     const { collidables, checkpoints, movingPlatforms } = usePhysics();
@@ -61,15 +59,22 @@ function FortalezaScene() {
 
     useEffect(() => {
         // === INITIALIZE ENVIRONMENT ===
-        // We intercept `scene.add` to track all procedurally injected objects
-        // so we can properly remove them on unmount (critical for React 18 Strict Mode).
+        // To avoid React Strict Mode crashes and WebGL stack overflows,
+        // we DO NOT monkey-patch the native scene.add.
+        // Instead, we create a proxy/mock scene object that tracks procedural additions safely.
         const addedObjects: THREE.Object3D[] = [];
-        const originalAdd = scene.add.bind(scene);
-        scene.add = function (...objects) {
-            addedObjects.push(...objects);
-            originalAdd(...objects);
-            return this;
-        };
+        const mockScene = {
+            ...scene,
+            add: (...objects: THREE.Object3D[]) => {
+                addedObjects.push(...objects);
+                scene.add(...objects);
+                return mockScene;
+            },
+            remove: (...objects: THREE.Object3D[]) => {
+                scene.remove(...objects);
+                return mockScene;
+            }
+        } as unknown as THREE.Scene;
 
         // Config camera defaults
         camera.near = 0.1;
@@ -77,6 +82,8 @@ function FortalezaScene() {
         camera.updateProjectionMatrix();
 
         initMaterials();
+
+        // Pass the native scene to setupEnvironment because it touches scene properties like fog/background.
         const env = setupEnvironment(scene);
 
         const ob = objectsRef.current;
@@ -94,52 +101,48 @@ function FortalezaScene() {
         const rotundaZ = bridgeZEnd - 40;
         const finalArenaZ = rotundaZ - 200;
 
-        // Pieces of the level
-        createWideBridge(scene, collidables, zStart - 52, bridgeZEnd + 26);
-        createGiantRotunda(scene, collidables, checkpoints, ob.animatedCrystals, rotundaZ);
-        createSecretChamber(scene, collidables, ob.animatedCrystals, ob.orbs, rotundaZ);
+        // Pass the `mockScene` to procedural generators so we can safely track and unmount them!
+        createWideBridge(mockScene, collidables, zStart - 52, bridgeZEnd + 26);
+        createGiantRotunda(mockScene, collidables, checkpoints, ob.animatedCrystals, rotundaZ);
+        createSecretChamber(mockScene, collidables, ob.animatedCrystals, ob.orbs, rotundaZ);
 
-        createStartingFortress(scene, collidables, checkpoints, ob.animatedCrystals, ob.fireEmitters, ob.gateObjects, zStart);
-        createPenumbraRuins(scene, collidables, checkpoints, ob.animatedCrystals, movingPlatforms, ob.fireEmitters, zStart);
-        createBlackKnightFortress(scene, collidables, ob.animatedCrystals, ob.fireEmitters, ob.mistEmitters, ob.mixers, 0, -2, finalArenaZ, -20);
+        createStartingFortress(mockScene, collidables, checkpoints, ob.animatedCrystals, ob.fireEmitters, ob.gateObjects, zStart);
+        createPenumbraRuins(mockScene, collidables, checkpoints, ob.animatedCrystals, movingPlatforms, ob.fireEmitters, zStart);
+        createBlackKnightFortress(mockScene, collidables, ob.animatedCrystals, ob.fireEmitters, ob.mistEmitters, ob.mixers, 0, -2, finalArenaZ, -20);
 
         // Fortress door
-        const doorSyst = createDoor(scene, collidables);
+        const doorSyst = createDoor(mockScene, collidables);
         if (doorSyst.group && ob.gateObjects.gatePos) {
             doorSyst.group.position.copy(ob.gateObjects.gatePos);
         }
         ob.doorSystem = doorSyst;
 
         // Floating Platforms
-        createPlatform(scene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 0, 5, rotundaZ - 45, 12, 0);
-        createPlatform(scene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -20, 15, rotundaZ - 80, 14, 1);
-        createPlatform(scene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 20, 25, rotundaZ - 120, 14, 1);
-        createPlatform(scene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 0, 35, rotundaZ - 160, 16, 2, true);
+        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 0, 5, rotundaZ - 45, 12, 0);
+        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -20, 15, rotundaZ - 80, 14, 1);
+        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 20, 25, rotundaZ - 120, 14, 1);
+        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 0, 35, rotundaZ - 160, 16, 2, true);
 
-        createPlatform(scene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -18, 5, zStart - 90, 8, 0);
-        createPlatform(scene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 18, 10, zStart - 130, 10, 1);
-        createPlatform(scene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -25, 2, zStart - 50, 12);
+        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -18, 5, zStart - 90, 8, 0);
+        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 18, 10, zStart - 130, 10, 1);
+        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -25, 2, zStart - 50, 12);
 
         // TRIPLE JUMP SEQUENCE
-        createPlatform(scene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -40, 8, zStart - 50, 10, 0);
-        createPlatform(scene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -55, 12, zStart - 50, 12);
-        createPlatform(scene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -85, 18, zStart - 50, 14, 1);
+        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -40, 8, zStart - 50, 10, 0);
+        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -55, 12, zStart - 50, 12);
+        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -85, 18, zStart - 50, 14, 1);
 
-        createOrb(scene, ob.orbs, 0, 20, zStart - 27, 'jump');
-        createOrb(scene, ob.orbs, -145, 35, zStart - 15, 'jump');
-        createOrb(scene, ob.orbs, -55, 14, zStart - 50, 'triple_jump');
-        createOrb(scene, ob.orbs, -85, 21, zStart - 50, 'lore');
+        createOrb(mockScene, ob.orbs, 0, 20, zStart - 27, 'jump');
+        createOrb(mockScene, ob.orbs, -145, 35, zStart - 15, 'jump');
+        createOrb(mockScene, ob.orbs, -55, 14, zStart - 50, 'triple_jump');
+        createOrb(mockScene, ob.orbs, -85, 21, zStart - 50, 'lore');
 
-        createOrb(scene, ob.orbs, -18, 12, zStart - 90, 'lore');
-        createOrb(scene, ob.orbs, 0, 42, rotundaZ - 160);
-
-        // Restore original add function
-        scene.add = originalAdd;
+        createOrb(mockScene, ob.orbs, -18, 12, zStart - 90, 'lore');
+        createOrb(mockScene, ob.orbs, 0, 42, rotundaZ - 160);
 
         // Interactive Key Binding for Door (E)
         const handleKeyDown = (e: KeyboardEvent) => {
             if (e.key.toLowerCase() === 'e' && ob.doorSystem && ob.gateObjects.gatePos) {
-                // Find player position (approximated logically by camera for now or managed inside player)
                 const playerObj = scene.getObjectByName("FortalezaPlayer");
                 if (playerObj) {
                     const dist = playerObj.position.distanceTo(ob.gateObjects.gatePos);
@@ -159,8 +162,12 @@ function FortalezaScene() {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
 
-            // Remove procedurally added objects
-            addedObjects.forEach(obj => scene.remove(obj));
+            // Safely remove tracked objects WITHOUT having corrupted the native `scene` prototype!
+            addedObjects.forEach(obj => {
+                scene.remove(obj);
+                // Also trigger basic memory cleanup if possible
+                if ((obj as any).geometry) (obj as any).geometry.dispose();
+            });
 
             // Reset fog & background mappings
             scene.fog = null;

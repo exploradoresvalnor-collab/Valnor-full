@@ -40,7 +40,7 @@ const DEFAULT_ANIMATIONS: Record<AnimationState, Partial<AnimationConfig>> = {
   walk: { loop: true, priority: 1, fadeInTime: 0.15 },
   run: { loop: true, priority: 1, fadeInTime: 0.15 },
   sprint: { loop: true, priority: 1, fadeInTime: 0.1 },
-  jump: { loop: false, priority: 2, fadeInTime: 0.1, clampWhenFinished: true },
+  jump: { loop: true, priority: 2, fadeInTime: 0.1 },
   fall: { loop: true, priority: 2, fadeInTime: 0.2 },
   land: { loop: false, priority: 2, fadeInTime: 0.1 },
   attack1: { loop: false, priority: 3, fadeInTime: 0.05, timeScale: 1.2 },
@@ -131,13 +131,13 @@ export function useAnimationSystem({
 
         // Si hay animación en cola, reproducirla
         if (state.current.queuedState) {
-          playAnimation(state.current.queuedState);
+          playAnimation(state.current.queuedState, { force: true });
           state.current.queuedState = null;
         } else {
-          // Volver a idle si no está en loop
+          // Volver a idle si no está en loop, forzando la transición para vencer el lock de prioridad superior
           const config = getAnimConfig(finishedState);
           if (!config.loop) {
-            playAnimation('idle');
+            playAnimation('idle', { force: true });
           }
         }
       }

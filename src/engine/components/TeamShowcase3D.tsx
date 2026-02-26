@@ -18,9 +18,13 @@ import {
   useGLTF,
   useAnimations,
   Html,
+  Sparkles,
+  Environment,
+  Float
 } from '@react-three/drei';
 import * as THREE from 'three';
 import { clone as skeletonClone } from 'three/examples/jsm/utils/SkeletonUtils.js';
+import { EffectComposer, Bloom, Vignette } from '@react-three/postprocessing';
 import {
   resolveModelPath,
   getCharacterModelConfig,
@@ -111,18 +115,25 @@ function ShowcaseCharacterModel({
         mesh.castShadow = true;
         mesh.receiveShadow = true;
         mesh.frustumCulled = false;
+        const isEffectPlane = mesh.name.toLowerCase().includes('plane') ||
+          mesh.name.toLowerCase().includes('effect') ||
+          mesh.name.toLowerCase().includes('aura');
+        if (isEffectPlane) {
+          mesh.visible = false;
+        }
+
         if (mesh.material) {
           if (Array.isArray(mesh.material)) {
             mesh.material = mesh.material.map((m) => {
               const c = m.clone();
-              c.depthWrite = true;
-              c.side = THREE.FrontSide;
+              if (c.transparent) c.depthWrite = false;
               return c;
             });
           } else {
-            mesh.material = mesh.material.clone();
-            (mesh.material as THREE.Material).depthWrite = true;
-            (mesh.material as THREE.Material).side = THREE.FrontSide;
+            mesh.material = (mesh.material as THREE.Material).clone();
+            if ((mesh.material as THREE.Material).transparent) {
+              (mesh.material as THREE.Material).depthWrite = false;
+            }
           }
         }
       }
@@ -174,8 +185,8 @@ function ShowcaseCharacterModel({
         ref={groupRef}
         scale={config.scale}
         position={[0, config.yOffset, 0]}
-        // Los modelos están mirando hacia Z+, rotamos para que miren a la cámara (Z-)
-        rotation={[0, Math.PI, 0]}
+        // Los modelos miran a la cámara (al jugador)
+        rotation={[0, 0, 0]}
       >
         <primitive object={clonedScene} />
       </group>
@@ -198,48 +209,56 @@ function ShowcaseCharacterModel({
         >
           <div
             style={{
-              background: 'rgba(0,0,0,0.8)',
-              color: isSelected ? '#ffd700' : '#fff',
-              padding: '4px 10px',
-              borderRadius: '8px',
-              fontSize: '11px',
+              background: 'linear-gradient(135deg, rgba(20, 15, 30, 0.85) 0%, rgba(10, 5, 15, 0.95) 100%)',
+              backdropFilter: 'blur(8px)',
+              color: isSelected ? '#ffd700' : '#e0e0e0',
+              padding: '6px 14px',
+              borderRadius: '6px',
+              fontSize: '12px',
               fontWeight: 600,
-              fontFamily: 'system-ui, sans-serif',
+              fontFamily: '"Cinzel", "Trajan Pro", serif, system-ui',
               whiteSpace: 'nowrap',
               textAlign: 'center',
-              border: isSelected ? '1px solid #ffd700' : '1px solid rgba(255,255,255,0.15)',
-              textShadow: '0 1px 2px rgba(0,0,0,0.5)',
-              minWidth: '80px',
+              border: isSelected ? '1px solid #cfa144' : '1px solid rgba(255,255,255,0.1)',
+              boxShadow: isSelected ? '0 0 15px rgba(207, 161, 68, 0.4)' : '0 4px 10px rgba(0,0,0,0.5)',
+              textShadow: '0 2px 4px rgba(0,0,0,0.8)',
+              minWidth: '90px',
+              transition: 'all 0.3s ease',
             }}
           >
-            <div>{displayName}</div>
+            <div style={{ fontSize: '14px', letterSpacing: '0.5px', marginBottom: '2px' }}>{displayName}</div>
             {showInfo && (
-              <div style={{ display: 'flex', gap: 4, justifyContent: 'center', alignItems: 'center', marginTop: 2 }}>
+              <div style={{ display: 'flex', gap: 6, justifyContent: 'center', alignItems: 'center', marginTop: 4, paddingBottom: 4, borderBottom: '1px solid rgba(255,255,255,0.1)' }}>
                 {nivel != null && (
-                  <span style={{ opacity: 0.8, fontSize: '10px' }}>Nv.{nivel}</span>
+                  <span style={{ opacity: 0.9, fontSize: '11px', color: '#b0b0b0' }}>Nv.{nivel}</span>
                 )}
                 {rango && (
                   <span
                     style={{
-                      fontSize: '9px',
+                      fontSize: '10px',
                       background: getRangoColor(rango),
-                      padding: '1px 4px',
-                      borderRadius: '3px',
+                      padding: '2px 6px',
+                      borderRadius: '4px',
+                      fontWeight: 700,
+                      color: '#fff',
+                      textShadow: '0 1px 1px rgba(0,0,0,0.5)'
                     }}
                   >
                     {rango}
                   </span>
                 )}
                 {equipamientoCount != null && equipamientoCount > 0 && (
-                  <span style={{ fontSize: '9px', color: '#4fc3f7' }}>⚔{equipamientoCount}</span>
+                  <span style={{ fontSize: '10px', color: '#4fc3f7', display: 'flex', alignItems: 'center', gap: '2px' }}>
+                    <span style={{ fontSize: '12px' }}>⚔</span> {equipamientoCount}
+                  </span>
                 )}
               </div>
             )}
             {showInfo && stats && (
-              <div style={{ display: 'flex', gap: 6, justifyContent: 'center', marginTop: 2, fontSize: '9px', opacity: 0.7 }}>
-                <span style={{ color: '#ef5350' }}>⚔{stats.atk}</span>
-                <span style={{ color: '#66bb6a' }}>♥{stats.vida}</span>
-                <span style={{ color: '#42a5f5' }}>🛡{stats.defensa}</span>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'center', marginTop: 6, fontSize: '11px', opacity: 0.85 }}>
+                <span style={{ color: '#ef5350', display: 'flex', alignItems: 'center', gap: '2px' }}>⚔ {stats.atk}</span>
+                <span style={{ color: '#66bb6a', display: 'flex', alignItems: 'center', gap: '2px' }}>♥ {stats.vida}</span>
+                <span style={{ color: '#42a5f5', display: 'flex', alignItems: 'center', gap: '2px' }}>🛡 {stats.defensa}</span>
               </div>
             )}
           </div>
@@ -301,7 +320,7 @@ function ShowcaseScene({
       return characters.map((_, i) => [
         startX + i * spacing,
         0,
-        0,
+        0.5, // Movidos un poco hacia adelante
       ] as [number, number, number]);
     }
 
@@ -334,54 +353,139 @@ function ShowcaseScene({
     return result;
   }, [characters.length]);
 
+  // Ref para el anillo pulsante de la plataforma
+  const ringRef = useRef<THREE.Mesh>(null);
+  useFrame((state) => {
+    if (ringRef.current) {
+      const mat = ringRef.current.material as THREE.MeshBasicMaterial;
+      mat.opacity = 0.35 + Math.sin(state.clock.elapsedTime * 1.5) * 0.15;
+    }
+  });
+
   return (
     <>
-      {/* Iluminación */}
-      <ambientLight intensity={0.5} color="#c4b5fd" />
+      {/* Entorno PBR para iluminación realista de los modelos */}
+      <Environment preset="city" />
+
+      {/* ═══ Iluminación Cinematográfica ═══ */}
+      {/* Key light — ámbar cálido (sol mágico) */}
       <directionalLight
-        position={[5, 8, 5]}
-        intensity={1}
-        color="#ffffff"
+        position={[5, 8, 3]}
+        intensity={2.5}
+        color="#ffb05a"
         castShadow
         shadow-mapSize={[1024, 1024]}
         shadow-camera-far={20}
-        shadow-camera-left={-5}
-        shadow-camera-right={5}
-        shadow-camera-top={5}
-        shadow-camera-bottom={-5}
+        shadow-camera-left={-6}
+        shadow-camera-right={6}
+        shadow-camera-top={6}
+        shadow-camera-bottom={-6}
       />
+
+      {/* Fill light — púrpura mágico */}
       <directionalLight
-        position={[-3, 4, -2]}
-        intensity={0.3}
-        color="#9b59b6"
+        position={[-4, 5, -3]}
+        intensity={1.2}
+        color="#b07cd8"
       />
 
-      {/* Rim light (contraluz) */}
-      <pointLight position={[0, 3, -4]} intensity={0.8} color="#3498db" distance={10} />
+      {/* Rim light — azul frío para contrasté */}
+      <pointLight position={[0, 4, -5]} intensity={1.5} color="#6aade9" distance={15} />
 
-      {/* Suelo con sombras de contacto */}
-      <ContactShadows
-        position={[0, 0, 0]}
+      {/* Ambient — tono cálido base */}
+      <ambientLight intensity={0.7} color="#e8c9a4" />
+
+      {/* Hemisphere — suelo marrón + cielo púrpura */}
+      <hemisphereLight args={['#4a2d6e', '#2a1a12', 0.8]} />
+
+      {/* ═══ Spotlights individuales por personaje (arena effect) ═══ */}
+      {positions.map((pos, i) => (
+        <spotLight
+          key={`spot-${i}`}
+          position={[pos[0], 6, pos[2] + 1]}
+          target-position={[pos[0], 0, pos[2]]}
+          angle={0.4}
+          penumbra={0.8}
+          intensity={2.5}
+          color="#ffbe60"
+          distance={12}
+          castShadow={false}
+        />
+      ))}
+
+      {/* ═══ Partículas mágicas (magic dust) ═══ */}
+      <Sparkles
+        count={60}
+        scale={[12, 6, 8]}
+        size={2.5}
+        speed={0.4}
         opacity={0.5}
-        scale={12}
+        color="#ffd700"
+      />
+      <Sparkles
+        count={30}
+        scale={[10, 5, 6]}
+        size={1.8}
+        speed={0.3}
+        opacity={0.3}
+        color="#c77dff"
+      />
+
+      {/* ═══ Fondo de Montañas Procedurales ═══ */}
+      {/* <ProceduralMountains /> (Removido para estética AAA) */}
+
+      {/* ═══ Plataforma Elegante AAA (Reemplaza la Piedra) ═══ */}
+      <PremiumStage />
+
+      {/* Rim Light 1: Luz azulada intensa desde atrás a la izquierda */}
+      <spotLight
+        position={[-6, 4, -6]}
+        angle={0.6}
+        penumbra={0.5}
+        intensity={6}
+        color="#4287f5"
+        distance={20}
+      />
+
+      {/* Rim Light 2: Luz púrpura mágica desde atrás a la derecha */}
+      <spotLight
+        position={[6, 3, -4]}
+        angle={0.5}
+        penumbra={0.8}
+        intensity={5}
+        color="#a342f5"
+        distance={20}
+      />
+
+      {/* Sombras de contacto */}
+      <ContactShadows
+        position={[0, 0.01, 0]}
+        opacity={0.6}
+        scale={14}
         blur={2.5}
         far={4}
-        color="#1a1a2e"
+        color="#0a0612"
       />
 
-      {/* Suelo sutil */}
-      <mesh rotation={[-Math.PI / 2, 0, 0]} position={[0, -0.01, 0]} receiveShadow>
-        <circleGeometry args={[8, 64]} />
-        <meshStandardMaterial
-          color="#1e1e2e"
-          roughness={0.95}
-          metalness={0.05}
-          transparent
-          opacity={0.6}
-        />
-      </mesh>
+      {/* ═══ Anillos de rareza bajo cada personaje ═══ */}
+      {positions.map((pos, i) => (
+        <mesh key={`ring-${i}`} rotation={[-Math.PI / 2, 0, 0]} position={[pos[0], 0.03, pos[2]]}>
+          <ringGeometry args={[0.55, 0.75, 32]} />
+          <meshBasicMaterial
+            color={
+              characters[i]?.rango === 'S' ? '#ffd700' :
+                characters[i]?.rango === 'A' ? '#c77dff' :
+                  characters[i]?.rango === 'B' ? '#4a90d9' :
+                    '#ff8c00'
+            }
+            transparent
+            opacity={0.5}
+            side={THREE.DoubleSide}
+          />
+        </mesh>
+      ))}
 
-      {/* Personajes */}
+      {/* ═══ Personajes ═══ */}
       {characters.map((char, i) => (
         <Suspense key={char.personajeId} fallback={<PlaceholderCharacter position={positions[i]} />}>
           <ShowcaseCharacterModel
@@ -399,9 +503,6 @@ function ShowcaseScene({
           />
         </Suspense>
       ))}
-
-      {/* Ambient sky tone (replaces network-dependent <Environment preset="night" />) */}
-      <hemisphereLight args={['#1a1a3e', '#0a0a14', 0.4]} />
     </>
   );
 }
@@ -414,7 +515,6 @@ export function TeamShowcase3D({
   personajes,
   personajeIds,
   height = 350,
-  enableOrbit = true,
   showNames = true,
   showInfo = true,
   quality = 'medium',
@@ -474,7 +574,7 @@ export function TeamShowcase3D({
           alpha: transparent,
           powerPreference: 'high-performance',
         }}
-        style={{ background: transparent ? 'transparent' : 'linear-gradient(180deg, #0a0a1a 0%, #1a1a2e 100%)' }}
+        style={{ background: transparent ? 'transparent' : 'radial-gradient(ellipse at 50% 80%, #1a0e20 0%, #0a0612 60%, #050308 100%)' }}
       >
         <Suspense fallback={null}>
           <ShowcaseScene
@@ -486,17 +586,24 @@ export function TeamShowcase3D({
           />
         </Suspense>
 
+        {/* Cámara apuntando al equipo heroico con mejor encuadre (centrado) */}
         <OrbitControls
-          enabled={enableOrbit}
-          target={[0, 1, 0]}
-          minDistance={3}
-          maxDistance={12}
-          minPolarAngle={Math.PI / 6}
-          maxPolarAngle={Math.PI / 2.2}
           enablePan={false}
-          enableZoom={enableOrbit}
-          autoRotate={false}
+          enableZoom={false}
+          enableRotate={false}
+          target={[0, 1.8, 0]} // Centrado perfecto para ver personajes de cuerpo completo
         />
+
+        {/* Post-Procesamiento AAA (Bloom mágica selectiva y Viñeteado) */}
+        <EffectComposer>
+          <Bloom
+            luminanceThreshold={0.9} // Alto umbral para que SOLO brille lo mágico (anillos/chispas)
+            luminanceSmoothing={0.1}
+            height={300}
+            intensity={1.8}
+          />
+          <Vignette eskil={false} offset={0.2} darkness={1.2} />
+        </EffectComposer>
 
         <AdaptiveDpr pixelated />
       </Canvas>
@@ -520,3 +627,55 @@ function getRangoColor(rango: string): string {
 }
 
 export default TeamShowcase3D;
+
+// ==========================================
+// SCENE COMPONENTS (PREMIUM AAA STAGE)
+// ==========================================
+
+function MagicRing({ radius, color, speed, yOffset }: { radius: number, color: string, speed: number, yOffset: number }) {
+  const ringRef = useRef<THREE.Mesh>(null);
+
+  useFrame((state) => {
+    if (ringRef.current) {
+      ringRef.current.rotation.z = state.clock.elapsedTime * speed;
+    }
+  });
+
+  return (
+    <mesh ref={ringRef} position={[0, yOffset, 0]} rotation={[-Math.PI / 2, 0, 0]}>
+      <ringGeometry args={[radius, radius + 0.1, 64]} />
+      <meshBasicMaterial color={color} side={THREE.DoubleSide} transparent opacity={0.6} />
+    </mesh>
+  );
+}
+
+function PremiumStage() {
+  return (
+    <group position={[0, -0.05, 0]}>
+      {/* Base cilíndrica de Obsidiana Pulida (Muy Ancha) */}
+      <mesh receiveShadow castShadow position={[0, -0.2, 0]}>
+        <cylinderGeometry args={[25, 24, 0.4, 64]} />
+        <meshPhysicalMaterial
+          color="#0a0a0c"
+          metalness={0.9}
+          roughness={0.1}
+          clearcoat={1.0}
+          clearcoatRoughness={0.1}
+        />
+      </mesh>
+
+      {/* Borde dorado de la plataforma */}
+      <mesh position={[0, 0, 0]}>
+        <cylinderGeometry args={[25.05, 25.05, 0.05, 64]} />
+        <meshStandardMaterial color="#cfa144" metalness={1} roughness={0.2} emissive="#4a3600" />
+      </mesh>
+
+      {/* Anillos Mágicos Flotantes Extendidos */}
+      <Float speed={2} rotationIntensity={0} floatIntensity={0.5}>
+        <MagicRing radius={26} color="#4287f5" speed={0.05} yOffset={-0.2} />
+        <MagicRing radius={28} color="#a342f5" speed={-0.03} yOffset={-0.5} />
+        <MagicRing radius={30} color="#f5b342" speed={0.02} yOffset={-0.8} />
+      </Float>
+    </group>
+  );
+}

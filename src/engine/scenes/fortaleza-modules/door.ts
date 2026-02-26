@@ -47,7 +47,7 @@ export function createDoor(scene: THREE.Scene, collidables: THREE.Object3D[]) {
   const handleMat = new THREE.MeshStandardMaterial({ color: '#bfa074', metalness: 0.95, roughness: 0.25 });
 
   const doorGroup = new THREE.Group();
-  const hingeOffsetX = 8; const panelW = 8; const panelH = 11.5; const panelDepth = 1.0;
+  const hingeOffsetX = 9; const panelW = 9; const panelH = 11.5; const panelDepth = 1.0;
 
   const leftHinge = new THREE.Group(); leftHinge.position.set(-hingeOffsetX, 0, 0); // Z será configurado en base a environment
   const leftPanel = new THREE.Mesh(new THREE.BoxGeometry(panelW, panelH, panelDepth), doorMat2);
