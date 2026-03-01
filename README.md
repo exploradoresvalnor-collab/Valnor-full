@@ -94,20 +94,4 @@ git commit -m "refactor(core): optimización arquitectónica de Zustand y fix de
 ```
 
 ---
-
-### 📝 Sugerencia de Commit (Actualización Arquitectónica)
-
-Si deseas guardar el progreso de las refactorizaciones y correcciones realizadas hoy, aquí tienes una sugerencia detallada para tu commit:
-
-```git
-git add .
-git commit -m "refactor(core): optimización arquitectónica de Zustand y fix de Three.js" -m "
-- Zustand Atómico: Refactorización en FortalezaPlayer y componentes 3D para usar selectores estrictos ('useShallow' y atómicos), eliminando re-renders masivos y previniendo el error 'Maximum update depth exceeded' en R3F.
-- Three.js Decoupling: Removido el monkey-patch global de 'scene.add' en FortalezaLevel. Se reemplazó por un proxy 'mockScene' virtual que rastrea y limpia geometrías de forma segura al desmontar el componente (Fix de memory leaks en React 18+).
-- Aislamiento Guest Mode: Reescritura de 'guest.service.ts' y 'api.service.ts'. Se inyecta la sesión Demo exclusivamente en memoria (authService setGuestUser) sin tocar 'localStorage'. Se añadió un interceptor global que bloquea silenciosamente todas las mutaciones HTTP (GET, POST, PUT, DELETE) para usuarios Demo, protegiendo los datos reales y evitando errores de red (401/403).
-- Documentación: README centralizado y actualizado al 75% reflejando con honestidad el Roadmap pendiente (Motor RPG, Audio, Scenarios, Resultados) y reorganización de la raíz del proyecto moviendo archivos de bitácora a /docs.
-"
-```
-
----
 *Última actualización: 25 de febrero de 2026*

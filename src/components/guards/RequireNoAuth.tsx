@@ -5,6 +5,7 @@
 
 import { Navigate, useLocation } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
+import { useSessionStore } from '../../stores/sessionStore';
 import { LoadingScreen } from '../ui/LoadingScreen';
 
 interface RequireNoAuthProps {
@@ -14,6 +15,7 @@ interface RequireNoAuthProps {
 
 export function RequireNoAuth({ children, redirectTo = '/dashboard' }: RequireNoAuthProps) {
   const { loading: isLoading, isAuthenticated } = useAuth();
+  const isGuest = useSessionStore((s) => s.isGuest);
   const location = useLocation();
 
   // Mientras carga, mostrar loading
@@ -21,8 +23,9 @@ export function RequireNoAuth({ children, redirectTo = '/dashboard' }: RequireNo
     return <LoadingScreen message="Cargando..." />;
   }
 
-  // Si ya está autenticado, redirigir
-  if (isAuthenticated) {
+  // Si ya está autenticado (y NO es sesión Guest/Demo), redirigir
+  // Los usuarios invitados deben poder ver Login/Registro para "subir de nivel" su cuenta
+  if (isAuthenticated && !isGuest) {
     // Intentar ir a la página de donde venía, o al dashboard
     const from = (location.state as { from?: Location })?.from?.pathname || redirectTo;
     return <Navigate to={from} replace />;

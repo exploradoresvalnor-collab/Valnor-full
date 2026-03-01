@@ -87,6 +87,12 @@ export default defineConfig({
       '/auth': {
         target: 'http://localhost:8080',
         changeOrigin: true,
+        // Evitar que el proxy intercepte rutas de frontend (peticiones de navegación)
+        bypass: (req) => {
+          if (req.headers.accept?.indexOf('text/html') !== -1) {
+            return '/index.html';
+          }
+        },
       },
       '/api': {
         target: 'http://localhost:8080',

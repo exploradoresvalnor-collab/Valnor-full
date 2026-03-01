@@ -188,7 +188,10 @@ function ShowcaseCharacterModel({
         // Los modelos miran a la cámara (al jugador)
         rotation={[0, 0, 0]}
       >
-        <primitive object={clonedScene} />
+        <primitive
+          object={clonedScene}
+          position={config.positionOffset || [0, 0, 0]}
+        />
       </group>
 
       {/* Indicador de selección (circulo brillante bajo el personaje) */}

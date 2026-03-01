@@ -1,23 +1,22 @@
 /**
  * Splash Screen - Pantalla de inicio
- * Migrado desde Angular splash-screen.component
- * Opciones: Iniciar sesión o ver Wiki
+ * Diseño profesional estático con flujo cinematográfico (Press Start)
  */
 
 import { useState, useCallback, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { GiSpellBook } from 'react-icons/gi';
-import { FiUser } from 'react-icons/fi';
+import { FiLogIn } from 'react-icons/fi';
 import './SplashScreen.css';
 
 function SplashScreen() {
   const [isExiting, setIsExiting] = useState(false);
   const [isAnimating, setIsAnimating] = useState(false);
   const [isLandscape, setIsLandscape] = useState(false);
-  const [showOptions, setShowOptions] = useState(false);
+  const [showMenu, setShowMenu] = useState(false);
   const navigate = useNavigate();
 
-  // Detectar orientación
+  // Detectar orientación y móviles
   useEffect(() => {
     const checkOrientation = () => {
       setIsLandscape(window.innerWidth > window.innerHeight);
@@ -25,8 +24,7 @@ function SplashScreen() {
 
     checkOrientation();
     window.addEventListener('resize', checkOrientation);
-    
-    // Set CSS variable for viewport height (mobile fix)
+
     const setVH = () => {
       const vh = window.innerHeight * 0.01;
       document.documentElement.style.setProperty('--vh', `${vh}px`);
@@ -40,16 +38,17 @@ function SplashScreen() {
     };
   }, []);
 
-  // Mostrar opciones al tocar la pantalla
-  const handleTap = useCallback(() => {
-    if (isAnimating) return;
-    setShowOptions(true);
-  }, [isAnimating]);
+  // Activar el menú al tocar la pantalla (primera fase)
+  const handleStartInteraction = useCallback(() => {
+    if (showMenu || isAnimating) return;
+    setShowMenu(true);
+  }, [showMenu, isAnimating]);
 
   // Ir al landing (para registro/login)
-  const handleEnter = useCallback(() => {
+  const handleEnter = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation(); // Evitar activar el menú si ya está activo
     if (isAnimating) return;
-    
+
     setIsAnimating(true);
     setIsExiting(true);
 
@@ -58,10 +57,11 @@ function SplashScreen() {
     }, 600);
   }, [isAnimating, navigate]);
 
-  // Ir a la wiki para más info
-  const handleWiki = useCallback(() => {
+  // Ir a la wiki
+  const handleWiki = useCallback((e: React.MouseEvent) => {
+    e.stopPropagation();
     if (isAnimating) return;
-    
+
     setIsAnimating(true);
     setIsExiting(true);
 
@@ -71,103 +71,63 @@ function SplashScreen() {
   }, [isAnimating, navigate]);
 
   return (
-    <div 
+    <div
       className={`splash-container ${isExiting ? 'exiting' : ''} ${isLandscape ? 'landscape' : 'portrait'}`}
-      onClick={!showOptions ? handleTap : undefined}
+      onClick={handleStartInteraction}
     >
       {/* Overlay cinematográfico */}
       <div className={`cinematic-overlay ${isExiting ? 'exit' : ''}`} />
-      
+
       {/* Contenido principal */}
-      <div className={`splash-content ${isExiting ? 'exit' : ''}`}>
-        {/* Logo */}
-        <div className="logo-wrapper">
-          <div className="logo-glow"></div>
-          <img
-            src="/assets/logo.png"
-            alt="Logo Exploradores de Valnor"
-            className={`logo ${isExiting ? 'exit' : ''}`}
-          />
+      <div className={`splash-content ${isExiting ? 'exit' : ''} ${showMenu ? 'with-menu' : ''}`}>
+
+        {/* Logo que ya contiene el título */}
+        <div className="title-group">
+          <div className="logo-wrapper">
+            <img
+              src="/assets/icons/Logo_2.webp"
+              alt="Logo Exploradores de Valnor"
+              className={`logo-main ${isExiting ? 'exit' : ''}`}
+            />
+          </div>
         </div>
-        
-        {/* Texto */}
-        <div className="text-wrapper">
-          {/* Título */}
-          <h1 className={`valnor-title ${isExiting ? 'exit' : ''}`}>
-            EXPLORADORES DE VALNOR
-          </h1>
-          
-          {/* Subtítulo o botones */}
-          {!showOptions ? (
-            <p className={`valnor-sub ${isExiting ? 'exit' : ''}`}>
-              Toca para comenzar
-            </p>
-          ) : (
-            <div className={`splash-options ${isExiting ? 'exit' : ''}`}>
-              {/* Botón principal - Entrar */}
-              <button
-                className="splash-btn splash-btn-primary minimal-portal"
-                onClick={handleEnter}
-              >
-                <span className="btn-icon"><FiUser size={24} /></span>
-                <span className="btn-text">Entrar</span>
-              </button>
-              {/* Botón secundario */}
-              <div className="splash-btn-row">
-                <button
-                  className="splash-btn splash-btn-secondary minimal-book"
-                  onClick={handleWiki}
-                >
-                  <span className="btn-icon"><GiSpellBook size={18} /></span>
-                  <span className="btn-text">Wiki</span>
-                </button>
-              </div>
-            </div>
-          )}
-        </div>
+
+        {/* Fase 1: Call to Action inicial */}
+        {!showMenu && (
+          <div className="press-start-prompt">
+            <p className="pulse-text">Haz clic para comenzar</p>
+          </div>
+        )}
+
+        {/* Fase 2: Menú de opciones */}
+        {showMenu && (
+          <nav className={`splash-menu ${isExiting ? 'exit' : ''}`}>
+            <button
+              className="splash-btn splash-btn-primary ornate-btn"
+              onClick={handleEnter}
+            >
+              <div className="btn-ornament ornate-left" />
+              <FiLogIn className="btn-icon" />
+              <span className="btn-label">Entrar al Reino</span>
+              <div className="btn-ornament ornate-right" />
+            </button>
+
+            <button
+              className="splash-btn splash-btn-secondary ornate-btn"
+              onClick={handleWiki}
+            >
+              <div className="btn-ornament ornate-left" />
+              <GiSpellBook className="btn-icon" />
+              <span className="btn-label">Ver Wiki</span>
+              <div className="btn-ornament ornate-right" />
+            </button>
+          </nav>
+        )}
       </div>
 
-      {/* Partículas decorativas */}
-      <div className="particles">
-        {/* Partículas doradas ascendentes */}
-        <div className="particle gold"></div>
-        <div className="particle gold"></div>
-        <div className="particle gold"></div>
-        <div className="particle gold"></div>
-        <div className="particle gold"></div>
-        <div className="particle gold"></div>
-        <div className="particle gold"></div>
-        <div className="particle gold"></div>
-        {/* Partículas de energía azul */}
-        <div className="particle energy"></div>
-        <div className="particle energy"></div>
-        <div className="particle energy"></div>
-        <div className="particle energy"></div>
-        <div className="particle energy"></div>
-        {/* Partículas de cristal púrpura */}
-        <div className="particle crystal"></div>
-        <div className="particle crystal"></div>
-        <div className="particle crystal"></div>
-        <div className="particle crystal"></div>
-        {/* Partículas de brillo */}
-        <div className="particle sparkle"></div>
-        <div className="particle sparkle"></div>
-        <div className="particle sparkle"></div>
-        <div className="particle sparkle"></div>
-        <div className="particle sparkle"></div>
-        <div className="particle sparkle"></div>
-        {/* Partículas flotantes laterales */}
-        <div className="particle float"></div>
-        <div className="particle float"></div>
-        <div className="particle float"></div>
-        <div className="particle float"></div>
-      </div>
-      
-      {/* Rayos de luz */}
-      <div className="light-rays">
-        <div className="ray"></div>
-        <div className="ray"></div>
-        <div className="ray"></div>
+      {/* Footer Info */}
+      <div className="splash-footer">
+        <span className="splash-version">© 2025 ValGame Studio</span>
       </div>
     </div>
   );

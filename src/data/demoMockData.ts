@@ -30,6 +30,7 @@ export const DEMO_CHARACTERS: TeamMember[] = [
     stats: { attack: 200, defense: 110, health: 1050, speed: 12 },
   },
 ];
+// Golan Valnor se añadirá cuando el modelo esté listo desde Blender
 
 // Equipamiento demo — objetos completos (InventorySummary y Inventory los muestran)
 export const DEMO_EQUIPMENT: EquipmentItem[] = [

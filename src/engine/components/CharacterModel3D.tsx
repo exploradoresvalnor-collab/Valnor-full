@@ -175,7 +175,10 @@ export function CharacterModel3D({
 
   return (
     <group ref={groupRef} scale={finalScale} position={[0, config.yOffset, 0]}>
-      <primitive object={clonedScene} />
+      <primitive
+        object={clonedScene}
+        position={config.positionOffset || [0, 0, 0]}
+      />
     </group>
   );
 }

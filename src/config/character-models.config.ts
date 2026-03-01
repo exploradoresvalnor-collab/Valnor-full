@@ -21,6 +21,8 @@ export interface CharacterModelConfig {
   scale: number;
   /** Offset vertical para que los pies toquen el suelo */
   yOffset: number;
+  /** Offset opcional adicional [x, y, z] para corregir la pos de modelos no centrados */
+  positionOffset?: [number, number, number];
   /** Nombres de animaciones disponibles en el archivo (depende del .glb) */
   animations?: {
     idle?: string;
@@ -138,6 +140,22 @@ export const CHARACTER_MODEL_MAP: Record<string, CharacterModelConfig> = {
       attack: 'Slash',
       death: 'Death',
       hit: 'HitReact',
+    },
+  },
+  'golan-valnor': {
+    modelPath: '/assets/models/characters/Golen Valnor.glb',
+    displayName: 'Golan Valnor',
+    scale: 1.0,
+    yOffset: 0,
+    animations: {
+      idle: 'Idle',
+      walk: 'Walk',
+      run: 'Run',
+      jump: 'Jumping Up',
+      fall: 'Fall',
+      attack: 'Left Strafe', // placeholder since no attack is apparent
+      death: 'Falling  Idle',
+      hit: 'Getting Up',
     },
   },
   'leviatan': {
