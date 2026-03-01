@@ -1,4 +1,5 @@
 import { useState, useEffect, useCallback } from 'react';
+import { usePlatform } from '../../hooks/usePlatform';
 import './InstallPrompt.css';
 
 interface BeforeInstallPromptEvent extends Event {
@@ -13,6 +14,7 @@ declare global {
 }
 
 export function InstallPrompt() {
+  const { isMobile } = usePlatform();
   const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [showBanner, setShowBanner] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
@@ -85,8 +87,9 @@ export function InstallPrompt() {
     localStorage.setItem('pwa-install-dismissed', Date.now().toString());
   }, []);
 
-  // No mostrar nada si ya está instalada o no hay prompt disponible
-  if (isInstalled || !showBanner || !deferredPrompt) {
+  // No mostrar nada si ya está instalada, no hay prompt, o NO es móvil
+  // El prompt de instalación PWA solo se muestra en dispositivos móviles
+  if (!isMobile || isInstalled || !showBanner || !deferredPrompt) {
     return null;
   }
 
@@ -95,7 +98,7 @@ export function InstallPrompt() {
       <div className="install-prompt-content">
         <div className="install-prompt-icon">
           <img 
-            src="/assets/icons/icon-192x192.svg" 
+            src="/assets/icons/Logo_2.webp" 
             alt="Valnor" 
             className="install-prompt-app-icon"
           />
