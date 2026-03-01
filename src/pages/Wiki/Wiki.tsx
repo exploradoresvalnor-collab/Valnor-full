@@ -59,8 +59,8 @@ const Wiki: React.FC = () => {
             <img src="/assets/icons/Logo_2.webp" alt="Valnor" className="navbar-logo" />
             <span className="navbar-title">WIKI VALNOR</span>
           </Link>
-          <button onClick={() => navigate(-1)} className="back-button">
-            <span className="desktop-text">← Volver al Inicio</span>
+          <button onClick={() => navigate('/landing')} className="back-button">
+            <span className="desktop-text">← Volver</span>
             <span className="mobile-text">← Volver</span>
           </button>
         </div>
@@ -115,11 +115,11 @@ const Wiki: React.FC = () => {
             </div>
             <div className="section-description">
               <p>
-                Valnor ofrece diferentes formas de comenzar tu aventura. Elige la que mejor 
+                Valnor ofrece diferentes formas de comenzar tu aventura. Elige la que mejor
                 se adapte a tus necesidades y empieza a explorar el mundo.
               </p>
             </div>
-            
+
             {/* Modos de acceso */}
             <div className="access-modes-grid">
               {/* Registro */}
@@ -165,7 +165,7 @@ const Wiki: React.FC = () => {
                 </div>
                 <div className="access-content">
                   <p className="access-description">
-                    ¿Ya tienes cuenta? Inicia sesión para continuar tu aventura donde 
+                    ¿Ya tienes cuenta? Inicia sesión para continuar tu aventura donde
                     la dejaste. Todo tu progreso te está esperando.
                   </p>
                   <ul className="access-features">

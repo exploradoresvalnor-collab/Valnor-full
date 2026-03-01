@@ -55,11 +55,11 @@ const Landing = () => {
   // Preload hero images
   const preloadHeroImages = useCallback((timeoutMs = 3000): Promise<void> => {
     const images = ['/assets/icons/portada_pc.webp', '/assets/icons/portada_movil.webp'];
-    
+
     return new Promise((resolve) => {
       let completed = 0;
       let finished = false;
-      
+
       const markDone = () => {
         if (finished) return;
         finished = true;
@@ -198,31 +198,26 @@ const Landing = () => {
             />
           </div>
 
-          {/* CTA: Entrar al Demo */}
+          {/* CTA: Entrar al Demo con Estética Premium */}
           <div className="hero-cta-wrap">
             <button
-              className="hero-cta hero-cta--primary"
+              className="ornate-btn"
               onClick={onStartEpic}
-              aria-label="Entrar al Demo"
+              aria-label="Demo"
             >
-              Entrar al Demo
-              <span className="chev" aria-hidden="true">
-                ➜
-              </span>
+              <span className="btn-ornament ornate-left"></span>
+              <span className="btn-label">DEMO</span>
+              <span className="chev" aria-hidden="true">➜</span>
+              <span className="btn-ornament ornate-right"></span>
             </button>
-            <div className="cta-sub">Explora la Fortaleza — sin instalación</div>
+            <div className="cta-sub">Explora la Fortaleza — Sin Instalación</div>
           </div>
         </div>
 
-        {/* Footer Content Transparente */}
+        {/* Footer Content Minimalista y Profesional */}
         <div className="hero-footer-content">
           <div className="hero-footer-inner">
             <div className="hero-footer-brand">
-              <img
-                src="/assets/icons/Logo_2.webp"
-                alt="ValGame Studio"
-                className="hero-footer-logo"
-              />
               <span className="hero-footer-text">ValGame Studio</span>
             </div>
             <p className="hero-footer-copy">&copy; 2025 ValGame Studio</p>

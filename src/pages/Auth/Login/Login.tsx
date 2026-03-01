@@ -12,7 +12,7 @@ const Login = () => {
   const navigate = useNavigate();
   const [searchParams] = useSearchParams();
   const { login, loading, error, clearError } = useAuth();
-  
+
   // Form state
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -36,14 +36,14 @@ const Login = () => {
     clearError();
 
     const success = await login({ email, password }, returnUrl);
-    
+
     if (!success) {
       setIsPageLoading(false);
     }
   };
 
   const goToHome = () => {
-    navigate('/');
+    navigate('/landing');
   };
 
   return (
@@ -77,11 +77,11 @@ const Login = () => {
           <form onSubmit={handleSubmit} className="login-form">
             {/* Animated Border Glow */}
             <div className="form-glow" />
-            
+
             {/* Corner Accents */}
             <div className="corner-accent corner-top-right" />
             <div className="corner-accent corner-bottom-left" />
-            
+
             {/* Glowing Corner Dots */}
             <div className="corner-dot dot-tl" />
             <div className="corner-dot dot-br" />
@@ -95,11 +95,10 @@ const Login = () => {
 
             {/* Mensajes de Error */}
             {error && (
-              <div className={`error-message ${
-                error.includes('verificada') || error.includes('verificar') ? 'error-warning' : 
-                error.includes('conectar') || error.includes('servidor') ? 'error-server' : 
-                'error-auth'
-              }`}>
+              <div className={`error-message ${error.includes('verificada') || error.includes('verificar') ? 'error-warning' :
+                  error.includes('conectar') || error.includes('servidor') ? 'error-server' :
+                    'error-auth'
+                }`}>
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>

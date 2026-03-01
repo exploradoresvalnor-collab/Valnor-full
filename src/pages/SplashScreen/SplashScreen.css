@@ -44,6 +44,19 @@
   animation: bgSubtleMovement 60s ease-in-out infinite alternate;
 }
 
+/* Soporte para orientación móvil */
+@media (orientation: portrait) {
+  .splash-container::before {
+    background-image: url('/assets/icons/portada_movil.webp');
+  }
+}
+
+@media (orientation: landscape) {
+  .splash-container::before {
+    background-image: url('/assets/icons/portada_pc.webp');
+  }
+}
+
 @keyframes bgSubtleMovement {
   0% {
     transform: scale(1.05);
