@@ -1,0 +1,145 @@
+/**
+ * Global Mobile Landscape Optimizations
+ * Focus on flexible scaling for low-height viewports
+ */
+
+/* Helper for very short screens (landscape mobile) */
+@media screen and (max-height: 500px) and (orientation: landscape) {
+    :root {
+        --nav-height: 48px !important;
+    }
+
+    /* Global scaling reduction */
+    html {
+        font-size: 13px !important;
+    }
+
+    /* Reduce spacing systematically */
+    .hero-content,
+    .splash-content {
+        gap: 1rem !important;
+        padding: 1rem !important;
+    }
+
+    /* Compact button scaling */
+    .ornate-btn {
+        height: 48px !important;
+        width: 240px !important;
+        font-size: 0.85rem !important;
+    }
+
+    .btn-ornament {
+        height: 30% !important;
+    }
+
+    /* Logo adjustment */
+    .hero-logo,
+    .logo-main {
+        width: clamp(140px, 25vh, 220px) !important;
+        margin-bottom: 0.5rem !important;
+    }
+
+    /* Hide non-critical footer info to save space */
+    .splash-footer,
+    .hero-footer-content {
+        bottom: 0.5rem !important;
+    }
+
+    .splash-version,
+    .hero-footer-copy {
+        display: none;
+    }
+
+    /* Ensure containers allow content to fit */
+    .splash-menu {
+        flex-direction: row !important;
+        flex-wrap: wrap !important;
+        justify-content: center !important;
+        gap: 0.8rem !important;
+        margin-top: 1rem !important;
+    }
+
+    /* Avoid overflowing titles */
+    .title-group {
+        margin-bottom: 1.5rem !important;
+    }
+
+    /* Dashboard Overrides */
+    .dash-main {
+        grid-template-columns: 1fr !important;
+        overflow-y: auto !important;
+        padding: 0.5rem !important;
+        gap: 0.5rem !important;
+    }
+
+    .panel-left,
+    .panel-right {
+        width: 100% !important;
+    }
+
+    .cards-row--2,
+    .cards-row--4 {
+        grid-template-columns: repeat(3, 1fr) !important;
+        gap: 0.5rem !important;
+    }
+
+    .action-card {
+        padding: 0.6rem !important;
+        min-height: auto !important;
+    }
+
+    .action-card__icon {
+        font-size: 1.2rem !important;
+    }
+
+    /* Portals Overrides */
+    .portal-cards-container {
+        flex-direction: row !important;
+        gap: 1rem !important;
+        align-items: center !important;
+        justify-content: center !important;
+    }
+
+    .portal-card {
+        width: 220px !important;
+        padding: 1rem !important;
+        border-radius: 16px !important;
+    }
+
+    .portals-header h1 {
+        font-size: 1.5rem !important;
+    }
+
+    .portal-icon {
+        width: 40px !important;
+        height: 40px !important;
+    }
+
+    .portal-content h2 {
+        font-size: 1.1rem !important;
+    }
+
+    .portal-features,
+    .portal-cost {
+        display: none !important;
+    }
+
+    .enter-portal-btn {
+        padding: 0.6rem !important;
+        font-size: 0.8rem !important;
+    }
+}
+
+/* Specific fix for Auth pages in landscape */
+@media screen and (max-height: 550px) and (orientation: landscape) {
+
+    .auth-card,
+    .card {
+        padding: 1rem !important;
+        max-width: 500px !important;
+    }
+
+    .auth-form-group {
+        margin-bottom: 0.5rem !important;
+    }
+}
