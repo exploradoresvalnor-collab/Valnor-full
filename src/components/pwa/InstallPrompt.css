@@ -105,6 +105,38 @@
   color: white;
 }
 
+/* Landscape en móvil: banner compacto para no tapar el juego en pantallas bajas */
+@media (orientation: landscape) and (max-height: 500px) {
+  .install-prompt-banner {
+    padding: 0.4rem 0.75rem;
+  }
+
+  .install-prompt-content {
+    padding: 0.5rem 0.75rem;
+    gap: 0.6rem;
+    border-radius: 10px;
+    max-width: 100%;
+  }
+
+  .install-prompt-icon {
+    display: none;
+  }
+
+  .install-prompt-text h4 {
+    font-size: 0.8rem;
+    margin-bottom: 0;
+  }
+
+  .install-prompt-text p {
+    display: none;
+  }
+
+  .install-prompt-btn {
+    padding: 0.3rem 0.7rem;
+    font-size: 0.78rem;
+  }
+}
+
 /* Responsive para móviles */
 @media (max-width: 480px) {
   .install-prompt-content {
