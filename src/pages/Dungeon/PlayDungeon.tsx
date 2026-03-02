@@ -12,6 +12,8 @@ import { Html } from '@react-three/drei';
 import FortalezaLevel from '../../engine/scenes/FortalezaLevel';
 import { ProSettingsPanel } from '../../components/ui/ProSettingsPanel';
 import { SceneAudioManager } from '../../engine/systems/SceneAudioManager';
+import { MobileControls } from '../../components/ui/MobileControls';
+import { useSettingsStore } from '../../stores/settingsStore';
 
 // Background music path
 const SCENE_MUSIC_URL = '/assets/audio/music/Valnor sountrac.mp3';
@@ -33,6 +35,7 @@ export default function PlayDungeon() {
   const [startingRemoteSession, setStartingRemoteSession] = useState(false);
   const [showSettings, setShowSettings] = useState(false);
   const [showInGameMenu, setShowInGameMenu] = useState(false);
+  const mobileControlsEnabled = useSettingsStore(s => s.mobileControlsEnabled);
 
   // ─── Background Music & Pointer Lock ──────────────────────────────
   useEffect(() => {
@@ -231,7 +234,7 @@ export default function PlayDungeon() {
 
       {/* IN-GAME PAUSE MENU (Activado al presionar ESC y perder PointerLock) */}
       {showInGameMenu && !showSettings && !showBattle && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.7)', backdropFilter: 'blur(5px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
           <h2 style={{ fontFamily: '"Cinzel", "Trajan Pro", serif', color: '#cfa144', fontSize: '36px', marginBottom: '30px', textShadow: '0 0 15px rgba(207,161,68,0.5)', letterSpacing: '2px' }}>El Juego está Pausado</h2>
           <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '320px' }}>
             <button
@@ -323,6 +326,9 @@ export default function PlayDungeon() {
           </div>
         </div>
       )}
+
+      {/* Mobile Controls Overlay */}
+      {mobileControlsEnabled && !showBattle && <MobileControls />}
     </div>
   );
 }

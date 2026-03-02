@@ -16,22 +16,23 @@ export interface UserSettings {
   musicVolume: number;      // 0-100
   sfxVolume: number;        // 0-100
   masterVolume: number;     // 0-100
-  
+
   // Idioma
   language: 'es' | 'en';
-  
+
   // Notificaciones
   notificationsEnabled: boolean;
   soundNotifications: boolean;
-  
+
   // Visual (extras frontend)
   showDamageNumbers: boolean;
   screenShake: boolean;
   particleEffects: boolean;
-  
+
   // Controles
   invertYAxis: boolean;
   mouseSensitivity: number; // 1-10
+  mobileControlsEnabled: boolean;
 }
 
 interface SettingsState extends UserSettings {
@@ -53,14 +54,15 @@ interface SettingsActions {
   setParticleEffects: (enabled: boolean) => void;
   setInvertYAxis: (invert: boolean) => void;
   setMouseSensitivity: (sensitivity: number) => void;
-  
+  setMobileControlsEnabled: (enabled: boolean) => void;
+
   // Batch update
   updateSettings: (settings: Partial<UserSettings>) => void;
-  
+
   // Sincronización con backend
   syncFromServer: (settings: Partial<UserSettings>) => void;
   markAsSynced: () => void;
-  
+
   // Reset
   resetToDefaults: () => void;
 }
@@ -77,6 +79,7 @@ const defaultSettings: UserSettings = {
   particleEffects: true,
   invertYAxis: false,
   mouseSensitivity: 5,
+  mobileControlsEnabled: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
 };
 
 const initialState: SettingsState = {
@@ -91,54 +94,57 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
       (set) => ({
         ...initialState,
 
-        setMusicVolume: (volume) => 
+        setMusicVolume: (volume) =>
           set({ musicVolume: Math.max(0, Math.min(100, volume)), isSynced: false }),
 
-        setSfxVolume: (volume) => 
+        setSfxVolume: (volume) =>
           set({ sfxVolume: Math.max(0, Math.min(100, volume)), isSynced: false }),
 
-        setMasterVolume: (volume) => 
+        setMasterVolume: (volume) =>
           set({ masterVolume: Math.max(0, Math.min(100, volume)), isSynced: false }),
 
-        setLanguage: (language) => 
+        setLanguage: (language) =>
           set({ language, isSynced: false }),
 
-        setNotificationsEnabled: (notificationsEnabled) => 
+        setNotificationsEnabled: (notificationsEnabled) =>
           set({ notificationsEnabled, isSynced: false }),
 
-        setSoundNotifications: (soundNotifications) => 
+        setSoundNotifications: (soundNotifications) =>
           set({ soundNotifications, isSynced: false }),
 
-        setShowDamageNumbers: (showDamageNumbers) => 
+        setShowDamageNumbers: (showDamageNumbers) =>
           set({ showDamageNumbers }),
 
-        setScreenShake: (screenShake) => 
+        setScreenShake: (screenShake) =>
           set({ screenShake }),
 
-        setParticleEffects: (particleEffects) => 
+        setParticleEffects: (particleEffects) =>
           set({ particleEffects }),
 
-        setInvertYAxis: (invertYAxis) => 
+        setInvertYAxis: (invertYAxis) =>
           set({ invertYAxis }),
 
-        setMouseSensitivity: (sensitivity) => 
+        setMouseSensitivity: (sensitivity) =>
           set({ mouseSensitivity: Math.max(1, Math.min(10, sensitivity)) }),
 
-        updateSettings: (settings) => 
+        setMobileControlsEnabled: (mobileControlsEnabled) =>
+          set({ mobileControlsEnabled }),
+
+        updateSettings: (settings) =>
           set((state) => ({ ...state, ...settings, isSynced: false })),
 
-        syncFromServer: (settings) => 
-          set((state) => ({ 
-            ...state, 
-            ...settings, 
-            isSynced: true, 
-            lastSyncedAt: Date.now() 
+        syncFromServer: (settings) =>
+          set((state) => ({
+            ...state,
+            ...settings,
+            isSynced: true,
+            lastSyncedAt: Date.now()
           })),
 
-        markAsSynced: () => 
+        markAsSynced: () =>
           set({ isSynced: true, lastSyncedAt: Date.now() }),
 
-        resetToDefaults: () => 
+        resetToDefaults: () =>
           set({ ...defaultSettings, isSynced: false }),
       }),
       {
@@ -155,6 +161,7 @@ export const useSettingsStore = create<SettingsState & SettingsActions>()(
           particleEffects: state.particleEffects,
           invertYAxis: state.invertYAxis,
           mouseSensitivity: state.mouseSensitivity,
+          mobileControlsEnabled: state.mobileControlsEnabled,
         }),
       }
     ),

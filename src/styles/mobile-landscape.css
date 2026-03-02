@@ -92,6 +92,31 @@
         font-size: 1.2rem !important;
     }
 
+    /* Header adjustments */
+    .dash-header {
+        height: 48px !important;
+        padding: 0 0.8rem !important;
+    }
+
+    .brand__logo {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
+    .brand__text {
+        font-size: 1.1rem !important;
+        letter-spacing: 2px !important;
+    }
+
+    .hdr-player {
+        padding: 0.25rem 0.5rem !important;
+    }
+
+    .hdr-btn {
+        width: 32px !important;
+        height: 32px !important;
+    }
+
     /* Portals Overrides */
     .portal-cards-container {
         flex-direction: row !important;

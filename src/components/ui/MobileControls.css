@@ -1,0 +1,130 @@
+.mobile-controls-container {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+    /* Let clicks pass through if not on controls */
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-end;
+    padding: 30px 60px;
+    z-index: 1000;
+}
+
+/* Joystick Styles */
+.joystick-area {
+    pointer-events: auto;
+    width: 150px;
+    height: 150px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.joystick-base {
+    width: 100px;
+    height: 100px;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    border-radius: 50%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+}
+
+.joystick-knob {
+    width: 50px;
+    height: 50px;
+    background: rgba(207, 161, 68, 0.4);
+    /* Valnor gold semi-transparent */
+    border: 1px solid rgba(207, 161, 68, 0.6);
+    border-radius: 50%;
+    cursor: grab;
+    touch-action: none;
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+}
+
+/* Action Buttons Styles */
+.action-buttons-area {
+    pointer-events: auto;
+    display: flex;
+    align-items: flex-end;
+    gap: 20px;
+}
+
+.secondary-buttons {
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+}
+
+.action-btn {
+    width: 60px;
+    height: 60px;
+    border-radius: 50%;
+    background: rgba(255, 255, 255, 0.1);
+    backdrop-filter: blur(8px);
+    border: 1px solid rgba(255, 255, 255, 0.2);
+    color: white;
+    font-size: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    touch-action: none;
+    transition: all 0.2s ease;
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+}
+
+.action-btn:active,
+.action-btn.active {
+    background: rgba(207, 161, 68, 0.3);
+    border-color: rgba(207, 161, 68, 0.8);
+    transform: scale(0.9);
+}
+
+.jump-btn {
+    width: 90px;
+    height: 90px;
+    background: rgba(207, 161, 68, 0.2);
+    border-color: rgba(207, 161, 68, 0.4);
+}
+
+.sprint-btn.active {
+    background: rgba(59, 130, 246, 0.3);
+    /* Blue for sprint toggle */
+    border-color: rgba(59, 130, 246, 0.8);
+}
+
+.attack-btn {
+    background: rgba(239, 68, 68, 0.1);
+}
+
+@media (max-height: 500px) and (orientation: landscape) {
+    .mobile-controls-container {
+        padding: 20px 40px;
+    }
+
+    .joystick-base {
+        width: 80px;
+        height: 80px;
+    }
+
+    .joystick-knob {
+        width: 40px;
+        height: 40px;
+    }
+
+    .action-btn {
+        width: 50px;
+        height: 50px;
+        font-size: 20px;
+    }
+
+    .jump-btn {
+        width: 70px;
+        height: 70px;
+    }
+}

@@ -1,12 +1,3 @@
-/**
- * ProSettingsPanel — Menú de Configuración Profesional RPG
- * 
- * Panel reutilizable para escenarios con:
- * - Calidad gráfica (Baja/Media/Alta/Ultra)
- * - Sliders de audio (Música, SFX, General)
- * - Info de rendimiento (FPS, sombras, distancia)
- */
-
 import { useCallback, useEffect } from 'react';
 import { useSettingsStore } from '../../stores/settingsStore';
 import { useEngineStore, type QualityLevel } from '../../engine/stores/engineStore';
@@ -38,6 +29,8 @@ export function ProSettingsPanel({ onClose }: ProSettingsPanelProps) {
     const setMusicVolume = useSettingsStore(s => s.setMusicVolume);
     const setSfxVolume = useSettingsStore(s => s.setSfxVolume);
     const setMasterVolume = useSettingsStore(s => s.setMasterVolume);
+    const mobileControlsEnabled = useSettingsStore(s => s.mobileControlsEnabled);
+    const setMobileControlsEnabled = useSettingsStore(s => s.setMobileControlsEnabled);
     const resetToDefaults = useSettingsStore(s => s.resetToDefaults);
 
     // Cerrar con ESC
@@ -52,7 +45,6 @@ export function ProSettingsPanel({ onClose }: ProSettingsPanelProps) {
     const handleReset = useCallback(() => {
         resetToDefaults();
         setQuality('medium');
-        // settingsStore.subscribe auto-syncs volumes to SceneAudioManager
     }, [resetToDefaults, setQuality]);
 
     return (
@@ -163,6 +155,30 @@ export function ProSettingsPanel({ onClose }: ProSettingsPanelProps) {
                                 }}
                             />
                         </div>
+                    </div>
+                </div>
+
+                {/* ─── Controles ─── */}
+                <div className="pro-settings-section">
+                    <div className="pro-settings-section-title">
+                        <span className="section-icon">🕹️</span>
+                        Controles
+                    </div>
+
+                    <div className="setting-toggle-row">
+                        <div className="setting-info">
+                            <span className="setting-label">Controles Táctiles (Joystick)</span>
+                            <span className="setting-desc">Habilita controles en pantalla para móviles</span>
+                        </div>
+                        <button
+                            className={`toggle-switch ${mobileControlsEnabled ? 'on' : 'off'}`}
+                            onClick={() => setMobileControlsEnabled(!mobileControlsEnabled)}
+                            style={{
+                                background: mobileControlsEnabled ? '#c8aa50' : 'rgba(255,255,255,0.08)'
+                            }}
+                        >
+                            <div className="toggle-knob" />
+                        </button>
                     </div>
                 </div>
 

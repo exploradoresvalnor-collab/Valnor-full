@@ -6,6 +6,8 @@ import { CharacterModel3D, CharacterPlaceholder } from './CharacterModel3D';
 import { useAnimationSystem, type AnimationState } from '../systems/AnimationSystem';
 import { usePhysics } from '../contexts/PhysicsContext';
 import { useTeamLeader } from '../../stores/teamStore';
+import { useInputStore } from '../../stores/inputStore';
+import { useSettingsStore } from '../../stores/settingsStore';
 
 // Teclas
 const keys: { [key: string]: boolean } = {};
@@ -20,6 +22,14 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
     const characterClass = usePlayerStore(s => s.characterClass);
     const isInCombat = usePlayerStore(s => s.isInCombat);
     const orbsCollected = usePlayerStore(s => s.orbsCollected);
+    const mobileControlsEnabled = useSettingsStore(s => s.mobileControlsEnabled);
+
+    // Mobile Input Store
+    const moveX = useInputStore(s => s.moveX);
+    const moveZ = useInputStore(s => s.moveZ);
+    const mobileJump = useInputStore(s => s.jump);
+    const mobileAttack = useInputStore(s => s.attack);
+    const mobileSprint = useInputStore(s => s.sprint);
 
     // Actions are stable in Zustand, they don't trigger re-renders
     const setPosition = usePlayerStore(s => s.setPosition);
@@ -73,7 +83,7 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
         friction: 10.0,
         cameraAngleX: 0,
         cameraAngleY: 0.5,
-        cameraDistance: 12.0,
+        cameraDistance: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 18.0 : 12.0,
         isDragging: false,
         prevMousePos: { x: 0, y: 0 },
         playerPos: new THREE.Vector3(position[0], position[1], position[2]),
@@ -110,6 +120,10 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
             // Animations trigger
             if (k === 'f') animationSystem?.play('attack1', { force: true });
         };
+
+        // Mobile Attack Trigger
+        if (mobileAttack) animationSystem?.play('attack1', { force: true });
+
         const onKeyUp = (e: KeyboardEvent) => {
             const k = (e.key || '').toLowerCase();
             keys[k] = false;
@@ -164,7 +178,12 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
             }
         }
 
-        const speed = keys.shift ? 25 : 14;
+        // Mobile Jump Trigger
+        if (mobileJump) {
+            s.jumpBufferTime = s.maxJumpBufferTime;
+        }
+
+        const speed = (keys.shift || mobileSprint) ? 25 : 14;
 
         const forward = new THREE.Vector3();
         camera.getWorldDirection(forward);
@@ -180,6 +199,12 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
         if (keys.s) inputZ -= 1;
         if (keys.a) inputX += 1;
         if (keys.d) inputX -= 1;
+
+        // Merge with Mobile Joystick Input
+        if (mobileControlsEnabled) {
+            inputX += moveX;
+            inputZ += moveZ;
+        }
 
         let isMoving = false;
 
