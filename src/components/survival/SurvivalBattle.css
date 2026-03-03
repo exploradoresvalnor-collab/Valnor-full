@@ -555,3 +555,74 @@
     font-size: 1.2rem;
   }
 }
+
+/* Landscape Mobile Optimizations */
+@media (max-height: 540px) and (orientation: landscape) {
+  .survival-battle .battle-header {
+    padding: 0.5rem 1rem;
+  }
+
+  .wave-number {
+    font-size: 1.1rem;
+  }
+
+  .battle-stats {
+    gap: 1rem;
+  }
+
+  .battle-stats .stat {
+    font-size: 0.85rem;
+  }
+
+  .team-health-bar {
+    padding: 0.4rem 1rem;
+  }
+
+  .health-track {
+    height: 12px;
+  }
+
+  .survival-battle .battle-area {
+    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .survival-battle .team-panel,
+  .survival-battle .battle-log {
+    padding: 0.5rem;
+  }
+
+  .survival-battle .team-panel h3,
+  .survival-battle .battle-log h3 {
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .survival-battle .log-entry {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .gameover-modal {
+    padding: 1.20rem;
+    max-width: 350px;
+  }
+
+  .gameover-modal h2 {
+    font-size: 1.4rem;
+    margin-bottom: 1rem;
+  }
+
+  .final-stats {
+    margin-bottom: 1rem;
+  }
+
+  .final-stat .stat-value {
+    font-size: 1.1rem;
+  }
+
+  .gameover-modal .rewards-section {
+    padding: 0.6rem;
+    margin-bottom: 1rem;
+  }
+}

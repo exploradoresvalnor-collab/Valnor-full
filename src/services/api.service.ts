@@ -6,6 +6,7 @@
 import { API_CONFIG, DEFAULT_HEADERS } from '../config/api.config';
 import { STORAGE_KEYS } from '../utils/constants';
 import { useSessionStore } from '../stores/sessionStore';
+import { DEMO_CHARACTERS } from '../data/demoMockData';
 
 interface RequestOptions {
   headers?: Record<string, string>;
@@ -48,7 +49,6 @@ class ApiService {
       ...customHeaders,
     };
 
-    // Añadir token si existe en localStorage
     const token = localStorage.getItem(STORAGE_KEYS.TOKEN);
     if (token) {
       headers['Authorization'] = `Bearer ${token}`;
@@ -56,6 +56,43 @@ class ApiService {
 
     return headers;
   }
+
+  // --- MOCK DATA FOR DEMO GACHA SYSTEM ---
+  private mockPackages = [
+    {
+      _id: 'pkg_demo_starter',
+      nombre: 'Cofre del Principiante',
+      descripcion: 'Un cofre básico con garantias de equipo común y consumibles útiles.',
+      precio: 500,
+      moneda: 'val',
+      rareza: 'common',
+      contenido: [],
+      disponible: true,
+      featured: false,
+    },
+    {
+      _id: 'pkg_demo_epic',
+      nombre: 'Grimorio de Invocación',
+      descripcion: 'Invoca un Héroe garantizado. Altas posibilidades de obtener calidad Rara o Épica.',
+      precio: 2500,
+      moneda: 'val',
+      rareza: 'epic',
+      contenido: [],
+      disponible: true,
+      featured: true,
+    },
+    {
+      _id: 'pkg_demo_legendary',
+      nombre: 'Relicario de Loto',
+      descripcion: 'El cofre más escaso. Contiene maravillas incalculables y probabilidad de Legendario.',
+      precio: 10000,
+      moneda: 'val',
+      rareza: 'legendary',
+      contenido: [],
+      disponible: true,
+      featured: true,
+    }
+  ];
 
   /**
    * Maneja la respuesta de la API
@@ -83,9 +120,115 @@ class ApiService {
   /**
    * Comprueba si estamos en modo Guest para interceptar y no golpear la red.
    */
-  private checkGuestMode<T>(method: string, endpoint: string): T | null {
+  private checkGuestMode<T>(method: string, endpoint: string, body?: any): T | null {
     if (useSessionStore.getState().isGuest) {
       console.info(`[Demo/Guest] Red bloqueada: ${method} ${endpoint}`);
+
+      // MOCKS PARA GET
+      if (method === 'GET') {
+        if (endpoint.includes('/api/shop/packages') || endpoint.includes('/api/packages')) {
+          return { packages: this.mockPackages } as unknown as T;
+        }
+        if (endpoint.includes('/api/user-packages/')) { // Obtener cajas del usuario
+          const demoUserStr = localStorage.getItem(STORAGE_KEYS.USER);
+          const demoUser = demoUserStr ? JSON.parse(demoUserStr) : {};
+          return { packages: demoUser.userPackages || [] } as unknown as T;
+        }
+      }
+
+      // MOCKS PARA POST
+      if (method === 'POST') {
+        if (endpoint.includes('/api/shop/purchase') && body?.purchaseType?.startsWith('pkg_demo')) {
+          // Guardar compra de paquete en local
+          const demoUserStr = localStorage.getItem(STORAGE_KEYS.USER);
+          if (demoUserStr) {
+            const demoUser = JSON.parse(demoUserStr);
+            const pkgInfo = this.mockPackages.find(p => p._id === body.purchaseType);
+            if (pkgInfo && ((demoUser.val || 0) >= pkgInfo.precio)) {
+              demoUser.val -= pkgInfo.precio;
+              const newPkg = {
+                _id: `upkg_${Math.random()}`,
+                userId: demoUser.id,
+                paqueteId: pkgInfo._id,
+                nombre: pkgInfo.nombre,
+                abierto: false,
+                createdAt: new Date().toISOString()
+              };
+              demoUser.userPackages = [...(demoUser.userPackages || []), newPkg];
+              localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
+              import('../services/auth.service').then(m => m.authService.loadFromStorage()); // forced update
+              return { success: true, message: 'Compra simulada exitosa' } as unknown as T;
+            } else {
+              throw { message: 'VAL insuficiente para Demo' };
+            }
+          }
+        }
+
+        if (endpoint.includes('/api/user-packages/') && endpoint.includes('/open')) {
+          const packageId = endpoint.split('/')[3]; // /api/user-packages/PKG_ID/open
+          const demoUserStr = localStorage.getItem(STORAGE_KEYS.USER);
+          if (demoUserStr) {
+            const demoUser = JSON.parse(demoUserStr);
+            const userPkgs = demoUser.userPackages || [];
+
+            const pIdx = userPkgs.findIndex((p: any) => p._id === packageId && !p.abierto);
+            if (pIdx >= 0) {
+              userPkgs[pIdx].abierto = true;
+              userPkgs[pIdx].openedAt = new Date().toISOString();
+              demoUser.userPackages = userPkgs;
+
+              // Assign a random demo character to the user's personajes
+              const existingPersonajes = demoUser.personajes || [];
+              const existingIds = existingPersonajes.map((p: any) => p.id);
+              const availableChars = DEMO_CHARACTERS.filter(c => !existingIds.includes(c.id));
+              let charsReceived = 0;
+              if (availableChars.length > 0) {
+                const randomChar = availableChars[Math.floor(Math.random() * availableChars.length)];
+                existingPersonajes.push({
+                  id: randomChar.id,
+                  name: randomChar.name,
+                  nombre: randomChar.name,
+                  level: randomChar.level,
+                  nivel: randomChar.level,
+                  class: randomChar.class,
+                  clase: randomChar.class,
+                  rarity: randomChar.rarity,
+                  rareza: randomChar.rarity,
+                  stats: randomChar.stats,
+                });
+                demoUser.personajes = existingPersonajes;
+                charsReceived = 1;
+              }
+
+              localStorage.setItem(STORAGE_KEYS.USER, JSON.stringify(demoUser));
+              import('../services/auth.service').then(m => m.authService.loadFromStorage());
+
+              return {
+                ok: true,
+                assigned: {
+                  userPackageId: packageId,
+                  paqueteId: userPkgs[pIdx].paqueteId,
+                  openedAt: new Date().toISOString()
+                },
+                summary: {
+                  charactersReceived: charsReceived,
+                  itemsReceived: Math.floor(Math.random() * 3),
+                  consumablesReceived: Math.floor(Math.random() * 5),
+                  valReceived: Math.floor(Math.random() * 500) + 100,
+                  totalCharacters: existingPersonajes.length,
+                  totalItems: 2,
+                  totalConsumables: 5,
+                  valBalance: demoUser.val
+                },
+                inventory: { equipamientoNuevos: [], consumiblesNuevos: [] }
+              } as unknown as T;
+            } else {
+              throw { message: 'Paquete demo no encontrado o ya abierto' };
+            }
+          }
+        }
+      }
+
       return {} as T;
     }
     return null;
@@ -120,7 +263,7 @@ class ApiService {
    * POST request
    */
   async post<T>(endpoint: string, body: any, options?: RequestOptions): Promise<T> {
-    const guestIntercept = this.checkGuestMode<T>('POST', endpoint);
+    const guestIntercept = this.checkGuestMode<T>('POST', endpoint, body);
     if (guestIntercept) return guestIntercept;
 
     const url = this.buildUrl(endpoint);
@@ -157,7 +300,7 @@ class ApiService {
    * PUT request
    */
   async put<T>(endpoint: string, body: any, options?: RequestOptions): Promise<T> {
-    const guestIntercept = this.checkGuestMode<T>('PUT', endpoint);
+    const guestIntercept = this.checkGuestMode<T>('PUT', endpoint, body);
     if (guestIntercept) return guestIntercept;
 
     const url = this.buildUrl(endpoint);
@@ -183,7 +326,7 @@ class ApiService {
    * PATCH request
    */
   async patch<T>(endpoint: string, body: any, options?: RequestOptions): Promise<T> {
-    const guestIntercept = this.checkGuestMode<T>('PATCH', endpoint);
+    const guestIntercept = this.checkGuestMode<T>('PATCH', endpoint, body);
     if (guestIntercept) return guestIntercept;
 
     const url = this.buildUrl(endpoint);

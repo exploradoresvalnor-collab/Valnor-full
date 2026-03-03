@@ -79,7 +79,7 @@ const defaultSettings: UserSettings = {
   particleEffects: true,
   invertYAxis: false,
   mouseSensitivity: 5,
-  mobileControlsEnabled: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent),
+  mobileControlsEnabled: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || (navigator.maxTouchPoints > 0),
 };
 
 const initialState: SettingsState = {

@@ -48,26 +48,21 @@ const Login = () => {
 
   return (
     <div className="login-page">
-      {/* Animated Background Pattern */}
-      <div className="bg-pattern" />
-
       {/* Background Image Overlay */}
       <div className="bg-image-overlay">
         <img src="/assets/icons/portada_pc.webp" alt="Valnor Background" />
         <div className="bg-gradient-overlay" />
       </div>
 
-      {/* Glowing Orbs */}
-      <div className="glow-orb glow-orb-1" />
-      <div className="glow-orb glow-orb-2" />
+      {/* Heroic Ambient Glow */}
+      <div className="form-ambient-glow" />
 
       {/* Back Button */}
       <div className="back-button-container">
-        <button onClick={goToHome} className="back-button">
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <button onClick={goToHome} className="back-button" title="Volver al inicio">
+          <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          <span>Volver al inicio</span>
         </button>
       </div>
 
@@ -75,19 +70,6 @@ const Login = () => {
       <div className="content-container">
         <div className="form-wrapper">
           <form onSubmit={handleSubmit} className="login-form">
-            {/* Animated Border Glow */}
-            <div className="form-glow" />
-
-            {/* Corner Accents */}
-            <div className="corner-accent corner-top-right" />
-            <div className="corner-accent corner-bottom-left" />
-
-            {/* Glowing Corner Dots */}
-            <div className="corner-dot dot-tl" />
-            <div className="corner-dot dot-br" />
-            <div className="corner-dot dot-tr" />
-            <div className="corner-dot dot-bl" />
-
             {/* Título */}
             <div className="form-title">
               <h2>INICIO DE SESIÓN</h2>
@@ -96,8 +78,8 @@ const Login = () => {
             {/* Mensajes de Error */}
             {error && (
               <div className={`error-message ${error.includes('verificada') || error.includes('verificar') ? 'error-warning' :
-                  error.includes('conectar') || error.includes('servidor') ? 'error-server' :
-                    'error-auth'
+                error.includes('conectar') || error.includes('servidor') ? 'error-server' :
+                  'error-auth'
                 }`}>
                 <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
@@ -116,7 +98,7 @@ const Login = () => {
             {/* Email */}
             <div className="form-group">
               <label htmlFor="email" className="form-label">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
                 </svg>
                 Email
@@ -143,7 +125,7 @@ const Login = () => {
             {/* Password */}
             <div className="form-group">
               <label htmlFor="password" className="form-label">
-                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
                   <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 15v2m-6 4h12a2 2 0 002-2v-6a2 2 0 00-2-2H6a2 2 0 00-2 2v6a2 2 0 002 2zm10-10V7a4 4 0 00-8 0v4h8z" />
                 </svg>
                 Contraseña
@@ -189,31 +171,13 @@ const Login = () => {
               disabled={loading}
               className="submit-button"
             >
-              <div className="button-shine" />
               {!loading ? (
-                <>
-                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M11 16l-4-4m0 0l4-4m-4 4h14m-5 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h7a3 3 0 013 3v1" />
-                  </svg>
-                  <span>Iniciar Sesión</span>
-                </>
+                <span className="btn-label">Entrar al Reino</span>
               ) : (
-                <>
-                  <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
-                    <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-                    <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-                  </svg>
-                  <span>Ingresando...</span>
-                </>
+                <span className="btn-label">Abriendo Puertas...</span>
               )}
             </button>
 
-            {/* Divider */}
-            <div className="divider">
-              <div className="divider-line" />
-              <span>O</span>
-              <div className="divider-line" />
-            </div>
 
             {/* Forgot Password Link */}
             <div className="link-container">

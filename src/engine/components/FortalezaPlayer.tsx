@@ -27,6 +27,8 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
     // Mobile Input Store
     const moveX = useInputStore(s => s.moveX);
     const moveZ = useInputStore(s => s.moveZ);
+    const lookX = useInputStore(s => s.lookX);
+    const lookY = useInputStore(s => s.lookY);
     const mobileJump = useInputStore(s => s.jump);
     const mobileAttack = useInputStore(s => s.attack);
     const mobileSprint = useInputStore(s => s.sprint);
@@ -151,6 +153,15 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
         const dt = Math.min(delta, 0.1); // Clamp largo
         const s = state.current;
 
+        // --- Dual Joystick Camera Rotation ---
+        if (mobileControlsEnabled && (lookX !== 0 || lookY !== 0)) {
+            // Analog camera movement (right stick)
+            // Scaling factor 3.0 gives a snappy feel
+            s.cameraAngleX -= lookX * 3.0 * dt;
+            s.cameraAngleY -= lookY * 2.0 * dt;
+            s.cameraAngleY = Math.max(-0.2, Math.min(1.5, s.cameraAngleY));
+        }
+
         // --- Metroidvania Jump Unlocks ---
         s.canDoubleJump = orbsCollected >= 1;
         s.canTripleJump = orbsCollected >= 2;
@@ -212,15 +223,19 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
             isMoving = true;
             const inputVec = new THREE.Vector3(inputX * right.x + inputZ * forward.x, 0, inputX * right.z + inputZ * forward.z).normalize();
 
-            const targetAccel = speed * s.friction * 1.5;
+            // Apply Analog Magnitude if using mobile controls
+            const magnitude = mobileControlsEnabled ? useInputStore.getState().moveMagnitude : 1.0;
+            const currentMaxSpeed = speed * Math.max(0.2, magnitude); // At least 20% speed if moving
+
+            const targetAccel = currentMaxSpeed * s.friction * 1.5;
             const currentAccel = s.isGrounded ? targetAccel : targetAccel * 0.4;
 
             s.velocityX += inputVec.x * currentAccel * dt;
             s.velocityZ += inputVec.z * currentAccel * dt;
 
             const currentSpeedVec = new THREE.Vector2(s.velocityX, s.velocityZ);
-            if (currentSpeedVec.length() > speed) {
-                currentSpeedVec.normalize().multiplyScalar(speed);
+            if (currentSpeedVec.length() > currentMaxSpeed) {
+                currentSpeedVec.normalize().multiplyScalar(currentMaxSpeed);
                 s.velocityX = currentSpeedVec.x;
                 s.velocityZ = currentSpeedVec.y;
             }

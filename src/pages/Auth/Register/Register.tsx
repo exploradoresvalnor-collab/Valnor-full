@@ -18,7 +18,6 @@ const Register: React.FC = () => {
   const [formData, setFormData] = useState({
     username: '',
     email: '',
-    confirmEmail: '',
     password: '',
     confirmPassword: '',
     acceptTerms: false
@@ -96,11 +95,6 @@ const Register: React.FC = () => {
         if (!isValidEmail(formData.email)) return 'Email inválido';
         if (emailDuplicate) return 'Ya existe';
         break;
-      case 'confirmEmail':
-        if (!formData.confirmEmail) return 'Requerido';
-        if (!isValidEmail(formData.confirmEmail)) return 'Email inválido';
-        if (formData.email !== formData.confirmEmail) return 'No coincide';
-        break;
       case 'password':
         if (!formData.password) return 'Requerido';
         if (formData.password.length < 10) return 'Mín. 10 chars';
@@ -123,7 +117,6 @@ const Register: React.FC = () => {
       formData.username.length >= 3 &&
       formData.username.length <= 20 &&
       isValidEmail(formData.email) &&
-      formData.email === formData.confirmEmail &&
       PASSWORD_REGEX.test(formData.password) &&
       formData.password === formData.confirmPassword &&
       formData.acceptTerms &&
@@ -185,7 +178,6 @@ const Register: React.FC = () => {
     setTouched({
       username: true,
       email: true,
-      confirmEmail: true,
       password: true,
       confirmPassword: true,
       acceptTerms: true
@@ -257,26 +249,21 @@ const Register: React.FC = () => {
 
   return (
     <div className="register-page">
-      {/* Animated Background Pattern */}
-      <div className="background-pattern"></div>
-
       {/* Background Image Overlay */}
-      <div className="background-image">
-        <img src="/assets/icons/invo_1.webp" alt="Valnor Background" />
-        <div className="background-gradient"></div>
+      <div className="bg-image-overlay">
+        <img src="/assets/icons/portada_pc.webp" alt="Valnor Background" />
+        <div className="bg-gradient-overlay"></div>
       </div>
 
-      {/* Glowing Orbs */}
-      <div className="glow-orb glow-orb-cyan"></div>
-      <div className="glow-orb glow-orb-purple"></div>
+      {/* Heroic Ambient Glow */}
+      <div className="form-ambient-glow" />
 
-      {/* Back Button */}
+      {/* Back Button (Simplified Circular) */}
       <div className="back-button-container">
-        <Link to="/landing" className="back-button">
-          <svg className="back-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+        <Link to="/landing" className="back-button" title="Volver al inicio">
+          <svg width="24" height="24" fill="none" stroke="currentColor" viewBox="0 0 24 24">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M10 19l-7-7m0 0l7-7m-7 7h18" />
           </svg>
-          <span>Volver al inicio</span>
         </Link>
       </div>
 
@@ -287,22 +274,12 @@ const Register: React.FC = () => {
             {/* Server error banner */}
             {(serverError || error) && (
               <div className="error-banner">
-                <svg className="error-icon" fill="currentColor" viewBox="0 0 20 20">
+                <svg width="16" height="16" fill="currentColor" viewBox="0 0 20 20">
                   <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zM8.707 7.293a1 1 0 00-1.414 1.414L8.586 10l-1.293 1.293a1 1 0 101.414 1.414L10 11.414l1.293 1.293a1 1 0 001.414-1.414L11.414 10l1.293-1.293a1 1 0 00-1.414-1.414L10 8.586 8.707 7.293z" clipRule="evenodd" />
                 </svg>
                 <span>{serverError || error}</span>
               </div>
             )}
-
-            {/* Corner Accents */}
-            <div className="corner-accent corner-top-right"></div>
-            <div className="corner-accent corner-bottom-left"></div>
-
-            {/* Glowing Corner Dots */}
-            <div className="corner-dot dot-cyan top-left"></div>
-            <div className="corner-dot dot-yellow bottom-right"></div>
-            <div className="corner-dot dot-purple top-right"></div>
-            <div className="corner-dot dot-blue bottom-left"></div>
 
             {/* Title */}
             <div className="form-title">
@@ -366,32 +343,6 @@ const Register: React.FC = () => {
               </div>
             </div>
 
-            {/* Confirm Email */}
-            <div className="form-group">
-              <label htmlFor="confirmEmail" className="form-label">
-                <svg className="label-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
-                </svg>
-                Confirmar Email
-              </label>
-              <div className="input-wrapper">
-                <input
-                  id="confirmEmail"
-                  type="email"
-                  name="confirmEmail"
-                  value={formData.confirmEmail}
-                  onChange={handleChange}
-                  onBlur={() => handleBlur('confirmEmail')}
-                  autoComplete="email"
-                  className={`form-input ${hasFieldError('confirmEmail') ? 'input-error' : ''}`}
-                  placeholder="repite tu email"
-                />
-                {hasFieldError('confirmEmail') && (
-                  <div className="error-badge">{getFieldError('confirmEmail')}</div>
-                )}
-              </div>
-            </div>
-
             {/* Password */}
             <div className="form-group">
               <label htmlFor="password" className="form-label">
@@ -400,7 +351,7 @@ const Register: React.FC = () => {
                 </svg>
                 Contraseña
               </label>
-              <div className="input-wrapper password-wrapper">
+              <div className="input-wrapper">
                 <input
                   id="password"
                   type={hidePassword ? 'password' : 'text'}
@@ -428,13 +379,10 @@ const Register: React.FC = () => {
                     </svg>
                   )}
                 </button>
-                {hasFieldError('password') && (
-                  <div className="error-badge error-badge-left">{getFieldError('password')}</div>
-                )}
               </div>
             </div>
 
-            {/* Password Strength Bar + Checklist */}
+            {/* Strength Container */}
             <div className="strength-container">
               <div className="strength-bar-wrapper">
                 <div className="strength-bar">
@@ -443,7 +391,7 @@ const Register: React.FC = () => {
                     style={{ width: `${strengthPercent}%` }}
                   ></div>
                 </div>
-                <div className="strength-text">{strengthPercent}% cumplimiento</div>
+                <div className="strength-text">Cumplimiento: {strengthPercent}%</div>
               </div>
 
               <details
@@ -451,7 +399,7 @@ const Register: React.FC = () => {
                 open={showRequirements}
                 onToggle={(e) => setShowRequirements((e.target as HTMLDetailsElement).open)}
               >
-                <summary className="requirements-summary">Requisitos</summary>
+                <summary className="requirements-summary">Ver Requisitos</summary>
                 <ul className="requirements-list">
                   {checklist.map((item) => (
                     <li key={item.key} className="requirement-item">
@@ -479,7 +427,7 @@ const Register: React.FC = () => {
                 </svg>
                 Confirmar
               </label>
-              <div className="input-wrapper password-wrapper">
+              <div className="input-wrapper">
                 <input
                   id="confirmPassword"
                   type={hideConfirmPassword ? 'password' : 'text'}
@@ -507,35 +455,21 @@ const Register: React.FC = () => {
                     </svg>
                   )}
                 </button>
-                {hasFieldError('confirmPassword') && (
-                  <div className="error-badge error-badge-left">{getFieldError('confirmPassword')}</div>
-                )}
               </div>
             </div>
 
             {/* Accept Terms */}
             <div className="terms-container">
-              <div className="terms-checkbox-wrapper">
+              <label className="terms-label">
                 <input
-                  id="acceptTerms"
                   type="checkbox"
                   name="acceptTerms"
                   checked={formData.acceptTerms}
                   onChange={handleChange}
                   className="terms-checkbox"
                 />
-                <label htmlFor="acceptTerms" className="terms-label">
-                  Acepto los <a href="#" className="terms-link">términos y condiciones</a> y la <a href="#" className="terms-link">política de privacidad</a>
-                </label>
-              </div>
-              {touched.acceptTerms && !formData.acceptTerms && (
-                <div className="terms-error">
-                  <svg className="terms-error-icon" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M18 10a8 8 0 11-16 0 8 8 0 0116 0zm-7 4a1 1 0 11-2 0 1 1 0 012 0zm-1-9a1 1 0 00-1 1v4a1 1 0 102 0V6a1 1 0 00-1-1z" clipRule="evenodd" />
-                  </svg>
-                  <span>Debes aceptar los términos</span>
-                </div>
-              )}
+                Acepto los términos y la política de privacidad
+              </label>
             </div>
 
             {/* Submit Button */}
@@ -544,35 +478,18 @@ const Register: React.FC = () => {
               disabled={!canSubmit}
               className="submit-button"
             >
-              <div className="button-shine"></div>
               {!isLoading ? (
-                <svg className="button-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z" />
-                </svg>
+                <span>UNIRSE A VALNOR</span>
               ) : (
-                <svg className="button-icon spin" fill="none" viewBox="0 0 24 24">
-                  <circle className="spinner-bg" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                  <path className="spinner-fg" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                </svg>
+                <span>Invocando Cuenta...</span>
               )}
-              <span>{!isLoading ? 'UNIRSE A VALNOR' : 'Creando cuenta...'}</span>
             </button>
-
-            {/* Divider */}
-            <div className="divider">
-              <div className="divider-line"></div>
-              <span className="divider-text">O</span>
-              <div className="divider-line"></div>
-            </div>
 
             {/* Link to Login */}
             <div className="login-link-container">
-              <span className="login-text">¿Ya tienes cuenta? </span>
+              <span>¿Ya eres un guerrero? </span>
               <Link to="/auth/login" className="login-link">
                 Inicia sesión aquí
-                <svg className="login-link-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
               </Link>
             </div>
           </form>
@@ -583,16 +500,9 @@ const Register: React.FC = () => {
       {isPageLoading && (
         <div className="loading-overlay">
           <div className="loading-content">
-            <div className="loading-logo">
-              <img src="/assets/icons/valnor_logo.png" alt="Valnor" />
-            </div>
-            <div className="loading-message">
-              <h3>Creando cuenta...</h3>
-              <p>Preparando tu aventura en Valnor</p>
-            </div>
-            <div className="loading-spinner">
-              <div className="spinner"></div>
-            </div>
+            <img src="/assets/icons/Logo_2.webp" alt="Valnor" width="80" />
+            <h3>Preparando tu aventura...</h3>
+            <div className="loading-spinner" />
           </div>
         </div>
       )}

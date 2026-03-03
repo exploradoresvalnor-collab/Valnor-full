@@ -1,10 +1,9 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { authService } from '../../../services/auth.service';
 import './ForgotPassword.css';
 
 const ForgotPassword: React.FC = () => {
-  const navigate = useNavigate();
 
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
@@ -119,18 +118,27 @@ const ForgotPassword: React.FC = () => {
 
   return (
     <div className="forgot-password-page">
+      {/* Background Image Overlay */}
+      <div className="bg-image-overlay">
+        <img src="/assets/icons/portada_pc.webp" alt="Valnor Background" />
+        <div className="bg-gradient-overlay" />
+      </div>
+
+      {/* Heroic Ambient Glow */}
+      <div className="form-ambient-glow" />
+
       <div className="forgot-container">
         <div className="forgot-card">
           {/* Header */}
           <div className="card-header">
-            <img 
-              src="/assets/icons/Logo_2.webp" 
-              alt="ValGame Studio" 
+            <img
+              src="/assets/icons/Logo_2.webp"
+              alt="ValGame Studio"
               className="header-logo"
             />
             <h1 className="header-title">¿Olvidaste tu Contraseña?</h1>
             <p className="header-subtitle">
-              Ingresa tu email y te enviaremos instrucciones
+              Ingresa tu email y te enviaremos instrucciones épticas
             </p>
           </div>
 
@@ -138,7 +146,12 @@ const ForgotPassword: React.FC = () => {
           {!emailSent && (
             <form onSubmit={handleSubmit} className="forgot-form">
               <div className="form-group">
-                <label htmlFor="email" className="form-label">Email</label>
+                <label htmlFor="email" className="form-label">
+                  <svg width="14" height="14" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M16 12a4 4 0 10-8 0 4 4 0 008 0zm0 0v1.5a2.5 2.5 0 005 0V12a9 9 0 10-9 9m4.5-1.206a8.959 8.959 0 01-4.5 1.207" />
+                  </svg>
+                  Email
+                </label>
                 <input
                   id="email"
                   type="email"
@@ -162,13 +175,7 @@ const ForgotPassword: React.FC = () => {
                 {!loading ? (
                   <span>Enviar Instrucciones</span>
                 ) : (
-                  <span className="loading-content">
-                    <svg className="spinner" viewBox="0 0 24 24">
-                      <circle className="spinner-bg" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none"></circle>
-                      <path className="spinner-fg" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                    </svg>
-                    Enviando...
-                  </span>
+                  <span>Enviando...</span>
                 )}
               </button>
             </form>
@@ -181,7 +188,7 @@ const ForgotPassword: React.FC = () => {
               <div className="success-icon-wrapper">
                 <div className="success-icon-bg">
                   <svg className="success-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76"/>
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M3 19v-8.93a2 2 0 01.89-1.664l7-4.666a2 2 0 012.22 0l7 4.666A2 2 0 0121 10.07V19M3 19a2 2 0 002 2h14a2 2 0 002-2M3 19l6.75-4.5M21 19l-6.75-4.5M3 10l6.75 4.5M21 10l-6.75 4.5m0 0l-1.14.76a2 2 0 01-2.22 0l-1.14-.76" />
                   </svg>
                 </div>
               </div>
@@ -191,35 +198,29 @@ const ForgotPassword: React.FC = () => {
                 <p className="success-message">
                   Si el email existe, recibirás un enlace para restablecer tu contraseña.
                 </p>
-                <p className="success-hint">
-                  Revisa tu bandeja de entrada (y spam)
-                </p>
               </div>
 
               {/* Actions */}
               <div className="success-actions">
                 <div className="timer-box">
                   <p className="timer-text">
-                    ⏱️ El enlace expira en <strong>{formatTime(secondsRemaining)}</strong>
+                    ⏱️ El enlace expira en: <strong>{formatTime(secondsRemaining)}</strong>
                   </p>
                   <button
                     onClick={handleResend}
                     disabled={resendCooldownRemaining > 0 || loading}
                     className="resend-button"
                   >
-                    {resendCooldownRemaining === 0 
-                      ? '🔁 Reenviar instrucciones' 
-                      : `🔁 Reenviar (${resendCooldownRemaining}s)`
+                    {resendCooldownRemaining === 0
+                      ? 'Reenviar'
+                      : `Reenviar (${resendCooldownRemaining}s)`
                     }
                   </button>
                 </div>
 
-                <button
-                  onClick={() => navigate('/auth/login')}
-                  className="back-button"
-                >
-                  ← Volver a Iniciar Sesión
-                </button>
+                <Link to="/auth/login" className="back-button-link">
+                  ← Volver al Portal
+                </Link>
               </div>
             </div>
           )}
@@ -228,7 +229,7 @@ const ForgotPassword: React.FC = () => {
           {!emailSent && (
             <div className="card-footer">
               <Link to="/auth/login" className="footer-link">
-                ← Volver a Iniciar Sesión
+                ← Volver al Portal
               </Link>
             </div>
           )}

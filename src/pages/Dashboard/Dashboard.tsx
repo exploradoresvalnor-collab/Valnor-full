@@ -6,7 +6,6 @@
 
 import { useState, useEffect, useCallback, useMemo } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useSessionStore } from '../../stores/sessionStore';
 import { usePlayerStore, usePlayerLevel, usePlayerHealth } from '../../stores/playerStore';
 import { useGameStore } from '../../stores/gameStore';
 import { useGameModeStore, useGameMode } from '../../stores/gameModeStore';
@@ -16,7 +15,7 @@ import { authService } from '../../services/auth.service';
 import { useAuth } from '../../hooks/useAuth';
 import { useIsGuestSession } from '../../stores/sessionStore';
 import { useToasts } from '../../stores';
-import { mapToShowcase, mapToTeamMember, mapActivity, findActiveCharacter, mapStatsES } from '../../utils/mappers';
+import { mapToShowcase, mapToTeamMember, findActiveCharacter, mapStatsES } from '../../utils/mappers';
 import { EnergyBar, InventorySummary } from '../../components/ui';
 import { NotificationBell } from '../../components/notifications';
 import { TeamShowcase3D, type ShowcaseCharacter } from '../../engine/components/TeamShowcase3D';
@@ -42,11 +41,8 @@ import {
   GiSpellBook,
   GiPadlock,
   GiHealthNormal,
-  GiUpgrade,
-  GiOpenTreasureChest,
   GiSwordman,
   GiStarFormation,
-  GiScrollUnfurled,
   GiSwordsEmblem,
 } from 'react-icons/gi';
 import {
@@ -142,7 +138,6 @@ function StatBar({ label, current, max, color, icon }: StatBarProps) {
 
 const Dashboard = () => {
   const navigate = useNavigate();
-  const { endSession } = useSessionStore();
   const { logout } = useAuth();
   const isGuest = useIsGuestSession();
   const { addToast } = useToasts();
@@ -150,13 +145,11 @@ const Dashboard = () => {
   const clearGameMode = useGameModeStore((s) => s.clearMode);
   const setGameMode = useGameModeStore((s) => s.setMode);
 
-  const characterId = usePlayerStore((s) => s.characterId);
   const characterName = usePlayerStore((s) => s.characterName);
   const characterClass = usePlayerStore((s) => s.characterClass);
   const gold = usePlayerStore((s) => s.gold);
   const gems = usePlayerStore((s) => s.gems);
   const stats = usePlayerStore((s) => s.stats);
-  const initPlayer = usePlayerStore((s) => s.initPlayer);
 
   const { level, exp, expRequired } = usePlayerLevel();
   const { current: hp, max: maxHp } = usePlayerHealth();
@@ -170,7 +163,6 @@ const Dashboard = () => {
   const playerClass = characterClass || 'warrior';
 
   // ── Backend data ──────────────────────────────────────────
-  const [recentActivity, setRecentActivity] = useState<{ id: number; text: string; time: string; type: string }[]>([]);
   const [teamPersonajes, setTeamPersonajes] = useState<ShowcaseCharacter[]>([]);
   const [selectedCharId, setSelectedCharId] = useState<string | null>(null);
 
@@ -321,16 +313,7 @@ const Dashboard = () => {
           }
         }
 
-        // Activity
-        try {
-          const dashboard = await userService.getDashboard();
-          if (!cancelled && dashboard) {
-            const d = dashboard as any;
-            if (Array.isArray(d.actividadReciente)) {
-              setRecentActivity(d.actividadReciente.map(mapActivity));
-            }
-          }
-        } catch { /* sin actividad */ }
+        // No longer fetching activity feed
       } catch (err) {
         console.error('[Dashboard] Error fetching data:', err);
       } finally {
@@ -340,23 +323,6 @@ const Dashboard = () => {
     load();
     return () => { cancelled = true; };
   }, []);
-
-  const displayActivity = useMemo(() => {
-    if (recentActivity.length > 0) return recentActivity;
-    return [
-      { id: 1, text: 'Bienvenido a Valnor', time: 'Ahora', type: 'combat' },
-      { id: 2, text: 'Explora mazmorras y combate', time: '', type: 'levelup' },
-      { id: 3, text: 'Visita la tienda para equiparte', time: '', type: 'loot' },
-    ];
-  }, [recentActivity]);
-
-  const activityIcon = (type: string) => {
-    switch (type) {
-      case 'loot': return <GiOpenTreasureChest size={14} />;
-      case 'levelup': return <GiUpgrade size={14} />;
-      default: return <GiCrossedSwords size={14} />;
-    }
-  };
 
   // ── Handlers ──────────────────────────────────────────────
   const handleChangeMode = () => { clearGameMode(); navigate('/portals'); };
@@ -601,22 +567,7 @@ const Dashboard = () => {
             )}
           </div>
 
-          {/* Actividad reciente */}
-          <div className="section-box section-box--main">
-            <h4 className="section-box__title">
-              <GiScrollUnfurled size={16} />
-              Actividad Reciente
-            </h4>
-            <div className="activity-feed">
-              {displayActivity.map((a) => (
-                <div key={a.id} className="activity-row">
-                  <span className="activity-row__icon">{activityIcon(a.type)}</span>
-                  <span className="activity-row__text">{a.text}</span>
-                  <span className="activity-row__time">{a.time}</span>
-                </div>
-              ))}
-            </div>
-          </div>
+          {/* Removed Actividad Reciente because Notifications handle this */}
         </section>
 
         {/* ──── PANEL DERECHO: Acciones + Stats ──── */}

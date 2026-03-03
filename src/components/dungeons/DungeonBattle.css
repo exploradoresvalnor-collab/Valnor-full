@@ -94,8 +94,13 @@
 }
 
 @keyframes pulse-boss {
-  from { box-shadow: 0 0 5px rgba(231, 76, 60, 0.5); }
-  to { box-shadow: 0 0 15px rgba(231, 76, 60, 0.8); }
+  from {
+    box-shadow: 0 0 5px rgba(231, 76, 60, 0.5);
+  }
+
+  to {
+    box-shadow: 0 0 15px rgba(231, 76, 60, 0.8);
+  }
 }
 
 .progress-markers {
@@ -276,6 +281,7 @@
     opacity: 0;
     transform: translateX(-10px);
   }
+
   to {
     opacity: 1;
     transform: translateX(0);
@@ -340,8 +346,13 @@
 }
 
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 .results-modal {
@@ -360,6 +371,7 @@
     opacity: 0;
     transform: scale(0.8);
   }
+
   to {
     opacity: 1;
     transform: scale(1);
@@ -382,8 +394,15 @@
 }
 
 @keyframes bounce {
-  0%, 100% { transform: scale(1); }
-  50% { transform: scale(1.2); }
+
+  0%,
+  100% {
+    transform: scale(1);
+  }
+
+  50% {
+    transform: scale(1.2);
+  }
 }
 
 .results-modal h2 {
@@ -552,12 +571,88 @@
   .battle-area {
     grid-template-columns: 1fr;
   }
-  
+
   .team-panel {
     order: -1;
   }
-  
+
   .battle-log {
     max-height: 200px;
+  }
+}
+
+/* Landscape Mobile Optimizations */
+@media (max-height: 540px) and (orientation: landscape) {
+  .battle-header {
+    padding: 0.5rem 1rem;
+  }
+
+  .dungeon-info h2 {
+    font-size: 1.1rem;
+  }
+
+  .battle-progress {
+    padding: 0.4rem 1rem;
+  }
+
+  .progress-bar {
+    height: 8px;
+  }
+
+  .progress-markers {
+    margin-top: 0.2rem;
+  }
+
+  .marker {
+    width: 20px;
+    height: 20px;
+    font-size: 0.6rem;
+  }
+
+  .battle-area {
+    padding: 0.5rem 1rem;
+    gap: 0.5rem;
+  }
+
+  .team-panel,
+  .battle-log {
+    padding: 0.5rem;
+  }
+
+  .team-panel h3,
+  .battle-log h3 {
+    margin-bottom: 0.5rem;
+    font-size: 0.85rem;
+  }
+
+  .team-member {
+    padding: 0.4rem;
+  }
+
+  .member-name {
+    font-size: 0.85rem;
+  }
+
+  .log-entry {
+    font-size: 0.75rem;
+    padding: 0.3rem 0.5rem;
+  }
+
+  .results-modal {
+    padding: 1.2rem;
+    max-width: 350px;
+  }
+
+  .results-modal h2 {
+    font-size: 1.4rem;
+  }
+
+  .rewards-grid {
+    gap: 1rem;
+    margin-bottom: 0.5rem;
+  }
+
+  .reward-value {
+    font-size: 1rem;
   }
 }

@@ -143,9 +143,12 @@ export function GameCanvas({
   const { initialize, shutdown } = useEngineStore();
 
   // Configuración de calidad
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+  const maxDpr = isMobile ? 1.75 : 2;
+
   const dpr = quality === 'low' ? [0.5, 1] as [number, number] :
-    quality === 'medium' ? [0.75, 1.5] as [number, number] :
-      [1, 2] as [number, number];
+    quality === 'medium' ? [0.75, maxDpr * 0.75] as [number, number] :
+      [1, maxDpr] as [number, number];
 
   // Inicializar engine al montar
   useEffect(() => {

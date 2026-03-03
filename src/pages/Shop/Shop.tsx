@@ -10,6 +10,7 @@ interface ShopItem extends Item {
   stock: number;
   descuento?: number;
   destacado?: boolean;
+  isPackage?: boolean;
 }
 
 /** Maps a backend item to ShopItem */
@@ -26,6 +27,7 @@ function mapToShopItem(raw: any): ShopItem {
     stock: raw.stock ?? raw.cantidad ?? 99,
     descuento: raw.descuento || raw.discount,
     destacado: raw.destacado || raw.featured || false,
+    isPackage: raw.isPackage || raw.tipo === 'package' || false,
   };
 }
 
@@ -50,6 +52,7 @@ const Shop: React.FC = () => {
   const [shopLoading, setShopLoading] = useState(true);
   const [shopError, setShopError] = useState<string | null>(null);
   const [purchasing, setPurchasing] = useState(false);
+  const [purchaseSuccess, setPurchaseSuccess] = useState<boolean>(false);
   const [purchaseMessage, setPurchaseMessage] = useState<string | null>(null);
   const [walletVal, setWalletVal] = useState(0);
 
@@ -121,13 +124,13 @@ const Shop: React.FC = () => {
 
     switch (category) {
       case 'weapons':
-        items = equipmentItems.filter(i => i.tipo === 'weapon' || i.tipo === 'arma');
+        items = equipmentItems.filter(i => (i.tipo as string) === 'weapon' || (i.tipo as string) === 'arma');
         break;
       case 'armor':
-        items = equipmentItems.filter(i => ['armor', 'armadura', 'helmet', 'casco', 'boots', 'botas'].includes(i.tipo));
+        items = equipmentItems.filter(i => ['armor', 'armadura', 'helmet', 'casco', 'boots', 'botas'].includes(i.tipo as string));
         break;
       case 'accessories':
-        items = equipmentItems.filter(i => i.tipo === 'accessory' || i.tipo === 'accesorio');
+        items = equipmentItems.filter(i => (i.tipo as string) === 'accessory' || (i.tipo as string) === 'accesorio');
         break;
       case 'consumables':
         items = [...consumableItemsList];
@@ -137,7 +140,7 @@ const Shop: React.FC = () => {
     }
 
     if (searchTerm) {
-      items = items.filter(i => 
+      items = items.filter(i =>
         i.nombre.toLowerCase().includes(searchTerm.toLowerCase()) ||
         i.descripcion.toLowerCase().includes(searchTerm.toLowerCase())
       );
@@ -180,7 +183,14 @@ const Shop: React.FC = () => {
     setPurchaseMessage(null);
     try {
       await shopService.purchase(selectedItem.id, selectedItem.tipo === 'consumable' ? purchaseQuantity : 1);
-      setPurchaseMessage(`¡Compraste ${selectedItem.nombre}!`);
+
+      if (selectedItem.isPackage) {
+        setPurchaseSuccess(true);
+      } else {
+        setPurchaseMessage(`¡Compraste ${selectedItem.nombre}!`);
+        setTimeout(() => setPurchaseMessage(null), 3000);
+      }
+
       // Refresh resources
       const resources = await userService.getResources().catch(() => null);
       if (resources) {
@@ -191,11 +201,11 @@ const Shop: React.FC = () => {
       }
     } catch (err: any) {
       setPurchaseMessage(err.message || 'Error al comprar');
+      setTimeout(() => setPurchaseMessage(null), 3000);
     } finally {
       setPurchasing(false);
       setShowPurchaseModal(false);
       setPurchaseQuantity(1);
-      setTimeout(() => setPurchaseMessage(null), 3000);
     }
   };
 
@@ -316,6 +326,7 @@ const Shop: React.FC = () => {
                     precio: pkg.precio || pkg.costoVal || 0,
                     stock: 99,
                     destacado: true,
+                    isPackage: true,
                   })}
                 >
                   <span className="featured-badge">📦</span>
@@ -330,53 +341,53 @@ const Shop: React.FC = () => {
               ))}
             </div>
           ) : (
-          <div className="shop-grid">
-            {filteredItems.length === 0 ? (
-              <div className="no-items"><p>No hay items en esta categoría</p></div>
-            ) : filteredItems.map(item => (
-              <div
-                key={item.id}
-                className={`shop-card ${selectedItem?.id === item.id ? 'selected' : ''} ${item.destacado ? 'featured' : ''}`}
-                style={{ borderColor: RARITY_COLORS[item.rareza] }}
-                onClick={() => setSelectedItem(item)}
-              >
-                {item.destacado && <span className="featured-badge">⭐</span>}
-                {item.descuento && <span className="discount-badge">-{item.descuento}%</span>}
-                
-                <div className="card-icon">
-                  {item.tipo === 'weapon' && '⚔️'}
-                  {item.tipo === 'armor' && '🛡️'}
-                  {item.tipo === 'helmet' && '🪖'}
-                  {item.tipo === 'boots' && '👢'}
-                  {item.tipo === 'accessory' && '💍'}
-                  {item.tipo === 'consumable' && '🧪'}
-                </div>
-
-                <h4 className="card-name">{item.nombre}</h4>
-                
-                <span 
-                  className="card-rarity"
-                  style={{ color: RARITY_COLORS[item.rareza] }}
+            <div className="shop-grid">
+              {filteredItems.length === 0 ? (
+                <div className="no-items"><p>No hay items en esta categoría</p></div>
+              ) : filteredItems.map(item => (
+                <div
+                  key={item.id}
+                  className={`shop-card ${selectedItem?.id === item.id ? 'selected' : ''} ${item.destacado ? 'featured' : ''}`}
+                  style={{ borderColor: RARITY_COLORS[item.rareza] }}
+                  onClick={() => setSelectedItem(item)}
                 >
-                  {RARITY_NAMES[item.rareza]}
-                </span>
+                  {item.destacado && <span className="featured-badge">⭐</span>}
+                  {item.descuento && <span className="discount-badge">-{item.descuento}%</span>}
 
-                <div className="card-price">
-                  {item.descuento ? (
-                    <>
-                      <span className="original-price">{item.precio.toLocaleString()}</span>
-                      <span className="final-price">{getFinalPrice(item).toLocaleString()}</span>
-                    </>
-                  ) : (
-                    <span className="final-price">{item.precio.toLocaleString()}</span>
-                  )}
-                  <span className="price-label">VAL</span>
+                  <div className="card-icon">
+                    {item.tipo === 'weapon' && '⚔️'}
+                    {item.tipo === 'armor' && '🛡️'}
+                    {item.tipo === 'helmet' && '🪖'}
+                    {item.tipo === 'boots' && '👢'}
+                    {item.tipo === 'accessory' && '💍'}
+                    {item.tipo === 'consumable' && '🧪'}
+                  </div>
+
+                  <h4 className="card-name">{item.nombre}</h4>
+
+                  <span
+                    className="card-rarity"
+                    style={{ color: RARITY_COLORS[item.rareza] }}
+                  >
+                    {RARITY_NAMES[item.rareza]}
+                  </span>
+
+                  <div className="card-price">
+                    {item.descuento ? (
+                      <>
+                        <span className="original-price">{item.precio.toLocaleString()}</span>
+                        <span className="final-price">{getFinalPrice(item).toLocaleString()}</span>
+                      </>
+                    ) : (
+                      <span className="final-price">{item.precio.toLocaleString()}</span>
+                    )}
+                    <span className="price-label">VAL</span>
+                  </div>
+
+                  <span className="card-stock">Stock: {item.stock}</span>
                 </div>
-
-                <span className="card-stock">Stock: {item.stock}</span>
-              </div>
-            ))}
-          </div>
+              ))}
+            </div>
           )}
         </main>
 
@@ -384,7 +395,7 @@ const Shop: React.FC = () => {
         <aside className="details-panel">
           {selectedItem ? (
             <div className="item-details">
-              <div 
+              <div
                 className="detail-header"
                 style={{ borderColor: RARITY_COLORS[selectedItem.rareza] }}
               >
@@ -398,7 +409,7 @@ const Shop: React.FC = () => {
                 </div>
                 <div className="detail-title">
                   <h3>{selectedItem.nombre}</h3>
-                  <span 
+                  <span
                     className="detail-rarity"
                     style={{ color: RARITY_COLORS[selectedItem.rareza] }}
                   >
@@ -438,14 +449,14 @@ const Shop: React.FC = () => {
 
                 {selectedItem.tipo === 'consumable' && (
                   <div className="quantity-selector">
-                    <button 
+                    <button
                       onClick={() => setPurchaseQuantity(Math.max(1, purchaseQuantity - 1))}
                       disabled={purchaseQuantity <= 1}
                     >
                       -
                     </button>
                     <span>{purchaseQuantity}</span>
-                    <button 
+                    <button
                       onClick={() => setPurchaseQuantity(Math.min(selectedItem.stock, purchaseQuantity + 1))}
                       disabled={purchaseQuantity >= selectedItem.stock}
                     >
@@ -466,8 +477,8 @@ const Shop: React.FC = () => {
                   onClick={() => setShowPurchaseModal(true)}
                   disabled={!canAfford(selectedItem, selectedItem.tipo === 'consumable' ? purchaseQuantity : 1)}
                 >
-                  {canAfford(selectedItem, selectedItem.tipo === 'consumable' ? purchaseQuantity : 1) 
-                    ? '🛒 Comprar' 
+                  {canAfford(selectedItem, selectedItem.tipo === 'consumable' ? purchaseQuantity : 1)
+                    ? '🛒 Comprar'
                     : '❌ VAL Insuficiente'}
                 </button>
               </div>
@@ -482,7 +493,7 @@ const Shop: React.FC = () => {
       </div>
 
       {/* Purchase Modal */}
-      {showPurchaseModal && selectedItem && (
+      {showPurchaseModal && selectedItem && !purchaseSuccess && (
         <div className="modal-overlay" onClick={() => setShowPurchaseModal(false)}>
           <div className="purchase-modal" onClick={e => e.stopPropagation()}>
             <h3>Confirmar Compra</h3>
@@ -508,8 +519,35 @@ const Shop: React.FC = () => {
               <button className="cancel-btn" onClick={() => setShowPurchaseModal(false)}>
                 Cancelar
               </button>
-              <button className="confirm-btn" onClick={handlePurchase}>
-                ✓ Confirmar
+              <button className="confirm-btn" onClick={handlePurchase} disabled={purchasing}>
+                {purchasing ? 'Comprando...' : '✓ Confirmar'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Success Modal (Gacha) */}
+      {purchaseSuccess && selectedItem?.isPackage && (
+        <div className="modal-overlay">
+          <div className="purchase-modal success-modal" onClick={e => e.stopPropagation()} style={{ border: '1px solid #f59e0b', textAlign: 'center' }}>
+            <div style={{ fontSize: '4rem', marginBottom: '1rem' }}>✨📦✨</div>
+            <h3 style={{ color: '#f59e0b', fontSize: '1.5rem' }}>¡Transacción Exitosa!</h3>
+            <p style={{ color: '#9ca3af', marginBottom: '2rem' }}>El <strong>{selectedItem.nombre}</strong> ha sido enviado a tu Inventario.</p>
+            <div className="modal-actions" style={{ flexDirection: 'column' }}>
+              <button
+                className="confirm-btn"
+                style={{ background: 'linear-gradient(135deg, #f59e0b, #d97706)', width: '100%' }}
+                onClick={() => navigate('/inventory')}
+              >
+                🎒 Ir a Mis Paquetes
+              </button>
+              <button
+                className="cancel-btn"
+                style={{ background: 'transparent', border: 'none', color: '#6b7280', width: '100%' }}
+                onClick={() => { setPurchaseSuccess(false); setSelectedItem(null); }}
+              >
+                Seguir comprando
               </button>
             </div>
           </div>

@@ -1,130 +1,225 @@
 .mobile-controls-container {
-    position: absolute;
+    position: fixed;
     inset: 0;
-    pointer-events: none;
-    /* Let clicks pass through if not on controls */
+    z-index: 1000;
     display: flex;
     justify-content: space-between;
     align-items: flex-end;
-    padding: 30px 60px;
-    z-index: 1000;
+    padding: 30px;
+    pointer-events: none;
+    user-select: none;
 }
 
-/* Joystick Styles */
+/* Base Joystick Sizing & Style */
 .joystick-area {
     pointer-events: auto;
-    width: 150px;
-    height: 150px;
+    width: 140px;
+    height: 140px;
     display: flex;
     align-items: center;
     justify-content: center;
 }
 
 .joystick-base {
-    width: 100px;
-    height: 100px;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    width: 110px;
+    height: 110px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     border-radius: 50%;
     position: relative;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    box-shadow: 0 0 20px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(4px);
+    box-shadow: inset 0 0 20px rgba(0, 0, 0, 0.2);
 }
 
 .joystick-knob {
     width: 50px;
     height: 50px;
-    background: rgba(207, 161, 68, 0.4);
-    /* Valnor gold semi-transparent */
-    border: 1px solid rgba(207, 161, 68, 0.6);
+    background: radial-gradient(circle at 30% 30%, rgba(255, 255, 255, 0.2), rgba(255, 255, 255, 0.05));
+    border: 1px solid rgba(255, 255, 255, 0.2);
     border-radius: 50%;
+    position: absolute;
+    top: calc(50% - 25px);
+    left: calc(50% - 25px);
     cursor: grab;
-    touch-action: none;
-    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.5);
+    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+    backdrop-filter: blur(2px);
 }
 
-/* Action Buttons Styles */
-.action-buttons-area {
-    pointer-events: auto;
-    display: flex;
-    align-items: flex-end;
-    gap: 20px;
+/* Distinctive colors for move vs look if active */
+.move-knob {
+    border-color: rgba(68, 161, 207, 0.3);
 }
 
-.secondary-buttons {
+.look-knob {
+    border-color: rgba(207, 161, 68, 0.3);
+}
+
+/* Right Side Layout */
+.right-controls-area {
     display: flex;
     flex-direction: column;
-    gap: 15px;
+    align-items: flex-end;
+    gap: 20px;
+    pointer-events: none;
 }
 
+.floating-actions,
+.primary-actions,
+.joystick-area.right {
+    pointer-events: auto;
+}
+
+/* Action Buttons */
 .action-btn {
     width: 60px;
     height: 60px;
     border-radius: 50%;
-    background: rgba(255, 255, 255, 0.1);
-    backdrop-filter: blur(8px);
-    border: 1px solid rgba(255, 255, 255, 0.2);
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
     color: white;
-    font-size: 24px;
     display: flex;
     align-items: center;
     justify-content: center;
-    cursor: pointer;
-    touch-action: none;
-    transition: all 0.2s ease;
-    box-shadow: 0 4px 15px rgba(0, 0, 0, 0.4);
+    backdrop-filter: blur(4px);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+    box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
 }
 
-.action-btn:active,
-.action-btn.active {
-    background: rgba(207, 161, 68, 0.3);
-    border-color: rgba(207, 161, 68, 0.8);
+.action-btn:active {
     transform: scale(0.9);
+    background: rgba(255, 255, 255, 0.15);
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.btn-icon {
+    font-size: 24px;
+    opacity: 0.7;
+}
+
+/* Sprint special state */
+.sprint-btn.active {
+    background: rgba(207, 161, 68, 0.2);
+    border-color: rgba(207, 161, 68, 0.5);
+    box-shadow: 0 0 15px rgba(207, 161, 68, 0.3);
+}
+
+.sprint-btn.active .btn-icon {
+    opacity: 1;
+}
+
+/* Ergonomic Primary Buttons (Jump & Attack) */
+.primary-actions {
+    display: flex;
+    gap: 15px;
+    margin-right: 10px;
 }
 
 .jump-btn {
-    width: 90px;
-    height: 90px;
-    background: rgba(207, 161, 68, 0.2);
-    border-color: rgba(207, 161, 68, 0.4);
+    width: 80px;
+    height: 80px;
 }
 
-.sprint-btn.active {
-    background: rgba(59, 130, 246, 0.3);
-    /* Blue for sprint toggle */
-    border-color: rgba(59, 130, 246, 0.8);
+.jump-btn .btn-icon {
+    font-size: 32px;
 }
 
-.attack-btn {
-    background: rgba(239, 68, 68, 0.1);
-}
-
-@media (max-height: 500px) and (orientation: landscape) {
-    .mobile-controls-container {
-        padding: 20px 40px;
-    }
-
+/* Responsive and Notch handling */
+@media (max-width: 768px) {
     .joystick-base {
-        width: 80px;
-        height: 80px;
-    }
-
-    .joystick-knob {
-        width: 40px;
-        height: 40px;
+        width: 100px;
+        height: 100px;
     }
 
     .action-btn {
-        width: 50px;
-        height: 50px;
-        font-size: 20px;
+        width: 55px;
+        height: 55px;
     }
 
     .jump-btn {
         width: 70px;
         height: 70px;
+    }
+}
+
+/* Fullscreen Prompt Styles */
+.fullscreen-prompt {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(15px);
+    z-index: 2000;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    animation: fadeIn 0.4s ease-out;
+    pointer-events: auto;
+}
+
+.prompt-content {
+    text-align: center;
+    color: white;
+    background: rgba(30, 25, 40, 0.9);
+    padding: 40px 60px;
+    border-radius: 24px;
+    border: 1px solid rgba(207, 161, 68, 0.3);
+    box-shadow: 0 0 40px rgba(207, 161, 68, 0.2);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 15px;
+    transform: translateY(0);
+    animation: slideUp 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+}
+
+.prompt-icon {
+    font-size: 60px;
+    margin-bottom: 10px;
+    filter: drop-shadow(0 0 15px rgba(207, 161, 68, 0.5));
+}
+
+.prompt-content p {
+    font-family: "Cinzel", "Trajan Pro", serif;
+    font-size: 24px;
+    margin: 0;
+    color: #cfa144;
+    text-transform: uppercase;
+    letter-spacing: 2px;
+}
+
+.prompt-content small {
+    font-size: 14px;
+    color: #888;
+    font-style: italic;
+}
+
+@keyframes fadeIn {
+    from {
+        opacity: 0;
+    }
+
+    to {
+        opacity: 1;
+    }
+}
+
+@keyframes slideUp {
+    from {
+        transform: translateY(30px);
+        opacity: 0;
+    }
+
+    to {
+        transform: translateY(0);
+        opacity: 1;
+    }
+}
+
+/* Specific orientation handling for notch devices */
+@media (orientation: landscape) {
+    .mobile-controls-container {
+        padding-left: max(30px, env(safe-area-inset-left));
+        padding-right: max(60px, env(safe-area-inset-right));
+        padding-bottom: max(30px, env(safe-area-inset-bottom));
     }
 }

@@ -1,15 +1,16 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../hooks/useAuth';
-import { 
-  EquipmentItem, 
-  ConsumableItem, 
-  EquippedItems, 
+import {
+  EquipmentItem,
+  ConsumableItem,
+  EquippedItems,
   ItemRarity,
-  RARITY_COLORS, 
-  RARITY_NAMES 
+  RARITY_COLORS,
+  RARITY_NAMES
 } from '../../types/item.types';
-import { inventoryService } from '../../services';
+import { inventoryService, shopService } from '../../services';
+import { PackageOpener } from '../../components/ui';
 import './Inventory.css';
 
 /** Maps raw backend equipment item */
@@ -47,18 +48,24 @@ function mapConsumable(raw: any): ConsumableItem {
   };
 }
 
-type InventoryTab = 'equipment' | 'consumables';
+type InventoryTab = 'equipment' | 'consumables' | 'packages';
 
 const Inventory: React.FC = () => {
   const navigate = useNavigate();
   const { user, loading } = useAuth();
   const [activeTab, setActiveTab] = useState<InventoryTab>('equipment');
-  const [selectedItem, setSelectedItem] = useState<EquipmentItem | ConsumableItem | null>(null);
+  const [selectedItem, setSelectedItem] = useState<EquipmentItem | ConsumableItem | any | null>(null);
   const [equippedItems, setEquippedItems] = useState<EquippedItems>({
     weapon: null, armor: null, helmet: null, boots: null, accessory1: null, accessory2: null,
   });
   const [backpackItems, setBackpackItems] = useState<EquipmentItem[]>([]);
   const [consumables, setConsumables] = useState<ConsumableItem[]>([]);
+  const [userPackages, setUserPackages] = useState<any[]>([]);
+  const [openingPackage, setOpeningPackage] = useState<any | null>(null);
+  const [confirmOpenModal, setConfirmOpenModal] = useState<boolean>(false);
+  const [openSuccessMsg, setOpenSuccessMsg] = useState<string | null>(null);
+  const [refreshKey, setRefreshKey] = useState(0);
+
   const [invLoading, setInvLoading] = useState(true);
   const [invError, setInvError] = useState<string | null>(null);
   const [invCapacity, setInvCapacity] = useState({ current: 0, max: 50 });
@@ -72,50 +79,57 @@ const Inventory: React.FC = () => {
       setInvLoading(true);
       setInvError(null);
       try {
-          // Load real inventory
-          const inventory = await inventoryService.getMyInventory();
-          if (cancelled) return;
+        // Load real inventory and packages
+        const [inventory, packagesResp] = await Promise.all([
+          inventoryService.getMyInventory(),
+          shopService.getUserPackages(user.id).catch(() => [])
+        ]);
+        if (cancelled) return;
 
-          const inv = inventory as any;
+        const inv = inventory as any;
 
-          // Equipment
-          if (inv.equipment || inv.equipamiento) {
-            const eqArr = (inv.equipment || inv.equipamiento || []) as any[];
-            const equipped: EquippedItems = {
-              weapon: null, armor: null, helmet: null, boots: null, accessory1: null, accessory2: null,
-            };
-            const backpack: EquipmentItem[] = [];
+        // Equipment
+        if (inv.equipment || inv.equipamiento) {
+          const eqArr = (inv.equipment || inv.equipamiento || []) as any[];
+          const equipped: EquippedItems = {
+            weapon: null, armor: null, helmet: null, boots: null, accessory1: null, accessory2: null,
+          };
+          const backpack: EquipmentItem[] = [];
 
-            eqArr.forEach((raw: any) => {
-              const item = mapEquipment(raw);
-              if (item.equipado) {
-                const slot = item.slot as keyof EquippedItems;
-                if (slot in equipped) {
-                  equipped[slot] = item;
-                }
-              } else {
-                backpack.push(item);
+          eqArr.forEach((raw: any) => {
+            const item = mapEquipment(raw);
+            if (item.equipado) {
+              const slot = item.slot as keyof EquippedItems;
+              if (slot in equipped) {
+                equipped[slot] = item;
               }
-            });
+            } else {
+              backpack.push(item);
+            }
+          });
 
-            setEquippedItems(equipped);
-            setBackpackItems(backpack);
-          }
+          setEquippedItems(equipped);
+          setBackpackItems(backpack);
+        }
 
-          // Consumables
-          if (inv.consumables || inv.consumibles) {
-            const conArr = (inv.consumables || inv.consumibles || []) as any[];
-            setConsumables(conArr.map(mapConsumable));
-          }
+        // Consumables
+        if (inv.consumables || inv.consumibles) {
+          const conArr = (inv.consumables || inv.consumibles || []) as any[];
+          setConsumables(conArr.map(mapConsumable));
+        }
 
-          // Capacity limits
-          if (inv.limits || inv.limites) {
-            const limits = inv.limits || inv.limites;
-            setInvCapacity({
-              current: (inv.equipment?.length || 0) + (inv.consumables?.length || 0),
-              max: limits.maxEquipamiento || limits.maxEquipment || 50,
-            });
-          }
+        // Packages 
+        const pkgs = Array.isArray(packagesResp) ? packagesResp : [];
+        setUserPackages(pkgs.filter((p: any) => !p.abierto));
+
+        // Capacity limits
+        if (inv.limits || inv.limites) {
+          const limits = inv.limits || inv.limites;
+          setInvCapacity({
+            current: (inv.equipment?.length || 0) + (inv.consumables?.length || 0),
+            max: limits.maxEquipamiento || limits.maxEquipment || 50,
+          });
+        }
 
       } catch (err: any) {
         console.error('[Inventory] Error loading:', err);
@@ -127,13 +141,24 @@ const Inventory: React.FC = () => {
 
     fetchInventory();
     return () => { cancelled = true; };
-  }, [loading, user]);
+  }, [loading, user, refreshKey]);
 
   if (loading || invLoading) {
     return (
       <div className="inventory-loading">
         <div className="loading-spinner" />
         <p>Cargando inventario...</p>
+      </div>
+    );
+  }
+
+  if (invError) {
+    return (
+      <div className="inventory-loading">
+        <p style={{ color: '#ef4444' }}>⚠️ {invError}</p>
+        <button onClick={() => navigate('/dashboard')} style={{ marginTop: '1rem', padding: '0.5rem 1.5rem', background: 'rgba(255,215,0,0.2)', border: '1px solid #f59e0b', color: '#f59e0b', borderRadius: '8px', cursor: 'pointer' }}>
+          Volver al Dashboard
+        </button>
       </div>
     );
   }
@@ -145,7 +170,7 @@ const Inventory: React.FC = () => {
 
   const getTotalStats = () => {
     let ataque = 0, defensa = 0, hp = 0, velocidad = 0, critico = 0, evasion = 0;
-    
+
     Object.values(equippedItems).forEach(item => {
       if (item) {
         ataque += item.stats.ataque || 0;
@@ -165,6 +190,15 @@ const Inventory: React.FC = () => {
 
   return (
     <div className="inventory-page">
+      {/* Post-Open Success Toast */}
+      {openSuccessMsg && (
+        <div className="open-success-toast">
+          <span>✨ {openSuccessMsg}</span>
+          <button onClick={() => navigate('/dashboard')} className="toast-dashboard-btn">
+            Ir al Dashboard →
+          </button>
+        </div>
+      )}
       {/* Header */}
       <header className="inventory-header">
         <button onClick={() => navigate('/dashboard')} className="back-btn">
@@ -201,7 +235,7 @@ const Inventory: React.FC = () => {
                   accessory1: '💍 Accesorio 1',
                   accessory2: '💎 Accesorio 2',
                 };
-                
+
                 return (
                   <div
                     key={slot}
@@ -278,11 +312,44 @@ const Inventory: React.FC = () => {
             >
               🧪 Consumibles
             </button>
+            <button
+              className={`tab-btn ${activeTab === 'packages' ? 'active' : ''}`}
+              onClick={() => setActiveTab('packages')}
+            >
+              📦 Paquetes {userPackages.length > 0 && <span className="notification-badge">{userPackages.length}</span>}
+            </button>
           </div>
 
           {/* Items Grid */}
           <div className="items-grid">
-            {activeTab === 'equipment' ? (
+            {activeTab === 'packages' ? (
+              userPackages.length > 0 ? (
+                userPackages.map(pkg => (
+                  <div
+                    key={pkg._id || pkg.id}
+                    className={`item-card package ${selectedItem?._id === pkg._id ? 'selected' : ''}`}
+                    style={getRarityStyle('rare')}
+                    onClick={() => setSelectedItem({ ...pkg, isPackage: true })}
+                  >
+                    <div className="item-icon">📦</div>
+                    <div className="item-info">
+                      <span className="item-name">{pkg.nombre || 'Paquete Misterioso'}</span>
+                    </div>
+                    <span
+                      className="item-rarity"
+                      style={{ color: RARITY_COLORS['rare'] }}
+                    >
+                      EPIC
+                    </span>
+                  </div>
+                ))
+              ) : (
+                <div className="empty-state">
+                  <span className="empty-icon">📦</span>
+                  <p>No tienes paquetes cerrados</p>
+                </div>
+              )
+            ) : activeTab === 'equipment' ? (
               backpackItems.length > 0 ? (
                 backpackItems.map(item => (
                   <div
@@ -296,7 +363,7 @@ const Inventory: React.FC = () => {
                       <span className="item-name">{item.nombre}</span>
                       <span className="item-level">Nv. {item.nivel}</span>
                     </div>
-                    <span 
+                    <span
                       className="item-rarity"
                       style={{ color: RARITY_COLORS[item.rareza] }}
                     >
@@ -324,7 +391,7 @@ const Inventory: React.FC = () => {
                       <span className="item-name">{item.nombre}</span>
                       <span className="item-quantity">x{item.cantidad}</span>
                     </div>
-                    <span 
+                    <span
                       className="item-rarity"
                       style={{ color: RARITY_COLORS[item.rareza] }}
                     >
@@ -346,43 +413,45 @@ const Inventory: React.FC = () => {
         <aside className="details-panel">
           {selectedItem ? (
             <div className="item-details">
-              <div 
+              <div
                 className="detail-header"
-                style={{ borderColor: RARITY_COLORS[selectedItem.rareza] }}
+                style={{ borderColor: RARITY_COLORS[selectedItem.rareza as ItemRarity] || '#ffd700' }}
               >
                 <div className="detail-icon">
-                  {selectedItem.tipo === 'consumable' ? '🧪' : '⚔️'}
+                  {selectedItem.isPackage ? '📦' : selectedItem.tipo === 'consumable' ? '🧪' : '⚔️'}
                 </div>
                 <div className="detail-title">
-                  <h3>{selectedItem.nombre}</h3>
-                  <span 
+                  <h3>{selectedItem.nombre || 'Objeto Valnoriano'}</h3>
+                  <span
                     className="detail-rarity"
-                    style={{ color: RARITY_COLORS[selectedItem.rareza] }}
+                    style={{ color: RARITY_COLORS[selectedItem.rareza as ItemRarity] || '#ffd700' }}
                   >
-                    {RARITY_NAMES[selectedItem.rareza]}
+                    {selectedItem.isPackage ? 'EPIC' : RARITY_NAMES[selectedItem.rareza as ItemRarity]}
                   </span>
                 </div>
               </div>
 
-              <p className="detail-description">{selectedItem.descripcion}</p>
+              <p className="detail-description">{selectedItem.descripcion || 'Una extraña reliquia.'}</p>
 
-              <div className="detail-stats">
-                <h4>📊 Estadísticas</h4>
-                {Object.entries(selectedItem.stats).map(([stat, value]) => (
-                  value ? (
-                    <div key={stat} className="detail-stat">
-                      <span className="stat-label">{stat.toUpperCase()}</span>
-                      <span className="stat-value">+{value}</span>
-                    </div>
-                  ) : null
-                ))}
-              </div>
+              {selectedItem.stats && Object.keys(selectedItem.stats).length > 0 && (
+                <div className="detail-stats">
+                  <h4>📊 Estadísticas</h4>
+                  {Object.entries(selectedItem.stats).map(([stat, value]) => (
+                    value ? (
+                      <div key={stat} className="detail-stat">
+                        <span className="stat-label">{stat.toUpperCase()}</span>
+                        <span className="stat-value">+{value as number}</span>
+                      </div>
+                    ) : null
+                  ))}
+                </div>
+              )}
 
               {'mejoras' in selectedItem && (
                 <div className="detail-upgrades">
                   <h4>⬆️ Mejoras</h4>
                   <div className="upgrade-bar">
-                    <div 
+                    <div
                       className="upgrade-progress"
                       style={{ width: `${((selectedItem as EquipmentItem).mejoras / (selectedItem as EquipmentItem).maxMejoras) * 100}%` }}
                     />
@@ -391,13 +460,22 @@ const Inventory: React.FC = () => {
                 </div>
               )}
 
-              <div className="detail-price">
-                <span>💰 Valor:</span>
-                <span className="price-value">{selectedItem.precio.toLocaleString()} VAL</span>
-              </div>
+              {selectedItem.precio != null && (
+                <div className="detail-price">
+                  <span>💰 Valor:</span>
+                  <span className="price-value">{(selectedItem.precio || 0).toLocaleString()} VAL</span>
+                </div>
+              )}
 
               <div className="detail-actions">
-                {'equipado' in selectedItem ? (
+                {selectedItem.isPackage ? (
+                  <button
+                    className="action-btn buy-btn package-magic-btn"
+                    onClick={() => setConfirmOpenModal(true)}
+                  >
+                    ✨ INVOCAR ✨
+                  </button>
+                ) : 'equipado' in selectedItem ? (
                   <>
                     {!(selectedItem as EquipmentItem).equipado && (
                       <button className="action-btn equip">⚔️ Equipar</button>
@@ -424,6 +502,55 @@ const Inventory: React.FC = () => {
           )}
         </aside>
       </div>
+
+      {/* Confirmation Modal for Packages */}
+      {confirmOpenModal && selectedItem && selectedItem.isPackage && (
+        <div className="modal-overlay" onClick={() => setConfirmOpenModal(false)}>
+          <div className="purchase-modal cinematic-modal" onClick={e => e.stopPropagation()}>
+            <h3>Confirmar Invocación</h3>
+            <div className="modal-item" style={{ flexDirection: 'column', alignItems: 'center', textAlign: 'center', background: 'transparent' }}>
+              <span style={{ fontSize: '3rem', filter: 'drop-shadow(0 0 10px rgba(255,215,0,0.5))' }}>📦</span>
+              <span className="modal-name" style={{ fontSize: '1.2rem', margin: '1rem 0', color: '#f59e0b' }}>
+                {selectedItem.nombre}
+              </span>
+              <p style={{ color: '#9ca3af', fontSize: '0.9rem', marginBottom: '1rem' }}>
+                ¿Estás listo para romper el sello y revelar su contenido?
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button className="cancel-btn" onClick={() => setConfirmOpenModal(false)}>
+                Mejor no
+              </button>
+              <button
+                className="confirm-btn confirm-magic"
+                onClick={() => {
+                  setConfirmOpenModal(false);
+                  setOpeningPackage(selectedItem);
+                }}
+              >
+                🔥 Romper Sello 🔥
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {openingPackage && (
+        <PackageOpener
+          packageName={openingPackage.nombre || 'Paquete Misterioso'}
+          onOpen={async () => {
+            const result = await shopService.openPackageById(openingPackage._id || openingPackage.paqueteId);
+            return result;
+          }}
+          onClose={() => {
+            setOpeningPackage(null);
+            setSelectedItem(null);
+            setOpenSuccessMsg('¡Tus nuevos héroes e items ya están disponibles! Revisa tu equipo en el Dashboard.');
+            setRefreshKey(k => k + 1);
+            setTimeout(() => setOpenSuccessMsg(null), 6000);
+          }}
+        />
+      )}
     </div>
   );
 };
