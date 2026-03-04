@@ -49,3 +49,76 @@ Al abrir la App en un móvil dentro del navegador o instalada como PWA:
 
 ---
 *Documento generado por Antigravity AI - Valnor Team.*
+
+---
+
+# 🛠️ Sesión de Trabajo — 3 de Marzo 2026
+
+## Sesión 1: Análisis y Gameplay (~14:00 - 16:00)
+
+### Escaleras de Colisión para el Golem
+- **Archivo:** `src/engine/scenes/fortaleza-modules/environment.ts`
+- **Cambio:** Se agregaron escalones invisibles con colisión dentro de `createPenumbraRuins()` para permitir al jugador subir a la plataforma del Golem.
+- **Problema:** El jugador no podía llegar al boss porque la plataforma era inaccesible.
+
+### Fix de Congelamiento al Recoger Orbes
+- **Archivo:** `src/engine/scenes/FortalezaLevel.tsx`
+- **Cambio:** Movida la actualización de `usePlayerStore.setOrbsCollected()` fuera del loop `useFrame`. Se implementó un sistema de `pendingOrbsToSync` que acumula orbes y sincroniza cada 500ms vía `useEffect` + `setInterval`.
+- **Problema:** Llamar `setState` de Zustand dentro de `useFrame` (60fps) causaba re-renders masivos y congelaba el juego por 4+ segundos.
+
+---
+
+## Sesión 2: UI/UX e Intro (~20:00 - 21:53)
+
+### Title Card "FORTALEZA OLVIDADA"
+- **Archivos:** `FortalezaLevel.tsx`, `PlayDungeon.tsx`, `ProSettingsPanel.css`
+- **Cambio:** Al entrar al nivel, aparece un letrero dorado centrado "FORTALEZA OLVIDADA — Dominio del Guardián Golem" durante 4 segundos. Implementado con `CustomEvent` del DOM disparado desde `FortalezaLevel` y renderizado como overlay HTML en `PlayDungeon`.
+- **Animación:** `titleFadeIn` con efecto de letter-spacing decreciente.
+
+### Fix Menú de Pausa (ESC) — Bug Crítico
+- **Archivos:** `PlayDungeon.tsx`, `ProSettingsPanel.css`
+- **Bug:** El menú de pausa aparecía y desaparecía inmediatamente. **Causa raíz:** La animación CSS `fadeInOut` terminaba en `opacity: 0` (keyframe `100% { opacity: 0 }`). Con `animation-fill-mode: forwards`, el menú quedaba invisible al completar la animación de 0.3s.
+- **Fix:** Reemplazada la animación con `menuFadeIn` (0→1 sin volver a 0). También se agregó un guard `escListenerRegistered` ref para evitar que React Strict Mode registrara listeners duplicados.
+
+### Fix Descarga del Soundtrack
+- **Archivo:** `src/engine/systems/SceneAudioManager.ts`
+- **Bug:** Al entrar a la escena, el navegador mostraba un diálogo de descarga del archivo `.mp3` en vez de reproducirlo.
+- **Causa:** El `SceneAudioManager` usaba `fetch(url)` + `URL.createObjectURL(blob)` para cargar el audio. Extensiones de descarga (IDM, etc.) interceptaban el `fetch()` al detectar un `.mp3`.
+- **Fix:** Eliminado el sistema de `fetch+Blob`. Se asigna la URL directamente como `audio.src` en el `HTMLAudioElement`.
+
+### Styling Premium
+- **Archivos:** `PlayDungeon.tsx`, `ProSettingsPanel.css`
+- **Cambio:** Menú de pausa con glassmorphism oscuro, bordes dorados, fuente Cinzel, efectos hover con glow. Title card con text-shadow cinematográfico.
+
+---
+
+## 📂 Archivos Modificados (3 Marzo 2026)
+
+| Archivo | Tipo de Cambio |
+|---|---|
+| `src/engine/scenes/FortalezaLevel.tsx` | Title card, orb sync, limpieza |
+| `src/pages/Dungeon/PlayDungeon.tsx` | ESC handler, title overlay, useRef |
+| `src/components/ui/ProSettingsPanel.css` | Animaciones, glassmorphism |
+| `src/engine/systems/SceneAudioManager.ts` | Audio sin fetch+Blob |
+| `src/engine/scenes/fortaleza-modules/environment.ts` | Escaleras Golem |
+
+---
+
+## 📋 Próximas Fases de Desarrollo
+
+### Fase 2: Posicionamiento 3D de Entidades
+- Party y Enemigos posicionados visualmente en la arena de combate
+- Cámara de combate dinámica enfocando atacante/defensor
+
+### Fase 3: Animaciones y VFX de Combate
+- Animaciones `Attack`, `Hurt`, `Die` sincronizadas con turnos
+- Flotantes de Daño 3D (`FloatingDamageText`)
+- Partículas/VFX al atacar y recibir daño
+
+### Fase 4: Integración Backend
+- Conectar con `combat.service.ts` (`/api/attack`, `/api/defend`, `/api/end`)
+- Transiciones entrada/salida combate ↔ exploración
+
+### Pendientes Menores
+- Remover constantes hardcodeadas de combate → mover a config
+- Feedback visual al recoger orbs (toast/banner)
