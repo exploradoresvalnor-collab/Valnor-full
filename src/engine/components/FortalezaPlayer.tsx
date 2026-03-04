@@ -223,9 +223,9 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
             isMoving = true;
             const inputVec = new THREE.Vector3(inputX * right.x + inputZ * forward.x, 0, inputX * right.z + inputZ * forward.z).normalize();
 
-            // Apply Analog Magnitude if using mobile controls
-            const magnitude = mobileControlsEnabled ? useInputStore.getState().moveMagnitude : 1.0;
-            const currentMaxSpeed = speed * Math.max(0.2, magnitude); // At least 20% speed if moving
+            // Apply Analog Magnitude si usamos controles móviles para caminar/correr suave
+            const magnitude = mobileControlsEnabled ? Math.min(1.0, useInputStore.getState().moveMagnitude) : 1.0;
+            const currentMaxSpeed = speed * (mobileControlsEnabled ? Math.max(0.01, magnitude) : 1.0);
 
             const targetAccel = currentMaxSpeed * s.friction * 1.5;
             const currentAccel = s.isGrounded ? targetAccel : targetAccel * 0.4;
@@ -240,12 +240,13 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
                 s.velocityZ = currentSpeedVec.y;
             }
 
-            // Rotar el modelo (suave)
+            // Rotar el modelo (suave y analógico)
             const targetAngle = Math.atan2(s.velocityX, s.velocityZ);
             const currentAngle = meshRef.current.rotation.y;
             const diff = targetAngle - currentAngle;
             const modDiff = ((diff + Math.PI) % (Math.PI * 2)) - Math.PI;
-            meshRef.current.rotation.y = currentAngle + modDiff * 10 * dt;
+            // Lerp aporta mejor interpolación que suma directa para evitar saltos en móvil
+            meshRef.current.rotation.y = THREE.MathUtils.lerp(currentAngle, currentAngle + modDiff, 8.0 * dt);
         }
 
         // Fricción
@@ -265,19 +266,20 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
             ];
             // Si collidables está vacío, saltará este paso
             if (collidables.length > 0) {
-                // RAYCAST ORIGIN FIX: Modificado a s.playerPos.y + 0.2 para evitar chocar 
-                // con las caras internas de pisos solapados (lo que creaba paredes invisibles)
-                [s.playerPos.y + 0.2, s.playerPos.y + 0.8].forEach(yPos => {
+                // RAYCAST ORIGIN FIX: Modificado a s.playerPos.y + 0.4 para ignorar 
+                // las pequeñas imperfecciones del suelo (escalones, piedras)
+                [s.playerPos.y + 0.4, s.playerPos.y + 1.2].forEach(yPos => {
                     const origin = new THREE.Vector3(s.playerPos.x, yPos, s.playerPos.z);
                     directions.forEach(dirVec => {
                         raycaster.current.set(origin, dirVec);
                         const hits = raycaster.current.intersectObjects(collidables, false);
-                        if (hits.length > 0 && hits[0].distance < 1.0) {
+                        if (hits.length > 0 && hits[0].distance < 0.65) {
                             if (hits[0].face) {
                                 const normalMatrix = new THREE.Matrix3().getNormalMatrix(hits[0].object.matrixWorld);
                                 const normal = hits[0].face.normal.clone().applyMatrix3(normalMatrix).normalize();
 
-                                s.playerPos.addScaledVector(normal, 1.0 - hits[0].distance);
+                                // Reducir repulsión para permitir deslizarse contra paredes en vez de rebotar
+                                s.playerPos.addScaledVector(normal, 0.65 - hits[0].distance);
                                 const dot = new THREE.Vector3(s.velocityX, 0, s.velocityZ).dot(normal);
                                 if (dot < 0) {
                                     s.velocityX -= normal.x * dot;
@@ -358,7 +360,7 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
             s.playerPos.z += activePlatform.deltaZ;
         }
 
-        if (s.playerPos.y < s.respawnPoint.y - 80) {
+        if (s.playerPos.y < s.respawnPoint.y - 20) {
             s.playerPos.copy(s.respawnPoint);
             s.velocityY = 0;
         }

@@ -4,8 +4,7 @@ import { useThree, useFrame } from '@react-three/fiber';
 import { usePlayerStore } from '../../stores/playerStore';
 import { FortalezaPlayer } from '../components/FortalezaPlayer';
 import { PhysicsProvider, usePhysics } from '../contexts/PhysicsContext';
-import { FloatingDamageText, DamageNumber } from '../components/FloatingDamageText';
-import { calculateExperienceGain } from '../rpg/leveling-system';
+import { useCombatModeStore } from '../stores/combatModeStore';
 
 // Import local Fortaleza modules
 import {
@@ -14,6 +13,7 @@ import {
     createStartingFortress, createPenumbraRuins
 } from './fortaleza-modules/environment';
 import { createDoor } from './fortaleza-modules/door';
+
 function FortalezaScene() {
     const { scene, camera } = useThree();
     const { collidables, checkpoints, movingPlatforms } = usePhysics();
@@ -31,15 +31,16 @@ function FortalezaScene() {
     });
 
     // --- Combat state ---
-    const [damageNumbers, setDamageNumbers] = useState<DamageNumber[]>([]);
-    const [combatActive, setCombatActive] = useState(false);
-    const [combatResult, setCombatResult] = useState<null | { won: boolean; exp: number; gold: number }>(null);
+    // Managed globally by combatModeStore
 
     const stateRef = useRef({
         orbsCollected: 0,
         doorState: 0, // 0=closed, 1=opening, 2=closing
         doorOpenAmount: 0,
         time: 0,
+        // Intro Animation
+        introState: 0, // 0=init, 1=flying to boss, 2=holding on boss, 3=flying back, 4=done
+        introTimer: 0,
         // Combat
         combatStarted: false,
         combatEnded: false,
@@ -55,7 +56,24 @@ function FortalezaScene() {
         golemBaseXP: 250,
         golemGold: 150,
         dmgIdCounter: 0,
+        pendingOrbsToSync: 0,
     });
+
+    // Ref to track if intro title has been shown
+    const introShownRef = useRef(false);
+
+    // --- Sync Orbs outside of useFrame to prevent freezing ---
+    useEffect(() => {
+        const interval = setInterval(() => {
+            const st = stateRef.current;
+            if (st.pendingOrbsToSync > 0) {
+                const currentOrbs = usePlayerStore.getState().orbsCollected || 0;
+                usePlayerStore.getState().setOrbsCollected(currentOrbs + st.pendingOrbsToSync);
+                st.pendingOrbsToSync = 0;
+            }
+        }, 500);
+        return () => clearInterval(interval);
+    }, []);
 
     useEffect(() => {
         // === INITIALIZE ENVIRONMENT ===
@@ -140,8 +158,21 @@ function FortalezaScene() {
         createOrb(mockScene, ob.orbs, -18, 12, zStart - 90, 'lore');
         createOrb(mockScene, ob.orbs, 0, 42, rotundaZ - 160);
 
-        // Interactive Key Binding for Door (E)
+        // --- Debug: material para visualizar colisionadores ---
+        const debugMatGreen = new THREE.MeshBasicMaterial({
+            color: '#00ff44', wireframe: true, transparent: true, opacity: 0.5,
+            depthTest: false, side: THREE.DoubleSide,
+        });
+        const debugMatRed = new THREE.MeshBasicMaterial({
+            color: '#ff2244', wireframe: true, transparent: true, opacity: 0.4,
+            depthTest: false, side: THREE.DoubleSide,
+        });
+        let debugMode = false;
+        const originalMaterials = new Map<THREE.Object3D, THREE.Material | THREE.Material[]>();
+
+        // Interactive Key Bindings
         const handleKeyDown = (e: KeyboardEvent) => {
+            // Door interaction (E)
             if (e.key.toLowerCase() === 'e' && ob.doorSystem && ob.gateObjects.gatePos) {
                 const playerObj = scene.getObjectByName("FortalezaPlayer");
                 if (playerObj) {
@@ -153,6 +184,89 @@ function FortalezaScene() {
                     }
                 }
             }
+
+            // Golem Boss Interaction (E)
+            if (e.key.toLowerCase() === 'e') {
+                const playerObj = scene.getObjectByName("FortalezaPlayer");
+                if (playerObj) {
+                    const golemPos = new THREE.Vector3(0, 0, -420);
+                    const distToGolem = playerObj.position.distanceTo(golemPos);
+                    const combatStore = useCombatModeStore.getState();
+
+                    if (distToGolem < 18 && !combatStore.isActive) {
+                        const pState = usePlayerStore.getState();
+
+                        // Set up entities
+                        const playerEntity = {
+                            id: pState.characterName || 'jugador',
+                            name: pState.characterName || 'Héroe',
+                            isPlayer: true,
+                            maxHealth: pState.maxHealth,
+                            currentHealth: pState.currentHealth,
+                            level: pState.level,
+                            stats: {
+                                attack: pState.stats?.attack ?? 15,
+                                defense: pState.stats?.defense ?? 10,
+                                critRate: pState.stats?.critRate ?? 5,
+                                critDamage: pState.stats?.critDamage ?? 150,
+                            }
+                        };
+
+                        const golemEntity = {
+                            id: 'golem_boss_1',
+                            name: 'Guardián Golem',
+                            isPlayer: false,
+                            maxHealth: 800,
+                            currentHealth: 800,
+                            level: 10,
+                            stats: {
+                                attack: 35,
+                                defense: 25,
+                                critRate: 8,
+                                critDamage: 160,
+                            }
+                        };
+
+                        // Center pos between player and golem
+                        const centerPos: [number, number, number] = [
+                            (playerObj.position.x + golemPos.x) / 2,
+                            (playerObj.position.y + golemPos.y) / 2,
+                            (playerObj.position.z + golemPos.z) / 2
+                        ];
+
+                        combatStore.actions.initCombat(golemEntity, playerEntity, centerPos);
+                        console.log('[FortalezaLevel] ⚔️ Golem Boss manual combat triggered!');
+                    }
+                }
+            }
+
+            // Debug collider visualization (F3)
+            if (e.key === 'F3') {
+                e.preventDefault();
+                debugMode = !debugMode;
+                console.log(`[Debug] Collider visualization: ${debugMode ? 'ON' : 'OFF'} (${collidables.length} colliders)`);
+
+                collidables.forEach((col: any) => {
+                    if (!col.isMesh) return;
+                    if (debugMode) {
+                        // Save original material and switch to debug wireframe
+                        originalMaterials.set(col, col.material);
+                        // Use red for tall walls (height > 6), green for floors/small
+                        const geo = col.geometry;
+                        if (geo && geo.parameters) {
+                            const h = geo.parameters.height || 0;
+                            col.material = h > 6 ? debugMatRed : debugMatGreen;
+                        } else {
+                            col.material = debugMatGreen;
+                        }
+                        col.visible = true;
+                    } else {
+                        // Restore original invisible material
+                        const orig = originalMaterials.get(col);
+                        if (orig) col.material = orig;
+                    }
+                });
+            }
         };
         window.addEventListener('keydown', handleKeyDown);
 
@@ -162,11 +276,26 @@ function FortalezaScene() {
         return () => {
             window.removeEventListener('keydown', handleKeyDown);
 
-            // Safely remove tracked objects WITHOUT having corrupted the native `scene` prototype!
+            // Safely remove tracked objects and free GPU memory
             addedObjects.forEach(obj => {
                 scene.remove(obj);
-                // Also trigger basic memory cleanup if possible
                 if ((obj as any).geometry) (obj as any).geometry.dispose();
+                if ((obj as any).material) {
+                    const mat = (obj as any).material;
+                    if (Array.isArray(mat)) {
+                        mat.forEach((m: any) => {
+                            if (m.map) m.map.dispose();
+                            if (m.bumpMap) m.bumpMap.dispose();
+                            if (m.normalMap) m.normalMap.dispose();
+                            m.dispose();
+                        });
+                    } else {
+                        if (mat.map) mat.map.dispose();
+                        if (mat.bumpMap) mat.bumpMap.dispose();
+                        if (mat.normalMap) mat.normalMap.dispose();
+                        mat.dispose();
+                    }
+                }
             });
 
             // Reset fog & background mappings
@@ -207,15 +336,32 @@ function FortalezaScene() {
             ob.env.sunLight.target.updateMatrixWorld();
         }
 
-        // Process procedural animations logic from the legacy system
+        // Process procedural animations — LOD por distancia para móviles
+        const camPos = camera.position;
+        const LOD_DISTANCE = 60; // Solo animar si está dentro de este radio
+        const LOD_SQ = LOD_DISTANCE * LOD_DISTANCE;
+
         ob.animatedCrystals.forEach((c: any) => {
             if (c.mesh) {
+                // Culling: solo animar cristales cercanos
+                const dx = c.mesh.position.x - camPos.x;
+                const dz = c.mesh.position.z - camPos.z;
+                if (dx * dx + dz * dz > LOD_SQ) return;
                 c.mesh.position.y = c.baseY + Math.sin(time * (1.5 + c.speedOffset * 0.25)) * 0.5;
                 c.mesh.rotation.y = time * (0.6 + c.speedOffset * 0.25);
             }
         });
 
         ob.fireEmitters.forEach((emitter: any) => {
+            // LOD: solo procesar partículas de fuego si el emisor está cerca
+            const ep = emitter.points.position || emitter.light.position;
+            const fdx = ep.x - camPos.x;
+            const fdz = ep.z - camPos.z;
+            if (fdx * fdx + fdz * fdz > LOD_SQ) {
+                emitter.points.geometry.attributes.position.needsUpdate = false;
+                return;
+            }
+
             emitter.light.intensity = emitter.baseIntensity + Math.sin(time * 8.0) * (emitter.scale * 1.5) + Math.cos(time * 12.0) * (emitter.scale * 0.5);
             const positions = emitter.points.geometry.attributes.position.array;
             const lifespans = emitter.points.geometry.attributes.lifespan.array;
@@ -223,7 +369,7 @@ function FortalezaScene() {
 
             for (let i = 0; i < lifespans.length; i++) {
                 lifespans[i] -= delta * speeds[i] * 0.5;
-                positions[i * 3 + 1] += delta * speeds[i] * emitter.scale * 3.0; // move Y
+                positions[i * 3 + 1] += delta * speeds[i] * emitter.scale * 3.0;
 
                 if (lifespans[i] <= 0) {
                     lifespans[i] = 1.0;
@@ -236,6 +382,15 @@ function FortalezaScene() {
         });
 
         ob.mistEmitters.forEach((mist: any) => {
+            // LOD: solo procesar niebla cercana
+            const mp = mist.points.position;
+            const mdx = mp.x - camPos.x;
+            const mdz = mp.z - camPos.z;
+            if (mdx * mdx + mdz * mdz > LOD_SQ) {
+                mist.points.geometry.attributes.position.needsUpdate = false;
+                return;
+            }
+
             const positions = mist.points.geometry.attributes.position.array;
             mist.timeOffset += delta * 0.8;
             for (let i = 0; i < positions.length / 3; i++) {
@@ -266,7 +421,7 @@ function FortalezaScene() {
                     if (!orb.isAbsorbing && playerObj.position.distanceTo(orb.mesh.position) < 5.0) {
                         orb.isAbsorbing = true;
                         st.orbsCollected++;
-                        usePlayerStore.getState().setOrbsCollected(st.orbsCollected);
+                        st.pendingOrbsToSync++; // Queue for batch sync
                     }
 
                     if (orb.isAbsorbing) {
@@ -289,123 +444,31 @@ function FortalezaScene() {
             st.doorOpenAmount = ob.doorSystem.animateDoor(delta, st.doorState, st.doorOpenAmount);
         }
 
-        // === GOLEM BOSS COMBAT ===
-        if (!st.combatEnded && playerObj) {
-            // Golem throne position (roughly at the end of the fortress)
-            const golemPos = new THREE.Vector3(0, 0, -420);
-            const distToGolem = playerObj.position.distanceTo(golemPos);
+        // === INTRO TITLE CARD (no camera movement) ===
+        if (!introShownRef.current) {
+            introShownRef.current = true;
+            console.log('[FortalezaLevel] 🎬 Showing intro title card...');
+            window.dispatchEvent(new CustomEvent('fortaleza-title', { detail: { show: true } }));
+            setTimeout(() => {
+                window.dispatchEvent(new CustomEvent('fortaleza-title', { detail: { show: false } }));
+                console.log('[FortalezaLevel] 🎬 Title card hidden.');
+            }, 4000);
+        }
 
-            // Trigger combat when player approaches within 15 units
-            if (!st.combatStarted && distToGolem < 15) {
-                st.combatStarted = true;
-                setCombatActive(true);
-                console.log('[FortalezaLevel] ⚔️ Golem Boss combat triggered!');
-            }
-
-            // Combat tick loop (attack every 1.2 seconds)
-            if (st.combatStarted && !st.combatEnded) {
-                st.combatTimer += delta;
-
-                if (st.combatTimer - st.lastAttackTime >= 1.2) {
-                    st.lastAttackTime = st.combatTimer;
-                    const pState = usePlayerStore.getState();
-                    const playerAtk = pState.stats?.attack ?? 15;
-                    const playerDef = pState.stats?.defense ?? 10;
-                    const playerCrit = pState.stats?.critRate ?? 5;
-                    const playerCritDmg = pState.stats?.critDamage ?? 150;
-
-                    // --- Player attacks Golem ---
-                    let playerDmg = playerAtk * (100 / (100 + st.golemDefense));
-                    const isPlayerCrit = Math.random() * 100 < playerCrit;
-                    if (isPlayerCrit) playerDmg = playerDmg * (playerCritDmg / 100);
-                    // ±10% variance
-                    playerDmg = Math.round(playerDmg * (1 + (Math.random() * 0.2 - 0.1)));
-                    playerDmg = Math.max(1, playerDmg);
-
-                    st.golemHealth = Math.max(0, st.golemHealth - playerDmg);
-                    st.dmgIdCounter++;
-
-                    const newPlayerDmg: DamageNumber = {
-                        id: `p-${st.dmgIdCounter}`,
-                        amount: playerDmg,
-                        position: golemPos.clone().add(new THREE.Vector3((Math.random() - 0.5) * 3, 5 + Math.random() * 2, 0)),
-                        isCritical: isPlayerCrit,
-                        type: 'damage',
-                    };
-
-                    // --- Golem attacks Player ---
-                    let golemDmg = st.golemAttack * (100 / (100 + playerDef));
-                    const isGolemCrit = Math.random() * 100 < st.golemCritRate;
-                    if (isGolemCrit) golemDmg = golemDmg * (st.golemCritDamage / 100);
-                    golemDmg = Math.round(golemDmg * (1 + (Math.random() * 0.2 - 0.1)));
-                    golemDmg = Math.max(1, golemDmg);
-
-                    // Apply damage to player store
-                    pState.takeDamage(golemDmg);
-                    st.dmgIdCounter++;
-
-                    const newGolemDmg: DamageNumber = {
-                        id: `g-${st.dmgIdCounter}`,
-                        amount: golemDmg,
-                        position: playerObj.position.clone().add(new THREE.Vector3(0, 3, 0)),
-                        isCritical: isGolemCrit,
-                        type: 'damage',
-                    };
-
-                    setDamageNumbers([newPlayerDmg, newGolemDmg]);
-
-                    // --- Check victory/defeat ---
-                    if (st.golemHealth <= 0) {
-                        st.combatEnded = true;
-                        setCombatActive(false);
-                        // Calculate EXP using native leveling-system formula
-                        const expResult = calculateExperienceGain(
-                            st.golemLevel,
-                            st.golemBaseXP,
-                            pState.level,
-                            { isFirstKill: true }
-                        );
-                        pState.addExperience(expResult.totalXP);
-                        pState.addGold(st.golemGold);
-                        setCombatResult({ won: true, exp: expResult.totalXP, gold: st.golemGold });
-                        console.log(`[FortalezaLevel] 🏆 Golem defeated! +${expResult.totalXP} EXP, +${st.golemGold} Gold`);
-                    }
-
-                    if (pState.currentHealth <= 0) {
-                        st.combatEnded = true;
-                        setCombatActive(false);
-                        setCombatResult({ won: false, exp: 0, gold: 0 });
-                        console.log('[FortalezaLevel] 💀 Player defeated by Golem!');
-                    }
-                }
-            }
+        // === GOLEM BOSS COMBAT CAMERA ===
+        const combatStore = useCombatModeStore.getState();
+        if (combatStore.isActive && combatStore.combatCenterPosition && playerObj) {
+            const center = new THREE.Vector3(...combatStore.combatCenterPosition);
+            const cameraOffset = new THREE.Vector3(25, 8, 0);
+            const targetCamPos = center.clone().add(cameraOffset);
+            camera.position.lerp(targetCamPos, delta * 3.0);
+            camera.lookAt(center);
         }
     });
 
     return (
         <>
             <FortalezaPlayer position={[0, 5, 45]} />
-            <FloatingDamageText damageNumbers={damageNumbers} />
-
-            {/* Boss Health Bar HUD */}
-            {combatActive && (
-                <group position={[0, 10, -420]}>
-                    <mesh>
-                        <planeGeometry args={[8, 0.8]} />
-                        <meshBasicMaterial color="#1a1a2e" transparent opacity={0.85} />
-                    </mesh>
-                    <mesh position={[-4 + (stateRef.current.golemHealth / stateRef.current.golemMaxHealth) * 4, 0, 0.01]}>
-                        <planeGeometry args={[(stateRef.current.golemHealth / stateRef.current.golemMaxHealth) * 8, 0.6]} />
-                        <meshBasicMaterial color={stateRef.current.golemHealth / stateRef.current.golemMaxHealth > 0.3 ? '#e74c3c' : '#ff0000'} />
-                    </mesh>
-                </group>
-            )}
-
-            {/* Victory / Defeat overlay */}
-            {combatResult && (
-                <group position={[0, 4, -418]}>
-                </group>
-            )}
         </>
     );
 }

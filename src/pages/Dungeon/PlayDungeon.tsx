@@ -1,4 +1,4 @@
-import { useEffect, useState, Suspense } from 'react';
+import { useEffect, useRef, useState, Suspense } from 'react';
 import { useParams, useNavigate, useLocation } from 'react-router-dom';
 import { GameCanvas } from '../../engine/components/GameCanvas';
 import { CharacterModel3D, CharacterPlaceholder } from '../../engine/components/CharacterModel3D';
@@ -10,6 +10,7 @@ import { dungeonService } from '../../services';
 import { RigidBody, CuboidCollider } from '@react-three/rapier';
 import { Html } from '@react-three/drei';
 import FortalezaLevel from '../../engine/scenes/FortalezaLevel';
+import { TurnBasedCombatUI } from '../../engine/components/TurnBasedCombatUI';
 import { ProSettingsPanel } from '../../components/ui/ProSettingsPanel';
 import { SceneAudioManager } from '../../engine/systems/SceneAudioManager';
 import { MobileControls } from '../../components/ui/MobileControls';
@@ -36,20 +37,48 @@ export default function PlayDungeon() {
   const [showSettings, setShowSettings] = useState(false);
   const [showInGameMenu, setShowInGameMenu] = useState(false);
   const mobileControlsEnabled = useSettingsStore(s => s.mobileControlsEnabled);
+  const [showTitleCard, setShowTitleCard] = useState(false);
 
-  // ─── Background Music & Pointer Lock ──────────────────────────────
+  // Listen for intro title card events from FortalezaLevel
   useEffect(() => {
-    // Volúmenes se sincronizan automáticamente via settingsStore.subscribe
+    const handler = (e: Event) => {
+      const detail = (e as CustomEvent).detail;
+      setShowTitleCard(detail?.show ?? false);
+    };
+    window.addEventListener('fortaleza-title', handler);
+    return () => window.removeEventListener('fortaleza-title', handler);
+  }, []);
+
+  // ─── Background Music & ESC Menu ──────────────────────────────
+  // Use refs to prevent React Strict Mode from registering duplicate listeners
+  const escListenerRegistered = useRef(false);
+  const menuOpenRef = useRef(false);
+
+  useEffect(() => {
     SceneAudioManager.playMusic(SCENE_MUSIC_URL);
 
-    // Escuchar ESC para mostrar el menú de pausa in-game (ya que FortalezaPlayer no usa pointerLock)
+    // Guard: prevent Strict Mode double-mount from creating two listeners
+    if (escListenerRegistered.current) {
+      console.log('[PlayDungeon] ESC listener already registered, skipping');
+      return;
+    }
+    escListenerRegistered.current = true;
+
     const handleKeyDown = (e: KeyboardEvent) => {
       if (e.key === 'Escape') {
-        setShowInGameMenu(prev => !prev);
+        e.stopPropagation();
+        e.preventDefault();
+        // Toggle using ref (not functional updater) to avoid Strict Mode double-invoke
+        menuOpenRef.current = !menuOpenRef.current;
+        console.log('[PlayDungeon] ESC pressed → menu:', menuOpenRef.current ? 'SHOWING' : 'HIDING');
+        setShowInGameMenu(menuOpenRef.current);
       }
     };
-    document.addEventListener('keydown', handleKeyDown);
-    return () => document.removeEventListener('keydown', handleKeyDown);
+    window.addEventListener('keydown', handleKeyDown, { capture: true });
+    return () => {
+      escListenerRegistered.current = false;
+      window.removeEventListener('keydown', handleKeyDown, { capture: true });
+    };
   }, []);
 
   // distancia umbral para iniciar combate
@@ -230,38 +259,51 @@ export default function PlayDungeon() {
         )}
       </GameCanvas>
 
-      {showSettings && <ProSettingsPanel onClose={() => setShowSettings(false)} />}
+      {showSettings && (
+        <>
+          {console.log('[PlayDungeon] ⚙️ Rendering ProSettingsPanel')}
+          <ProSettingsPanel onClose={() => { console.log('[PlayDungeon] Settings closed'); setShowSettings(false); }} />
+        </>
+      )}
 
       {/* IN-GAME PAUSE MENU (Activado al presionar ESC y perder PointerLock) */}
       {showInGameMenu && !showSettings && !showBattle && (
-        <div style={{ position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(0,0,0,0.4)', backdropFilter: 'blur(10px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center' }}>
-          <h2 style={{ fontFamily: '"Cinzel", "Trajan Pro", serif', color: '#cfa144', fontSize: '36px', marginBottom: '30px', textShadow: '0 0 15px rgba(207,161,68,0.5)', letterSpacing: '2px' }}>El Juego está Pausado</h2>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: '15px', width: '320px' }}>
-            <button
-              onClick={() => { setShowInGameMenu(false); document.body.requestPointerLock?.(); }}
-              style={{ padding: '16px 20px', background: 'rgba(30, 25, 40, 0.95)', color: '#fff', border: '1px solid rgba(207,161,68,0.3)', borderRadius: '8px', cursor: 'pointer', fontFamily: '"Cinzel", serif', fontSize: '18px', display: 'flex', justifySelf: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}
-              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(207, 161, 68, 0.15)'; e.currentTarget.style.borderColor = '#cfa144'; e.currentTarget.style.boxShadow = '0 0 15px rgba(207,161,68,0.4)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(30, 25, 40, 0.95)'; e.currentTarget.style.borderColor = 'rgba(207,161,68,0.3)'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)'; }}
-            >
-              Reanudar Partida
-            </button>
-            <button
-              onClick={() => setShowSettings(true)}
-              style={{ padding: '16px 20px', background: 'rgba(30, 25, 40, 0.95)', color: '#fff', border: '1px solid rgba(255,255,255,0.2)', borderRadius: '8px', cursor: 'pointer', fontFamily: '"Cinzel", serif', fontSize: '18px', display: 'flex', justifySelf: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}
-              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.1)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.6)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(30, 25, 40, 0.95)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.2)'; }}
-            >
-              ⚙️ Ajustes de Sistema
-            </button>
-            <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(255,255,255,0.2), transparent)', margin: '15px 0' }} />
-            <button
-              onClick={() => navigate('/dungeon')}
-              style={{ padding: '16px 20px', background: 'rgba(50, 15, 15, 0.95)', color: '#ffaaaa', border: '1px solid rgba(255,100,100,0.3)', borderRadius: '8px', cursor: 'pointer', fontFamily: '"Cinzel", serif', fontSize: '18px', display: 'flex', justifySelf: 'center', justifyContent: 'center', transition: 'all 0.2s', boxShadow: '0 4px 10px rgba(0,0,0,0.5)' }}
-              onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(100, 20, 20, 0.95)'; e.currentTarget.style.borderColor = '#ff4444'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.boxShadow = '0 0 15px rgba(255,68,68,0.4)'; }}
-              onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(50, 15, 15, 0.95)'; e.currentTarget.style.borderColor = 'rgba(255,100,100,0.3)'; e.currentTarget.style.color = '#ffaaaa'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.5)'; }}
-            >
-              Abandonar al Dashboard
-            </button>
+        <div style={{ position: 'absolute', inset: 0, zIndex: 100, background: 'rgba(5, 5, 8, 0.7)', backdropFilter: 'blur(25px)', WebkitBackdropFilter: 'blur(25px)', display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', animation: 'menuFadeIn 0.3s ease-out forwards' }}>
+
+          <div style={{ background: 'linear-gradient(165deg, rgba(22, 22, 36, 0.75), rgba(12, 12, 24, 0.85))', padding: '40px 60px', borderRadius: '20px', border: '1px solid rgba(220, 190, 100, 0.3)', boxShadow: '0 0 50px rgba(200, 170, 80, 0.1), inset 0 1px 2px rgba(255, 255, 255, 0.1)', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+
+            <h2 style={{ fontFamily: '"Cinzel", "Trajan Pro", serif', color: '#ffd700', fontSize: '2.5rem', marginBottom: '40px', letterSpacing: '4px', textShadow: '0 0 20px rgba(207,161,68,0.4)', textTransform: 'uppercase' }}>Pausa</h2>
+
+            <div style={{ display: 'flex', flexDirection: 'column', gap: '16px', width: '300px' }}>
+              <button
+                onClick={() => { setShowInGameMenu(false); document.body.requestPointerLock?.(); }}
+                style={{ padding: '16px 20px', background: 'linear-gradient(135deg, rgba(210, 180, 90, 0.15), rgba(210, 180, 90, 0.05))', color: '#ffd700', border: '1px solid rgba(207,161,68,0.5)', borderRadius: '12px', cursor: 'pointer', fontFamily: '"Cinzel", serif', fontSize: '1.1rem', letterSpacing: '1px', transition: 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', boxShadow: '0 4px 15px rgba(0,0,0,0.5)' }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(210, 180, 90, 0.3), rgba(210, 180, 90, 0.15))'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 25px rgba(207,161,68,0.2)'; e.currentTarget.style.textShadow = '0 0 10px rgba(255, 215, 0, 0.5)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'linear-gradient(135deg, rgba(210, 180, 90, 0.15), rgba(210, 180, 90, 0.05))'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 15px rgba(0,0,0,0.5)'; e.currentTarget.style.textShadow = 'none'; }}
+              >
+                Reanudar
+              </button>
+
+              <button
+                onClick={() => { console.log('[PlayDungeon] ⚙️ Ajustes button clicked, showing settings'); setShowSettings(true); }}
+                style={{ padding: '16px 20px', background: 'rgba(255, 255, 255, 0.03)', color: '#ccc', border: '1px solid rgba(255,255,255,0.1)', borderRadius: '12px', cursor: 'pointer', fontFamily: '"Cinzel", serif', fontSize: '1.0rem', letterSpacing: '1px', transition: 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.08)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.3)'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(255, 255, 255, 0.03)'; e.currentTarget.style.borderColor = 'rgba(255,255,255,0.1)'; e.currentTarget.style.color = '#ccc'; e.currentTarget.style.transform = 'translateY(0)'; }}
+              >
+                Ajustes
+              </button>
+
+              <div style={{ height: '1px', background: 'linear-gradient(90deg, transparent, rgba(200,170,80,0.2), transparent)', margin: '15px 0' }} />
+
+              <button
+                onClick={() => navigate('/dashboard')}
+                style={{ padding: '16px 20px', background: 'rgba(80, 20, 20, 0.3)', color: '#ffaaaa', border: '1px solid rgba(255,100,100,0.2)', borderRadius: '12px', cursor: 'pointer', fontFamily: '"Cinzel", serif', fontSize: '1.0rem', letterSpacing: '1px', transition: 'all 0.25s cubic-bezier(0.2, 0.8, 0.2, 1)', boxShadow: '0 4px 10px rgba(0,0,0,0.3)' }}
+                onMouseOver={(e) => { e.currentTarget.style.background = 'rgba(120, 30, 30, 0.6)'; e.currentTarget.style.borderColor = '#ff4444'; e.currentTarget.style.color = '#fff'; e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.boxShadow = '0 8px 20px rgba(255,68,68,0.2)'; }}
+                onMouseOut={(e) => { e.currentTarget.style.background = 'rgba(80, 20, 20, 0.3)'; e.currentTarget.style.borderColor = 'rgba(255,100,100,0.2)'; e.currentTarget.style.color = '#ffaaaa'; e.currentTarget.style.transform = 'translateY(0)'; e.currentTarget.style.boxShadow = '0 4px 10px rgba(0,0,0,0.3)'; }}
+              >
+                Abandonar
+              </button>
+            </div>
           </div>
         </div>
       )}
@@ -327,8 +369,49 @@ export default function PlayDungeon() {
         </div>
       )}
 
+      {/* Turn-Based 3D Combat UI */}
+      {!showBattle && <TurnBasedCombatUI />}
+
       {/* Mobile Controls Overlay */}
       {mobileControlsEnabled && !showBattle && <MobileControls />}
+
+      {/* Cinematic Level Title Card */}
+      {showTitleCard && (
+        <div style={{
+          position: 'absolute',
+          inset: 0,
+          zIndex: 200,
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          pointerEvents: 'none',
+          background: 'transparent'
+        }}>
+          <div style={{
+            color: '#ffd700',
+            fontFamily: '"Cinzel", "Trajan Pro", serif',
+            fontSize: 'clamp(2rem, 5vw, 4rem)',
+            fontWeight: 700,
+            letterSpacing: '6px',
+            textTransform: 'uppercase',
+            textShadow: '0 0 30px rgba(0, 0, 0, 0.95), 0 0 15px #cfa144, 0 4px 20px rgba(0,0,0,0.8)',
+            textAlign: 'center',
+            animation: 'titleFadeIn 1.5s ease-out forwards'
+          }}>
+            FORTALEZA OLVIDADA
+            <div style={{
+              fontSize: 'clamp(0.8rem, 2vw, 1.4rem)',
+              marginTop: '12px',
+              color: '#bbb',
+              letterSpacing: '3px',
+              fontWeight: 400
+            }}>
+              Dominio del Guardián Golem
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }

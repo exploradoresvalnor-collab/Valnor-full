@@ -12,7 +12,6 @@ class SceneAudioManagerClass {
     private musicVolume = 0.5;    // 0–1 (canal música)
     private sfxVolume = 0.5;      // 0–1 (canal sfx)
     private masterVolume = 1;     // 0–1 (general)
-    private blobCache: Map<string, string> = new Map(); // Cache para URLs de blobs
 
     // ─── Music ───────────────────────────────────────────────
 
@@ -22,37 +21,20 @@ class SceneAudioManagerClass {
             return;
         }
 
-        // Marcar la nueva URL intentada inmediatamente para evitar double-fetches concurrentes
-        this.musicUrl = url;
-
-        // Intentar obtener el Blob URL (evita que extensiones como IDM secuestren el stream de <audio src="...mp3">)
-        let blobUrl = url;
-        try {
-            if (this.blobCache.has(url)) {
-                blobUrl = this.blobCache.get(url)!;
-            } else {
-                const response = await fetch(url);
-                const blob = await response.blob();
-                blobUrl = URL.createObjectURL(blob);
-                this.blobCache.set(url, blobUrl);
-            }
-        } catch (e) {
-            console.warn('[SceneAudio] Falló la conversión a Blob, usando URL directa:', e);
-        }
-
-        // Si mientras descargaba el Blob se pidió otra canción, cancelar.
-        if (this.musicUrl !== url) return;
+        console.log('[SceneAudio] 🎵 Cargando música:', url);
 
         // Detener la pista anterior
         this.stopMusicImmediate();
 
-        // Crear nuevo elemento de audio usando el Blob URL protegido
-        const audio = new Audio(blobUrl);
-        audio.loop = true;          // ← bucle continuo sin cortes
+        // Crear nuevo elemento de audio usando la URL directa (NO usar fetch+Blob
+        // porque extensiones de descarga como IDM interceptan el fetch y muestran
+        // un diálogo de descarga en lugar de reproducir el audio).
+        const audio = new Audio();
+        audio.crossOrigin = 'anonymous';
+        audio.loop = true;
         audio.preload = 'auto';
-
-        // Establecer volumen correcto desde el inicio
         audio.volume = this.getEffectiveMusicVolume();
+        audio.src = url;
 
         this.musicElement = audio;
         this.musicUrl = url;
@@ -62,20 +44,17 @@ class SceneAudioManagerClass {
             if (!this.musicElement || this.musicElement !== audio) return;
 
             audio.play().then(() => {
-                console.log('[SceneAudio] ✅ Música reproduciéndose:', url); // Mantener el log de la URL original para debug
+                console.log('[SceneAudio] ✅ Música reproduciéndose:', url);
             }).catch(err => {
                 console.warn('[SceneAudio] ⚠️ Autoplay bloqueado, se reproducirá al interactuar:', err.message);
-                // Registrar listeners globales para reproducir al primer click/tecla
                 this.registerAutoplayRetry(audio);
             });
         };
 
-        // Si ya está cargado, reproducir inmediatamente
         if (audio.readyState >= 3) {
             tryPlay();
         } else {
             audio.addEventListener('canplaythrough', tryPlay, { once: true });
-            // Timeout de seguridad: intentar de todos modos después de 1s
             setTimeout(tryPlay, 1000);
         }
     }

@@ -1,5 +1,5 @@
-import { useEffect, useState } from 'react';
-import { Html } from '@react-three/drei';
+import { useRef } from 'react';
+import { useFrame } from '@react-three/fiber';
 import * as THREE from 'three';
 
 export interface DamageNumber {
@@ -10,55 +10,128 @@ export interface DamageNumber {
     type: 'damage' | 'heal' | 'status';
 }
 
-interface FloatingDamageTextProps {
-    damageNumbers: DamageNumber[];
+interface ActiveDamage {
+    id: string;
+    sprite: THREE.Sprite;
+    startY: number;
+    startTime: number;
+    isCritical: boolean;
 }
 
-export function FloatingDamageText({ damageNumbers }: FloatingDamageTextProps) {
-    const [activeNumbers, setActiveNumbers] = useState<(DamageNumber & { startTime: number })[]>([]);
+/**
+ * Genera un Sprite de texto en un canvas offscreen.
+ * Cero DOM, cero re-render — ideal para móviles.
+ */
+function createDamageSprite(dmg: DamageNumber): THREE.Sprite {
+    const canvas = document.createElement('canvas');
+    const ctx = canvas.getContext('2d')!;
+    canvas.width = 256;
+    canvas.height = 128;
+    ctx.clearRect(0, 0, canvas.width, canvas.height);
 
-    useEffect(() => {
-        if (damageNumbers.length > 0) {
-            const added = damageNumbers.map(n => ({ ...n, startTime: Date.now() }));
-            setActiveNumbers(prev => [...prev, ...added]);
+    const fontSize = dmg.isCritical ? 52 : 38;
+    ctx.font = `bold ${fontSize}px Arial, sans-serif`;
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+
+    const prefix = dmg.type === 'heal' ? '+' : '-';
+    const suffix = dmg.isCritical ? ' CRIT!' : '';
+    const label = `${prefix}${dmg.amount}${suffix}`;
+
+    // Outline negro
+    ctx.strokeStyle = '#000';
+    ctx.lineWidth = 5;
+    ctx.strokeText(label, 128, 64);
+
+    // Color de relleno según tipo
+    ctx.fillStyle = dmg.type === 'heal'
+        ? '#00ff88'
+        : dmg.isCritical
+            ? '#ffcc00'
+            : '#ffffff';
+    ctx.fillText(label, 128, 64);
+
+    const texture = new THREE.CanvasTexture(canvas);
+    const material = new THREE.SpriteMaterial({
+        map: texture,
+        transparent: true,
+        depthTest: false,
+        sizeAttenuation: true,
+    });
+
+    const sprite = new THREE.Sprite(material);
+    const baseScale = dmg.isCritical ? 5 : 3.5;
+    sprite.scale.set(baseScale, baseScale * 0.5, 1);
+    sprite.position.copy(dmg.position);
+    return sprite;
+}
+
+interface FloatingDamageTextProps {
+    damageQueueRef: React.RefObject<DamageNumber[]>;
+}
+
+/**
+ * Componente 100% imperativo — opera dentro de useFrame sin setState.
+ * Consume una cola de DamageNumber[] desde un ref externo (sin props reactivas).
+ * Cada número se dibuja como un Sprite (textura Canvas), NO como Html/DOM.
+ * Esto elimina completamente los re-renders de React durante el combate.
+ */
+export function FloatingDamageText({ damageQueueRef }: FloatingDamageTextProps) {
+    const containerRef = useRef<THREE.Group>(null);
+    const activeRef = useRef<ActiveDamage[]>([]);
+    const seenIdsRef = useRef<Set<string>>(new Set());
+
+    useFrame(() => {
+        if (!containerRef.current) return;
+        const now = Date.now();
+        const queue = damageQueueRef.current;
+
+        // Ingestar nuevos números sin provocar re-renders de React
+        if (queue && queue.length > 0) {
+            for (const dmg of queue) {
+                if (!seenIdsRef.current.has(dmg.id)) {
+                    seenIdsRef.current.add(dmg.id);
+                    const sprite = createDamageSprite(dmg);
+                    containerRef.current.add(sprite);
+                    activeRef.current.push({
+                        id: dmg.id,
+                        sprite,
+                        startY: dmg.position.y,
+                        startTime: now,
+                        isCritical: dmg.isCritical,
+                    });
+                }
+            }
         }
-    }, [damageNumbers]);
 
-    useEffect(() => {
-        const interval = setInterval(() => {
-            setActiveNumbers(prev => prev.filter(n => Date.now() - n.startTime < 1500));
-        }, 100);
-        return () => clearInterval(interval);
-    }, []);
+        // Animar y limpiar sprites expirados
+        const stillActive: ActiveDamage[] = [];
+        for (const entry of activeRef.current) {
+            const progress = Math.min((now - entry.startTime) / 1500, 1.0);
 
-    return (
-        <>
-            {activeNumbers.map((dmg) => {
-                const progress = Math.min((Date.now() - dmg.startTime) / 1500, 1.0);
-                const floatY = dmg.position.y + progress * 2.0;
+            if (progress >= 1.0) {
+                // Limpiar sprite y liberar memoria GPU
+                containerRef.current.remove(entry.sprite);
+                entry.sprite.material.map?.dispose();
+                (entry.sprite.material as THREE.SpriteMaterial).dispose();
+                seenIdsRef.current.delete(entry.id);
+                continue;
+            }
 
-                const getStyles = () => {
-                    if (dmg.type === 'heal') return { color: '#00ff00', fontSize: '24px', fontWeight: 'bold' };
-                    if (dmg.isCritical) return { color: '#ffcc00', fontSize: '32px', fontWeight: 'bold', textShadow: '0px 0px 10px red' };
-                    return { color: '#ffffff', fontSize: '20px', fontWeight: 'bold' }; // Default damage
-                };
+            // Flotar hacia arriba
+            entry.sprite.position.y = entry.startY + progress * 2.5;
+            // Desvanecimiento gradual
+            (entry.sprite.material as THREE.SpriteMaterial).opacity = 1.0 - progress;
+            // Pulso de escala en críticos
+            if (entry.isCritical) {
+                const pulse = 1 + (1 - progress) * 0.4;
+                entry.sprite.scale.set(5 * pulse, 2.5 * pulse, 1);
+            }
 
-                return (
-                    <group key={`${dmg.id}-${dmg.startTime}`} position={[dmg.position.x, floatY, dmg.position.z]}>
-                        <Html center style={{
-                            ...getStyles(),
-                            opacity: 1 - progress,
-                            pointerEvents: 'none',
-                            userSelect: 'none',
-                            whiteSpace: 'nowrap',
-                            WebkitTextStroke: '1px black',
-                            transform: `scale(${dmg.isCritical ? 1 + (1 - progress) * 0.5 : 1})`
-                        }}>
-                            {dmg.type === 'heal' ? '+' : '-'}{dmg.amount} {dmg.isCritical ? '💥' : '⚔️'}
-                        </Html>
-                    </group>
-                );
-            })}
-        </>
-    );
+            stillActive.push(entry);
+        }
+        activeRef.current = stillActive;
+    });
+
+    return <group ref={containerRef} />;
 }

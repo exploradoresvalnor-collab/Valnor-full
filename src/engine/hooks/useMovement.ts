@@ -19,36 +19,37 @@ import * as THREE from 'three';
 import { useInput } from './useInput';
 import { VectorSpringSimulator, RelativeSpringSimulator } from '../utils/SpringSimulator';
 import { CollisionGroups } from '../components/PhysicsWorld';
+import { useCombatModeStore } from '../stores/combatModeStore';
 
 export interface MovementConfig {
   // Velocidades
   walkSpeed: number;
   runSpeed: number;
   sprintSpeed: number;
-  
+
   // Spring de velocidad (mass mayor = más inercia, damping 0-1 = fricción)
   velocitySpringMass: number;
   velocitySpringDamping: number;
-  
+
   // Spring de rotación
   rotationSpringMass: number;
   rotationSpringDamping: number;
-  
+
   // Arcade velocity influence (0 = solo física, 1 = solo arcade)
   arcadeVelocityInfluence: number;
-  
+
   // Control aéreo
   airControl: number;
-  
+
   // Salto
   jumpForce: number;
   jumpCooldown: number;
   maxJumps: number;
   coyoteTime: number;
-  
+
   // Física
   maxFallSpeed: number;
-  
+
   // Raycast ground detection
   groundRayLength: number;
   groundRayOffset: number;
@@ -58,25 +59,25 @@ const DEFAULT_CONFIG: MovementConfig = {
   walkSpeed: 4,
   runSpeed: 7,
   sprintSpeed: 12,
-  
+
   // Spring de velocidad: mass=50 → aceleración suave, damp=0.82 → frenado con inercia
   velocitySpringMass: 50,
   velocitySpringDamping: 0.82,
-  
+
   // Spring de rotación: mass=10 → giro rápido pero suave, damp=0.5 → sin oscilación excesiva
   rotationSpringMass: 10,
   rotationSpringDamping: 0.5,
-  
+
   // Arcade: 1 = control total arcade (overwrite physics), 0.5 = mitad y mitad
   arcadeVelocityInfluence: 1.0,
-  
+
   airControl: 0.3,
   jumpForce: 8,
   jumpCooldown: 0.2,
   maxJumps: 2,
   coyoteTime: 0.15,
   maxFallSpeed: 50,
-  
+
   // Raycast: rayo corto hacia abajo desde la base de la cápsula
   groundRayLength: 0.6,
   groundRayOffset: 0.6, // Offset Y desde el centro del body (base de la cápsula)
@@ -87,22 +88,22 @@ interface MovementState {
   velocity: THREE.Vector3;
   horizontalVelocity: THREE.Vector3;
   verticalVelocity: number;
-  
+
   // Estado de suelo
   isGrounded: boolean;
   groundNormal: THREE.Vector3;
   timeSinceGrounded: number;
-  
+
   // Salto
   jumpCount: number;
   timeSinceJump: number;
-  
+
   // Movimiento
   isMoving: boolean;
   isSprinting: boolean;
   currentSpeed: number;
   targetSpeed: number;
-  
+
   // Dirección & rotación
   moveDirection: THREE.Vector3;
   facingDirection: THREE.Vector3;
@@ -154,7 +155,7 @@ export function useMovement(
   const _rayOrigin = useRef(new THREE.Vector3());
   const _rayDir = useRef(new THREE.Vector3(0, -1, 0));
   const _upAxis = useRef(new THREE.Vector3(0, 1, 0));
-  
+
   // Rapier world para raycast de grounding
   const { world, rapier } = useRapier();
 
@@ -162,6 +163,11 @@ export function useMovement(
   // Calcular dirección de movimiento relativa a la cámara
   // ────────────────────────────────────────────────────────────
   const calculateMoveDirection = useCallback(() => {
+    if (useCombatModeStore.getState().isActive) {
+      _moveInput.current.set(0, 0, 0);
+      return _moveInput.current;
+    }
+
     const { moveX, moveY } = input.state;
 
     if (moveX === 0 && moveY === 0) {
@@ -189,19 +195,19 @@ export function useMovement(
   // ────────────────────────────────────────────────────────────
   const checkGrounding = useCallback(() => {
     if (!bodyRef.current) return;
-    
+
     const pos = bodyRef.current.translation();
-    
+
     // Origen del rayo: Ligeramente por encima de la base (pos.y + 0.1)
     // El collider empieza en pos.y (bottom=0).
     // Usamos un filtro de grupo para asegurarnos de no golpearnos a nosotros mismos
     // O empezamos LIGERAMENTE FUERA (pos.y + 0.05) y confiamos en que solid=false para backfaces?
     // Rapier castRay solid=true detecta hits desde dentro.
-    
+
     // MEJOR: Empezar desde el centro del personaje (pos.y + 0.7) hacia abajo
     // y EXCLUIR el rigidbody actual.
     // Si no podemos excluir, empezamos desde abajo (pos.y + 0.05).
-    
+
     _rayOrigin.current.set(pos.x, pos.y + 0.5, pos.z);
     _rayDir.current.set(0, -1, 0);
 
@@ -209,7 +215,7 @@ export function useMovement(
       _rayOrigin.current,
       _rayDir.current
     );
-    
+
     // castRayAndGetNormal devuelve { collider, timeOfImpact, normal }
     // Filtrar por grupos para IGNORAR Triggers y al propio jugador (evita "raycast fantasma").
     const RAY_FILTER = (CollisionGroups.PLAYER << 16) | (CollisionGroups.ALL & ~CollisionGroups.TRIGGER & ~CollisionGroups.PLAYER);
@@ -342,7 +348,7 @@ export function useMovement(
   // Manejar salto
   // ────────────────────────────────────────────────────────────
   const handleJump = useCallback(() => {
-    if (!bodyRef.current) return;
+    if (!bodyRef.current || useCombatModeStore.getState().isActive) return;
 
     const s = state.current;
     const canCoyoteJump = s.timeSinceGrounded < cfg.coyoteTime;

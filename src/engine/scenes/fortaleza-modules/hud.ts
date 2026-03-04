@@ -270,7 +270,6 @@ export function createHUD(container: HTMLElement) {
       if (bar) bar.style.width = `${progress}%`;
       if (text) {
         const shortName = itemUrl.split('/').pop() || 'recursos';
-        text.innerText = `Invocando ${shortName}... Math.floor(${progress})%`;
         text.innerText = `Invocando ${shortName}... ${Math.floor(progress)}%`;
       }
     },

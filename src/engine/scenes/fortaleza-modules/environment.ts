@@ -1,6 +1,7 @@
 import * as THREE from 'three';
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
+import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
 
 export const Materials = {
     obsidian: new THREE.MeshStandardMaterial({ color: '#0d0d14', roughness: 0.05, metalness: 1.0 }),
@@ -435,28 +436,28 @@ export function createChain(scene: THREE.Scene, x: number, y: number, z: number)
 export function createWideBridge(scene: THREE.Scene, collidables: THREE.Object3D[], zStart: number, zEnd: number) {
     const length = Math.abs(zStart - zEnd); const zMin = Math.min(zStart, zEnd); const zCenter = zMin + length / 2;
     const bGroup = new THREE.Group();
-    // Suelo ensanchado a 18 unidades para empalmar sin muros invisibles
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(18, 2, length), Materials.plaza);
-    floor.position.set(0, -1, 0); floor.receiveShadow = true; bGroup.add(floor);
-    // Muros laterales con colisionadores movidos a +-8.4
+    // Suelo ensanchado a 24 unidades para empalmar con el puente medieval (que mide 24 de ancho)
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(24, 2, length), Materials.plaza);
+    floor.position.set(0, -1.08, 0); floor.receiveShadow = true; bGroup.add(floor);
+    // Muros laterales alineados con las barandas del puente medieval (±11.7)
     const wallL = new THREE.Mesh(new THREE.BoxGeometry(1.2, 4, length), Materials.wall);
-    wallL.position.set(-8.4, 1, 0); wallL.castShadow = true; wallL.receiveShadow = true; bGroup.add(wallL);
+    wallL.position.set(-11.4, 1, 0); wallL.castShadow = true; wallL.receiveShadow = true; bGroup.add(wallL);
     const wallR = new THREE.Mesh(new THREE.BoxGeometry(1.2, 4, length), Materials.wall);
-    wallR.position.set(8.4, 1, 0); wallR.castShadow = true; wallR.receiveShadow = true; bGroup.add(wallR);
+    wallR.position.set(11.4, 1, 0); wallR.castShadow = true; wallR.receiveShadow = true; bGroup.add(wallR);
     // Almenas en los muros
     const merlonCount = Math.floor(length / 8);
     for (let m = 0; m < merlonCount; m++) {
         if (m % 2 === 0) continue;
         const mz = -length / 2 + m * (length / merlonCount) + (length / merlonCount) * 0.5;
         const merL = new THREE.Mesh(new THREE.BoxGeometry(1.4, 1.8, 2.5), Materials.wall);
-        merL.position.set(-8.4, 3.2, mz); bGroup.add(merL);
-        const merR = merL.clone(); merR.position.set(8.4, 3.2, mz); bGroup.add(merR);
+        merL.position.set(-11.4, 3.2, mz); bGroup.add(merL);
+        const merR = merL.clone(); merR.position.set(11.4, 3.2, mz); bGroup.add(merR);
     }
     // Pilones con faros cada ~18 unidades
     const pilonCount = Math.max(2, Math.floor(length / 18));
     for (let p = 0; p < pilonCount; p++) {
         const pz = -length / 2 + (p + 0.5) * (length / pilonCount);
-        [-8.4, 8.4].forEach((px) => {
+        [-11.4, 11.4].forEach((px) => {
             const pilon = new THREE.Mesh(new THREE.BoxGeometry(2, 7, 2), Materials.wall);
             pilon.position.set(px, 2.5, pz); pilon.castShadow = true; bGroup.add(pilon);
             const lanternBody = new THREE.Mesh(new THREE.BoxGeometry(0.7, 0.7, 0.7),
@@ -465,14 +466,14 @@ export function createWideBridge(scene: THREE.Scene, collidables: THREE.Object3D
         });
     }
     bGroup.position.set(0, 0, zCenter); scene.add(bGroup);
-    // Colisionadores globales del grupo ajustados a ancho 18
-    const floorCol = new THREE.Mesh(new THREE.BoxGeometry(18, 2, length), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
-    floorCol.position.set(0, -1, zCenter); collidables.push(floorCol); scene.add(floorCol);
+    // Colisionadores globales del grupo ajustados a ancho 24 (match puente medieval)
+    const floorCol = new THREE.Mesh(new THREE.BoxGeometry(24, 2, length), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
+    floorCol.position.set(0, -1.08, zCenter); collidables.push(floorCol); scene.add(floorCol);
 
-    // Mismo grosor (0.6) y misma posición X (8.7) que las barandas medievales
+    // Colisionadores de muros a ±11.7 (mismo X que barandas del puente medieval)
     const wallLCol = new THREE.Mesh(new THREE.BoxGeometry(0.6, 8, length), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
-    wallLCol.position.set(-8.7, 1, zCenter); collidables.push(wallLCol); scene.add(wallLCol);
-    const wallRCol = wallLCol.clone(); wallRCol.position.set(8.7, 1, zCenter); collidables.push(wallRCol); scene.add(wallRCol);
+    wallLCol.position.set(-11.7, 1, zCenter); collidables.push(wallLCol); scene.add(wallLCol);
+    const wallRCol = wallLCol.clone(); wallRCol.position.set(11.7, 1, zCenter); collidables.push(wallRCol); scene.add(wallRCol);
 }
 
 export function createGiantRotunda(scene: THREE.Scene, collidables: THREE.Object3D[], checkpoints: any[], animatedCrystals: any[], zCenter: number) {
@@ -1068,11 +1069,12 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
     const bridgeZStart = -size / 2; // Z local del muro frontal
     const bridgeZMid = bridgeZStart - bridgeLen / 2;
 
-    // Tablero principal del puente (calzada de piedra ampliada p/ solapar costuras físicas)
-    const floorLen = bridgeLen + 4; // 34m (2m extra por ambos lados)
+    // Tablero principal del puente (calzada de piedra)
+    // Bajamos 0.15 unidades respecto al suelo de la fortaleza para evitar Z-fighting
+    const floorLen = bridgeLen + 1; // 31m (0.5m extra por ambos lados, reducido para evitar solapamiento)
     const deck = new THREE.Mesh(new THREE.BoxGeometry(bridgeW, 1.5, floorLen), Materials.plaza);
-    deck.position.set(0, -0.75, bridgeZMid); deck.receiveShadow = true; deck.castShadow = true; entranceGroup.add(deck);
-    addColBox(bridgeW, 1.5, floorLen, 0, -0.75, bridgeZMid);
+    deck.position.set(0, -0.90, bridgeZMid); deck.receiveShadow = true; deck.castShadow = true; entranceGroup.add(deck);
+    addColBox(bridgeW, 1.5, floorLen, 0, -0.90, bridgeZMid);
 
     // Pilastras de soporte del puente (sin arcos)
     for (let a = 0; a < 3; a++) {
@@ -1215,6 +1217,62 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
     createAzoteaBattlements(-22, 22, size / 2 - 2, true);
     createAzoteaBattlements(-22, 22, -size / 2 + 2, true);
 
+    // === PORTAL en la Azotea (último piso) ===
+    const objLoader = new OBJLoader();
+    objLoader.load('/assets/models/environment/Portal.obj', (obj) => {
+        // Escala
+        obj.scale.set(4.5, 4.5, 4.5);
+        // Posición: subimos a +7.8 para que asiente completamente arriba
+        obj.position.set(5, azoteaY + 7.8, -8);
+
+        // Rotar sobre Y para que mire hacia el frente
+        obj.rotation.y = Math.PI / 2;
+
+        // Material PIEDRA
+        const stoneMat = new THREE.MeshStandardMaterial({
+            color: '#8b6b50',
+            roughness: 0.9,
+            metalness: 0.05,
+        });
+
+        obj.traverse((child: any) => {
+            if (child.isMesh) {
+                child.castShadow = true;
+                child.receiveShadow = true;
+                child.material = stoneMat; // Todo el modelo OBJ es de piedra maciza
+            }
+        });
+
+        entranceGroup.add(obj);
+
+        // --- CREAMOS EL CENTRO LUMINOSO ---
+        // Radio ajustado para que encaje DENTRO del arco de piedra (aprox 5.2)
+        const portalCenter = new THREE.Mesh(
+            new THREE.CylinderGeometry(5.2, 5.2, 0.1, 32),
+            new THREE.MeshStandardMaterial({
+                color: '#6611cc', // Púrpura base
+                emissive: '#00ffff', // Cian brillante
+                emissiveIntensity: 3.0,
+                transparent: true,
+                opacity: 0.85,
+            })
+        );
+        // Rotamos el cilindro para que quede de pie
+        portalCenter.rotation.x = Math.PI / 2;
+        // Posición centrada en el agujero del arco (+4.5 desde su nueva base)
+        portalCenter.position.set(5, azoteaY + 7.8 + 4.5, -8);
+        entranceGroup.add(portalCenter);
+
+        // Luz del portal
+        const portalLight = new THREE.PointLight('#33ccff', 4.0, 35);
+        portalLight.position.set(5, azoteaY + 12.3, -5);
+        entranceGroup.add(portalLight);
+
+        console.log('[Environment] Portal.obj cargado correctamente en azotea');
+    }, undefined, (err) => {
+        console.warn('[Environment] Error cargando Portal.obj:', err);
+    });
+
     // === ANTORCHAS DE PARED EN CADA PISO (única iluminación interior) ===
     // Función: crea una antorcha de pared con su soporte y fuego
     const placeWallTorch = (x: number, y: number, z: number) => {
@@ -1325,7 +1383,7 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
 
     // --- ENSAMBLAJE DE PUERTA EXTERNA PROVISTA POR MODULE door.ts ---
     // Guardamos las coordenadas base para encajar la puerta importada
-    gateObjects.gatePos = new THREE.Vector3(0, -1, zCenter - size / 2 + 0.5);
+    gateObjects.gatePos = new THREE.Vector3(0, 0, zCenter - size / 2 + 0.5); // Y=0: el piso de la fortaleza termina aquí
     gateObjects.hingeZBase = -size / 2 + 0.6;
     gateObjects.entranceZ = zCenter - size / 2;
 
@@ -1389,6 +1447,34 @@ export function createPenumbraRuins(scene: THREE.Scene, collidables: THREE.Objec
 
     const colEnd = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 10, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
     colEnd.position.set(-145, 25, zStart - 15); collidables.push(colEnd); endGroup.add(colEnd);
+
+    // Escaleras frontales para subir al templo del Golem
+    const stairX = -131; // Enfrente del cilindro (-145 + 14)
+    const stairZ = zStart - 15;
+    const stairGroup = new THREE.Group();
+
+    // 5 Peldaños
+    for (let i = 0; i < 5; i++) {
+        const stepW = 8;
+        const stepH = 2.0; // Total height to reach = 10. 5 steps of 2
+        const stepD = 3;
+
+        // Z local = 0
+        // X = stairX + (i * stepD) (escalera baja hacia el +X)
+        const stepX = stairX + (i * stepD);
+        const stepY = 20 + ((4 - i) * stepH) + (stepH / 2); // From 21 to 29
+
+        const step = new THREE.Mesh(new THREE.BoxGeometry(stepD, stepH, stepW), Materials.plaza);
+        step.position.set(stepX, stepY, stairZ);
+        step.receiveShadow = true; step.castShadow = true;
+        stairGroup.add(step);
+
+        const stepCol = new THREE.Mesh(new THREE.BoxGeometry(stepD, stepH, stepW), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
+        stepCol.position.copy(step.position);
+        collidables.push(stepCol);
+        stairGroup.add(stepCol);
+    }
+    endGroup.add(stairGroup);
 
     scene.add(endGroup);
 
