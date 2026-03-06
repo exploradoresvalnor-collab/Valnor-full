@@ -3,22 +3,28 @@ import * as THREE from 'three';
 import { useThree, useFrame } from '@react-three/fiber';
 import { usePlayerStore } from '../../stores/playerStore';
 import { FortalezaPlayer } from '../components/FortalezaPlayer';
+import { SnowFootprints } from './SnowFootprints';
 import { PhysicsProvider, usePhysics } from '../contexts/PhysicsContext';
 import { useCombatModeStore } from '../stores/combatModeStore';
+import { Html } from '@react-three/drei';
 
 // Import local Fortaleza modules
 import {
     initMaterials, setupEnvironment, createWideBridge, createGiantRotunda,
     createSecretChamber, createPlatform, createOrb, createBlackKnightFortress,
-    createStartingFortress, createPenumbraRuins
+    createStartingFortress, createPenumbraRuins, createObsidianCourtyard, createAbyssPath
 } from './fortaleza-modules/environment';
 import { createDoor } from './fortaleza-modules/door';
+import { createGraphicsSettings } from './fortaleza-modules/graphicsSettings';
+import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { EffectComposer, Bloom } from '@react-three/postprocessing';
 
 function FortalezaScene() {
-    const { scene, camera } = useThree();
+    const { scene, camera, gl } = useThree();
     const { collidables, checkpoints, movingPlatforms } = usePhysics();
 
     const [isLoaded, setIsLoaded] = useState(false);
+    const [loadingStatus, setLoadingStatus] = useState("Iniciando...");
     const objectsRef = useRef<any>({
         mixers: [],
         animatedCrystals: [],
@@ -94,69 +100,90 @@ function FortalezaScene() {
             }
         } as unknown as THREE.Scene;
 
+        const ob = objectsRef.current;
+        const bloomPass = new UnrealBloomPass(new THREE.Vector2(window.innerWidth, window.innerHeight), 0.4, 0.4, 0.85);
+
         // Config camera defaults
         camera.near = 0.1;
         camera.far = 2000;
         camera.updateProjectionMatrix();
 
-        initMaterials();
+        const initGame = async () => {
+            setLoadingStatus("Forjando materiales...");
+            await initMaterials();
+            await new Promise(r => setTimeout(r, 100));
 
-        // Pass the native scene to setupEnvironment because it touches scene properties like fog/background.
-        const env = setupEnvironment(scene);
+            setLoadingStatus("Preparando ambiente...");
+            const envRefs = setupEnvironment(scene); ob.env = envRefs;
 
-        const ob = objectsRef.current;
-        ob.env = env;
+            setLoadingStatus("Tallando el abismo...");
+            createAbyssPath(mockScene, ob.fireEmitters);
 
-        // Reset object arrays to avoid accumulation on hot reloads
-        ob.mixers = [];
-        ob.animatedCrystals = [];
-        ob.fireEmitters = [];
-        ob.orbs = [];
-        ob.mistEmitters = [];
+            const graphicsSystem = createGraphicsSettings(document.body, gl, envRefs.sunLight, [], bloomPass, { ashParticles: envRefs.ashParticles });
+            ob.graphicsSystem = graphicsSystem;
 
-        const zStart = 45;
-        const bridgeZEnd = zStart - 180;
-        const rotundaZ = bridgeZEnd - 40;
-        const finalArenaZ = rotundaZ - 200;
+            ob.mixers = []; ob.animatedCrystals = []; ob.fireEmitters = []; ob.orbs = []; ob.mistEmitters = [];
 
-        // Pass the `mockScene` to procedural generators so we can safely track and unmount them!
-        createWideBridge(mockScene, collidables, zStart - 52, bridgeZEnd + 26);
-        createGiantRotunda(mockScene, collidables, checkpoints, ob.animatedCrystals, rotundaZ);
-        createSecretChamber(mockScene, collidables, ob.animatedCrystals, ob.orbs, rotundaZ);
+            const zStart = 45;
+            const bridgeZEnd = zStart - 180;
+            const courtyardZ = bridgeZEnd - 80;
+            const rotundaZ = courtyardZ - 80;
+            const finalArenaZ = rotundaZ - 200;
 
-        createStartingFortress(mockScene, collidables, checkpoints, ob.animatedCrystals, ob.fireEmitters, ob.gateObjects, zStart);
-        createPenumbraRuins(mockScene, collidables, checkpoints, ob.animatedCrystals, movingPlatforms, ob.fireEmitters, zStart);
-        createBlackKnightFortress(mockScene, collidables, ob.animatedCrystals, ob.fireEmitters, ob.mistEmitters, ob.mixers, 0, -2, finalArenaZ, -20);
+            setLoadingStatus("Levantando murallas...");
+            createStartingFortress(mockScene, collidables, checkpoints, ob.animatedCrystals, ob.fireEmitters, ob.gateObjects, zStart);
+            await new Promise(r => setTimeout(r, 50));
 
-        // Fortress door
-        const doorSyst = createDoor(mockScene, collidables);
-        if (doorSyst.group && ob.gateObjects.gatePos) {
-            doorSyst.group.position.copy(ob.gateObjects.gatePos);
-        }
-        ob.doorSystem = doorSyst;
+            setLoadingStatus("Extendiendo el puente...");
+            createWideBridge(mockScene, collidables, zStart - 52, bridgeZEnd + 26);
 
-        // Floating Platforms
-        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 0, 5, rotundaZ - 45, 12, 0);
-        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -20, 15, rotundaZ - 80, 14, 1);
-        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 20, 25, rotundaZ - 120, 14, 1);
-        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 0, 35, rotundaZ - 160, 16, 2, true);
+            setLoadingStatus("Construyendo el patio...");
+            createObsidianCourtyard(mockScene, collidables, checkpoints, ob.orbs, courtyardZ);
+            await new Promise(r => setTimeout(r, 50));
 
-        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -18, 5, zStart - 90, 8, 0);
-        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 18, 10, zStart - 130, 10, 1);
-        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -25, 2, zStart - 50, 12);
+            setLoadingStatus("Esculpiendo la rotonda...");
+            createGiantRotunda(mockScene, collidables, checkpoints, ob.animatedCrystals, rotundaZ);
+            createSecretChamber(mockScene, collidables, ob.animatedCrystals, ob.orbs, rotundaZ);
 
-        // TRIPLE JUMP SEQUENCE
-        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -40, 8, zStart - 50, 10, 0);
-        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -55, 12, zStart - 50, 12);
-        createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -85, 18, zStart - 50, 14, 1);
+            setLoadingStatus("Invocando ruinas...");
+            createPenumbraRuins(mockScene, collidables, checkpoints, ob.animatedCrystals, movingPlatforms, ob.fireEmitters, zStart);
+            createBlackKnightFortress(mockScene, collidables, ob.animatedCrystals, ob.fireEmitters, ob.mistEmitters, ob.mixers, 0, -2, finalArenaZ, -20);
+            await new Promise(r => setTimeout(r, 50));
 
-        createOrb(mockScene, ob.orbs, 0, 20, zStart - 27, 'jump');
-        createOrb(mockScene, ob.orbs, -145, 35, zStart - 15, 'jump');
-        createOrb(mockScene, ob.orbs, -55, 14, zStart - 50, 'triple_jump');
-        createOrb(mockScene, ob.orbs, -85, 21, zStart - 50, 'lore');
+            setLoadingStatus("Instalando la puerta...");
+            const doorSyst = createDoor(mockScene, collidables);
+            if (doorSyst.group && ob.gateObjects.gatePos) {
+                doorSyst.group.position.copy(ob.gateObjects.gatePos);
+                mockScene.add(doorSyst.group);
+            }
+            ob.doorSystem = doorSyst;
 
-        createOrb(mockScene, ob.orbs, -18, 12, zStart - 90, 'lore');
-        createOrb(mockScene, ob.orbs, 0, 42, rotundaZ - 160);
+            setLoadingStatus("Colocando plataformas mágicas...");
+            createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 0, 5, rotundaZ - 45, 12, 0);
+            createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -20, 15, rotundaZ - 80, 14, 1);
+            createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 20, 25, rotundaZ - 120, 14, 1);
+            createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 0, 35, rotundaZ - 160, 16, 2, true);
+
+            createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -58, 5, zStart - 150, 8, 0);
+            createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, 18, 10, zStart - 200, 10, 1);
+            createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -75, 2, zStart - 100, 12);
+
+            createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -90, 8, zStart - 100, 10, 0);
+            createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -115, 12, zStart - 100, 12);
+            createPlatform(mockScene, collidables, movingPlatforms, checkpoints, ob.animatedCrystals, -135, 18, zStart - 100, 14, 1);
+
+            createOrb(mockScene, ob.orbs, 0, 20, zStart - 27, 'jump');
+            createOrb(mockScene, ob.orbs, -145, 35, zStart - 15, 'jump');
+            createOrb(mockScene, ob.orbs, -55, 14, zStart - 50, 'triple_jump');
+            createOrb(mockScene, ob.orbs, -85, 21, zStart - 50, 'lore');
+            createOrb(mockScene, ob.orbs, -18, 12, zStart - 90, 'lore');
+            createOrb(mockScene, ob.orbs, 0, 42, rotundaZ - 160);
+
+            setLoadingStatus("¡Listo!");
+            setIsLoaded(true);
+        };
+
+        initGame();
 
         // --- Debug: material para visualizar colisionadores ---
         const debugMatGreen = new THREE.MeshBasicMaterial({
@@ -319,8 +346,61 @@ function FortalezaScene() {
         const time = st.time;
 
         // Atmospheric elements
-        if (ob.env && ob.env.atmosphericParticles) {
-            ob.env.atmosphericParticles.position.y = 0.2 + Math.sin(time * 0.9) * 0.02;
+        if (ob.env) {
+            // Animación de Nieve (ashParticles) - "Tormenta Ártica"
+            if (ob.env.ashParticles) {
+                const pos = ob.env.ashParticles.geometry.attributes.position;
+                const arr = pos.array as Float32Array;
+
+                // Variación de viento global intensa
+                const windX = Math.sin(time * 0.4) * 20;
+                const windZ = Math.cos(time * 0.3) * 15;
+
+                for (let i = 0; i < arr.length; i += 3) {
+                    // Caída con velocidad variable por partícula
+                    const speed = 30 + (i % 15);
+                    arr[i + 1] -= delta * speed;
+
+                    // Movimiento influenciado por el viento + turbulencia local
+                    arr[i] += delta * (windX + Math.sin(time * 2.0 + i) * 8);
+                    arr[i + 2] += delta * (windZ + Math.cos(time * 1.5 + i) * 6);
+
+                    // --- Snow exclusion: recycle flakes entering roofed zones ---
+                    const px = arr[i], py = arr[i + 1], pz = arr[i + 2];
+
+                    // Starting Fortress (roof at Y≈36)
+                    // Allow snow through the azotea stairwell hole (world X:-23→-9, Z:38→52)
+                    const inStairwellHole = px > -23 && px < -9 && pz > 38 && pz < 52;
+                    if (px > -25 && px < 25 && pz > 20 && pz < 70 && py < 36 && !inStairwellHole) {
+                        arr[i + 1] = 180 + Math.random() * 120;
+                        arr[i] = (Math.random() - 0.5) * 850;
+                        arr[i + 2] = (Math.random() - 0.5) * 850;
+                        continue;
+                    }
+                    // Snow that drifts through the stairwell settles at ground level
+                    if (inStairwellHole && py < 0) {
+                        arr[i + 1] = 180 + Math.random() * 120;
+                        arr[i] = (Math.random() - 0.5) * 850;
+                        arr[i + 2] = (Math.random() - 0.5) * 850;
+                        continue;
+                    }
+                    // Black Knight Fortress (ceiling at Y≈86)
+                    if (px > -70 && px < 70 && pz > -505 && pz < -285 && py < 86) {
+                        arr[i + 1] = 180 + Math.random() * 120;
+                        arr[i] = (Math.random() - 0.5) * 850;
+                        arr[i + 2] = (Math.random() - 0.5) * 850;
+                        continue;
+                    }
+
+                    // Reset — umbral bajo para que la nieve cubra bien los pisos inferiores
+                    if (arr[i + 1] < -120) {
+                        arr[i + 1] = 180 + Math.random() * 120;
+                        arr[i] = (Math.random() - 0.5) * 850;
+                        arr[i + 2] = (Math.random() - 0.5) * 850;
+                    }
+                }
+                pos.needsUpdate = true;
+            }
         }
 
         // Object Animations (GLTF Mixers like Bosses)
@@ -433,7 +513,10 @@ function FortalezaScene() {
                         if (newScale < 0.05) {
                             orb.collected = true;
                             orb.mesh.visible = false;
-                            orb.light.visible = false;
+
+                            // PERFORMANCE FIX: We set intensity to 0 instead of visibility = false
+                            // This prevents Three.js from recompiling all shaders mid-game.
+                            orb.light.intensity = 0;
                         }
                     }
                 }
@@ -468,7 +551,43 @@ function FortalezaScene() {
 
     return (
         <>
-            <FortalezaPlayer position={[0, 5, 45]} />
+            {!isLoaded && (
+                <Html fullscreen zIndexRange={[9999, 10000]}>
+                    <div style={{
+                        position: 'absolute', top: 0, left: 0, width: '100vw', height: '100vh',
+                        backgroundColor: '#050a10', color: '#00e5ff',
+                        display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
+                        fontFamily: 'Inter, sans-serif'
+                    }}>
+                        <div className="loading-spinner" style={{
+                            width: '60px', height: '60px', border: '4px solid rgba(0,229,255,0.1)',
+                            borderTop: '4px solid #00e5ff', borderRadius: '50%',
+                            marginBottom: '20px'
+                        }} />
+                        <h2 style={{ fontSize: '1.2rem', fontWeight: 300, letterSpacing: '2px' }}>{loadingStatus}</h2>
+                        <style>{`
+                            @keyframes spin { 100% { transform: rotate(360deg); } }
+                            .loading-spinner { animation: spin 1s linear infinite; }
+                        `}</style>
+                    </div>
+                </Html>
+            )}
+
+            {isLoaded && (
+                <>
+                    <FortalezaPlayer position={[0, 5, 45]} />
+                    <SnowFootprints />
+
+                    <EffectComposer>
+                        <Bloom
+                            luminanceThreshold={0.1}
+                            mipmapBlur
+                            intensity={1.2}
+                            radius={0.4}
+                        />
+                    </EffectComposer>
+                </>
+            )}
         </>
     );
 }

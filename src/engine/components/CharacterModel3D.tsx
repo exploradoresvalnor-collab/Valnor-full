@@ -148,17 +148,32 @@ export function CharacterModel3D({
       if (!processedAnimations.has(animStateKey)) {
         processedAnimations.set(animStateKey, clip);
       }
+
+      // 3. Fuzzy matching: si el nombre contiene "jump", mapearlo a jump
+      if (cleanName.toLowerCase().includes('jump') && !processedAnimations.has('jump')) {
+        processedAnimations.set('jump', clip);
+      }
+      if (cleanName.toLowerCase().includes('fall') && !processedAnimations.has('fall')) {
+        processedAnimations.set('fall', clip);
+      }
     });
 
-    // 3. Fallbacks garantizados para evitar congelamientos si el GLB no tiene animaciones específicas
+    // 4. Fallbacks garantizados
     if (!processedAnimations.has('sprint' as AnimationState) && processedAnimations.has('run' as AnimationState)) {
       processedAnimations.set('sprint' as AnimationState, processedAnimations.get('run' as AnimationState)!);
     }
-    if (!processedAnimations.has('fall' as AnimationState) && processedAnimations.has('jump' as AnimationState)) {
-      processedAnimations.set('fall' as AnimationState, processedAnimations.get('jump' as AnimationState)!);
+    if (!processedAnimations.has('jump' as AnimationState)) {
+      // SI NO HAY JUMP, buscar algo que se le parezca
+      const anyJump = gltfAnimations.find(a => a.name.toLowerCase().includes('jump'));
+      if (anyJump) processedAnimations.set('jump', anyJump);
     }
-    if (!processedAnimations.has('triple_jump' as AnimationState) && processedAnimations.has('jump' as AnimationState)) {
-      processedAnimations.set('triple_jump' as AnimationState, processedAnimations.get('jump' as AnimationState)!);
+    if (!processedAnimations.has('fall' as AnimationState)) {
+      if (processedAnimations.has('jump' as AnimationState)) {
+        processedAnimations.set('fall' as AnimationState, processedAnimations.get('jump' as AnimationState)!);
+      } else {
+        const anyFall = gltfAnimations.find(a => a.name.toLowerCase().includes('fall'));
+        if (anyFall) processedAnimations.set('fall', anyFall);
+      }
     }
 
     if (import.meta.env.DEV) {

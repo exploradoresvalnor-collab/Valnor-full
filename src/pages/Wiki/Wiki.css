@@ -108,11 +108,17 @@
   display: flex;
   flex-direction: column;
   gap: 12px;
-  scrollbar-width: none;
+  scrollbar-width: thin;
+  scrollbar-color: var(--gold-primary) transparent;
 }
 
 .nav-scroll-area::-webkit-scrollbar {
-  display: none;
+  width: 4px;
+}
+
+.nav-scroll-area::-webkit-scrollbar-thumb {
+  background: var(--gold-primary);
+  border-radius: 4px;
 }
 
 .sidebar-header {
@@ -393,6 +399,96 @@
   .section-title-wrap {
     margin-bottom: 1.5rem;
   }
+}
+
+/* Specialized Chronicles Aesthetics */
+.chronicles-special-grid {
+  grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)) !important;
+  gap: 40px !important;
+}
+
+.chronicle-card {
+  background: linear-gradient(165deg, rgba(194, 160, 93, 0.1), rgba(0, 0, 0, 0.4)) !important;
+  border: 1px solid rgba(194, 160, 93, 0.4) !important;
+  box-shadow: 0 10px 40px rgba(0, 0, 0, 0.5), inset 0 0 30px rgba(194, 160, 93, 0.05);
+  min-height: 250px;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+}
+
+.chronicle-card:hover {
+  border-color: var(--gold-primary) !important;
+  background: linear-gradient(165deg, rgba(194, 160, 93, 0.2), rgba(0, 0, 0, 0.6)) !important;
+  box-shadow: 0 0 50px rgba(194, 160, 93, 0.2) !important;
+}
+
+.chronicle-card .card-title {
+  font-family: 'Cinzel', serif;
+  font-size: 1.6rem;
+  font-weight: 700;
+  color: var(--gold-primary);
+  margin-bottom: 1.5rem;
+  letter-spacing: 2px;
+}
+
+.chronicle-card .card-text {
+  font-size: 1.1rem;
+  color: rgba(255, 255, 255, 0.85);
+  line-height: 1.8;
+  font-style: italic;
+}
+
+.chronicle-card::after {
+  content: '📜';
+  position: absolute;
+  top: 1rem;
+  right: 1.5rem;
+  opacity: 0.2;
+  font-size: 2rem;
+}
+
+/* Narrative Storytelling Blocks */
+.narrative-block {
+  max-width: 1000px;
+  margin-bottom: 5rem;
+  padding: 3rem;
+  background: rgba(255, 255, 255, 0.03);
+  border-left: 3px solid var(--gold-primary);
+  position: relative;
+  overflow: hidden;
+}
+
+.narrative-block::before {
+  content: '"';
+  position: absolute;
+  top: -1rem;
+  left: 1rem;
+  font-family: 'Cinzel', serif;
+  font-size: 8rem;
+  color: var(--gold-primary);
+  opacity: 0.1;
+}
+
+.narrative-para {
+  font-family: 'Exo 2', sans-serif;
+  font-size: 1.2rem;
+  line-height: 2;
+  color: rgba(255, 255, 255, 0.85);
+  margin-bottom: 2rem;
+  text-align: justify;
+  letter-spacing: 0.5px;
+}
+
+.narrative-para:first-letter {
+  font-family: 'Cinzel', serif;
+  font-size: 3rem;
+  float: left;
+  margin-right: 15px;
+  line-height: 1;
+  color: var(--gold-primary);
+  font-weight: 900;
+  text-shadow: 0 0 10px var(--gold-glow);
 }
 
 .altar-footer-info {

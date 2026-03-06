@@ -1,4 +1,5 @@
 import { useRef, useEffect, useState, Suspense, useCallback } from 'react';
+import { Html } from '@react-three/drei';
 import { useFrame, useThree } from '@react-three/fiber';
 import * as THREE from 'three';
 import { usePlayerStore } from '../../stores/playerStore';
@@ -84,14 +85,18 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
         accel: 60.0,
         friction: 10.0,
         cameraAngleX: 0,
-        cameraAngleY: 0.5,
-        cameraDistance: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 18.0 : 12.0,
+        cameraAngleY: 0.15,
+        cameraDistance: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 12.0 : 7.0,
         isDragging: false,
         prevMousePos: { x: 0, y: 0 },
         playerPos: new THREE.Vector3(position[0], position[1], position[2]),
         respawnPoint: new THREE.Vector3(position[0], position[1], position[2]),
         cameraDip: 0,
+        cameraMode: 'shoulder' as 'shoulder' | 'panoramic' | 'first',
+        baseCameraDistance: /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) ? 12.0 : 7.0,
     });
+
+    const [camMode, setCamMode] = useState<'shoulder' | 'panoramic' | 'first'>('shoulder');
 
     // --- Input Events ---
     useEffect(() => {
@@ -99,6 +104,13 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
 
         // Mouse (Orbit Camera)
         const onMouseDown = () => { s.isDragging = true; };
+
+        // --- FOV Cinemático ---
+        if ((camera as THREE.PerspectiveCamera).isPerspectiveCamera) {
+            (camera as THREE.PerspectiveCamera).fov = 40;
+            (camera as THREE.PerspectiveCamera).updateProjectionMatrix();
+        }
+        // ---------------------
         const onMouseUp = () => { s.isDragging = false; };
         const onMouseMove = (e: MouseEvent) => {
             if (s.isDragging) {
@@ -121,6 +133,21 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
 
             // Animations trigger
             if (k === 'f') animationSystem?.play('attack1', { force: true });
+
+            // Ciclo de cámara: Shoulder -> Panoramic -> First Person
+            if (k === 'ñ') {
+                if (s.cameraMode === 'shoulder') {
+                    s.cameraMode = 'panoramic';
+                    s.cameraDistance = 22.0;
+                } else if (s.cameraMode === 'panoramic') {
+                    s.cameraMode = 'first';
+                    s.cameraDistance = 0.1;
+                } else {
+                    s.cameraMode = 'shoulder';
+                    s.cameraDistance = s.baseCameraDistance;
+                }
+                setCamMode(s.cameraMode);
+            }
         };
 
         // Mobile Attack Trigger
@@ -378,9 +405,14 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
         animationSystem.updateFromMovement(isMoving, keys.shift, s.isGrounded, s.velocityY);
 
         // TPS Camera Update
-        const camOffsetX = s.cameraDistance * Math.sin(s.cameraAngleX) * Math.cos(s.cameraAngleY);
-        const camOffsetY = s.cameraDistance * Math.sin(s.cameraAngleY);
-        const camOffsetZ = s.cameraDistance * Math.cos(s.cameraAngleX) * Math.cos(s.cameraAngleY);
+        let camOffsetX = s.cameraDistance * Math.sin(s.cameraAngleX) * Math.cos(s.cameraAngleY);
+        let camOffsetY = s.cameraDistance * Math.sin(s.cameraAngleY);
+        let camOffsetZ = s.cameraDistance * Math.cos(s.cameraAngleX) * Math.cos(s.cameraAngleY);
+
+        // Adjustments per mode
+        if (s.cameraMode === 'panoramic') {
+            camOffsetY += 5.0; // Higher perspective
+        }
 
         const targetCamPos = new THREE.Vector3(s.playerPos.x + camOffsetX, s.playerPos.y + camOffsetY + 2.0, s.playerPos.z + camOffsetZ);
         const camDir = new THREE.Vector3().subVectors(targetCamPos, s.playerPos).normalize();
@@ -398,15 +430,69 @@ export function FortalezaPlayer({ position = [0, 5, 0] }: { position?: [number, 
         }
 
         const lookTarget = s.playerPos.clone();
-        lookTarget.y += 4.0 - s.cameraDip;
+        if (s.cameraMode === 'first') {
+            // En primera persona miramos hacia adelante basándonos en cameraAngleX
+            const forward = new THREE.Vector3(
+                -Math.sin(s.cameraAngleX),
+                -Math.sin(s.cameraAngleY),
+                -Math.cos(s.cameraAngleX)
+            );
+            lookTarget.add(forward.multiplyScalar(10));
+            lookTarget.y += 4.5; // Altura de los ojos aprox
+        } else if (s.cameraMode === 'panoramic') {
+            lookTarget.y += 3.0;
+        } else {
+            lookTarget.y += 4.0 - s.cameraDip;
+        }
         camera.lookAt(lookTarget);
 
     });
 
+    const getCamLabel = () => {
+        if (camMode === 'shoulder') return 'MODO: AL HOMBRO';
+        if (camMode === 'panoramic') return 'MODO: PANORÁMICO';
+        return 'MODO: 1ª PERSONA';
+    };
+
     return (
         <group ref={playerGroup} name="FortalezaPlayer">
-            <group ref={meshRef}>
-                <group ref={tiltContainerRef} position={[0, -2, 0]}>
+            {/* HUD de Cámara Minimalista y Elegante */}
+            <Html position={[0, 0, 0]} fullscreen style={{ pointerEvents: 'none' }}>
+                <div style={{
+                    position: 'absolute',
+                    top: '20px',
+                    left: '20px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '10px',
+                    padding: '8px 16px',
+                    background: 'rgba(0, 0, 0, 0.4)',
+                    backdropFilter: 'blur(10px)',
+                    border: '1px solid rgba(255, 255, 255, 0.1)',
+                    borderRadius: '8px',
+                    color: 'white',
+                    fontFamily: "'Inter', sans-serif",
+                    fontSize: '12px',
+                    letterSpacing: '1px',
+                    textTransform: 'uppercase',
+                    opacity: 0.8,
+                    transition: 'all 0.3s ease'
+                }}>
+                    <div style={{
+                        width: '8px',
+                        height: '8px',
+                        borderRadius: '50%',
+                        background: camMode === 'shoulder' ? '#00ffcc' : camMode === 'panoramic' ? '#ff00ee' : '#ffcc00',
+                        boxShadow: `0 0 10px ${camMode === 'shoulder' ? '#00ffcc' : camMode === 'panoramic' ? '#ff00ee' : '#ffcc00'}`
+                    }} />
+                    <span>{getCamLabel()}</span>
+                    <span style={{ fontSize: '10px', opacity: 0.5, marginLeft: '5px' }}>[ñ]</span>
+                </div>
+            </Html>
+
+            <group ref={meshRef} visible={camMode !== 'first'}>
+                {/* Character scale increased for imposing presence */}
+                <group ref={tiltContainerRef} position={[0, -2, 0]} scale={[1.25, 1.25, 1.25]}>
                     <Suspense fallback={<CharacterPlaceholder />}>
                         <CharacterModel3D
                             personajeId={resolvedCharacterId}

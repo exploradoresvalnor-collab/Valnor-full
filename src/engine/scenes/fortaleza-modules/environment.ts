@@ -1,4 +1,7 @@
 import * as THREE from 'three';
+import { FootprintManager } from './FootprintManager';
+
+export const footprintManager = new FootprintManager();
 import { RGBELoader } from 'three/examples/jsm/loaders/RGBELoader.js';
 import { GLTFLoader } from 'three/examples/jsm/loaders/GLTFLoader.js';
 import { OBJLoader } from 'three/examples/jsm/loaders/OBJLoader.js';
@@ -61,15 +64,179 @@ export function createRealisticFire(x: number, y: number, z: number, scale: numb
     const particles = new THREE.Points(geometry, mat);
     fireGroup.add(particles);
 
-    const light = new THREE.PointLight(type === 'boss_tower' ? '#ff4400' : '#ff7700', scale > 1.5 ? 6 : 5, scale * 30);
+    // --- NUEVO: SISTEMA DE CHISPAS ---
+    const sparkCount = count / 2;
+    const sparkGeo = new THREE.BufferGeometry();
+    const sparkPos = new Float32Array(sparkCount * 3);
+    for (let i = 0; i < sparkCount; i++) {
+        sparkPos[i * 3] = (Math.random() - 0.5) * scale;
+        sparkPos[i * 3 + 1] = Math.random() * scale * 3;
+        sparkPos[i * 3 + 2] = (Math.random() - 0.5) * scale;
+    }
+    sparkGeo.setAttribute('position', new THREE.BufferAttribute(sparkPos, 3));
+    // Reutilizamos los arrays de lifespans y speeds del fuego
+    sparkGeo.setAttribute('lifespan', new THREE.BufferAttribute(lifespans.slice(0, sparkCount), 1));
+    sparkGeo.setAttribute('speed', new THREE.BufferAttribute(speeds.slice(0, sparkCount), 1));
+
+    const sparkMat = new THREE.PointsMaterial({
+        color: '#ffdd44',
+        size: scale * 0.8, // Chispas pequeñas
+        transparent: true,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false
+    });
+    const sparks = new THREE.Points(sparkGeo, sparkMat);
+    fireGroup.add(sparks);
+    // Inyectamos las chispas en el mismo emisor para que se animen solas
+    emittersData.push({ points: sparks, light: { intensity: 0, position: new THREE.Vector3() }, scale: scale * 1.5, baseIntensity: 0 });
+    // ---------------------------------
+
+    // --- LUZ MEJORADA CON SOMBRAS Y DECAY NATURAL ---
+    const light = new THREE.PointLight(
+        type === 'boss_tower' ? '#ff4400' : '#ff7700',
+        scale > 1.5 ? 40 : 25, // Intensidad aumentada para compensar el decay
+        scale * 60,            // Mayor alcance
+        1.5                    // Decay natural (PBR)
+    );
     light.position.y = scale;
+
+    // ACTIVAR SOMBRAS (Limitamos esto a los fuegos principales para evitar errores de memoria)
+    light.castShadow = false;
+    light.shadow.mapSize.width = 512;
+    light.shadow.mapSize.height = 512;
+    light.shadow.camera.near = 0.5;
+    light.shadow.camera.far = scale * 60;
+    light.shadow.bias = -0.002;
+    light.shadow.radius = 4; // Sombras suaves
+
     fireGroup.add(light);
     parentContainer.add(fireGroup);
 
     emittersData.push({ points: particles, light: light, scale: scale, baseIntensity: light.intensity });
 }
 
-function createStonePattern(type: number) {
+export function createChain(container: THREE.Group, x: number, y: number, z: number) {
+    const chainGroup = new THREE.Group();
+    chainGroup.position.set(x, y, z);
+    const linkGeom = new THREE.TorusGeometry(0.5, 0.1, 8, 16);
+    const linkMat = new THREE.MeshStandardMaterial({ color: '#222222', metalness: 0.9, roughness: 0.2 });
+
+    for (let i = 0; i < 20; i++) {
+        const link = new THREE.Mesh(linkGeom, linkMat);
+        link.position.y = -i * 0.8;
+        link.rotation.y = (i % 2) * Math.PI / 2;
+        link.castShadow = true;
+        chainGroup.add(link);
+    }
+    container.add(chainGroup);
+}
+
+export function createGrandThrone(container: THREE.Group, x: number, y: number, z: number) {
+    const throneGroup = new THREE.Group();
+    throneGroup.position.set(x, y, z);
+    throneGroup.rotation.y = Math.PI; // ROTACIÓN 180: Para que mire a la entrada
+
+    // 1. Base escalonada (Podio)
+    const baseGeo = new THREE.BoxGeometry(10, 1.5, 8);
+    const base = new THREE.Mesh(baseGeo, Materials.obsidian);
+    base.position.y = 0.75;
+    base.receiveShadow = true;
+    throneGroup.add(base);
+
+    const stepGeo = new THREE.BoxGeometry(12, 0.8, 10);
+    const step = new THREE.Mesh(stepGeo, Materials.wall);
+    step.position.y = 0.4;
+    step.receiveShadow = true;
+    throneGroup.add(step);
+
+    // 2. Asiento del trono
+    const seatGeo = new THREE.BoxGeometry(4, 1.2, 3.5);
+    const seat = new THREE.Mesh(seatGeo, Materials.obsidian);
+    seat.position.y = 2.1;
+    seat.castShadow = true;
+    throneGroup.add(seat);
+
+    // 3. Respaldo Alto Gótico (Con punta)
+    const backGeo = new THREE.BoxGeometry(4, 8, 0.8);
+    const back = new THREE.Mesh(backGeo, Materials.obsidian);
+    back.position.set(0, 5.5, -1.5);
+    back.castShadow = true;
+    throneGroup.add(back);
+
+    // Punta del respaldo (Estilo gótico)
+    const topGeo = new THREE.ConeGeometry(2, 3, 4);
+    const top = new THREE.Mesh(topGeo, Materials.obsidian);
+    top.position.set(0, 11, -1.5);
+    top.rotation.y = Math.PI / 4;
+    top.castShadow = true;
+    throneGroup.add(top);
+
+    // 4. Brazos del trono
+    for (const side of [-1, 1]) {
+        const arm = new THREE.Mesh(new THREE.BoxGeometry(0.8, 1.5, 3), Materials.obsidian);
+        arm.position.set(side * 2.4, 3.0, 0);
+        arm.castShadow = true;
+        throneGroup.add(arm);
+
+        // Decoración de calavera o remate en el brazo
+        const orb = new THREE.Mesh(new THREE.SphereGeometry(0.5, 8, 8), Materials.obsidian);
+        orb.position.set(side * 2.4, 3.8, 1.5);
+        throneGroup.add(orb);
+    }
+
+    // 5. Luz de aura (Roja/Malvada)
+    const light = new THREE.PointLight('#ff0033', 10, 20);
+    light.position.set(0, 4, 2);
+    throneGroup.add(light);
+
+    container.add(throneGroup);
+}
+
+export function createBanner(container: THREE.Group, x: number, y: number, z: number, color: string = '#441111', ceilingY: number = -1) {
+    const bannerGroup = new THREE.Group();
+    bannerGroup.position.set(x, y, z);
+
+    // Mástil horizontal
+    const bar = new THREE.Mesh(new THREE.CylinderGeometry(0.1, 0.1, 4, 8), Materials.obsidian);
+    bar.rotation.z = Math.PI / 2;
+    bannerGroup.add(bar);
+
+    // Soporte vertical (Cable) hasta el techo si se especifica
+    if (ceilingY > y) {
+        const h = ceilingY - y;
+        const cable = new THREE.Mesh(new THREE.CylinderGeometry(0.04, 0.04, h, 6), Materials.obsidian);
+        cable.position.y = h / 2;
+        bannerGroup.add(cable);
+    }
+
+    // Tela del estandarte (geometría plana con subdivisiones para posible animación futura)
+    const clothGeo = new THREE.PlaneGeometry(3.5, 8, 1, 4);
+    const clothMat = new THREE.MeshStandardMaterial({
+        color: color,
+        side: THREE.DoubleSide,
+        roughness: 0.9,
+    });
+    const cloth = new THREE.Mesh(clothGeo, clothMat);
+    cloth.position.y = -4;
+    cloth.position.z = 0.1;
+    bannerGroup.add(cloth);
+
+    // Borde inferior dentado o terminado en punta
+    const tipGeo = new THREE.ConeGeometry(1.75, 2, 4);
+    const tip = new THREE.Mesh(tipGeo, clothMat);
+    tip.rotation.x = Math.PI;
+    tip.position.y = -9;
+    bannerGroup.add(tip);
+
+    // Símbolo (un engranaje o garra simple usando geometría)
+    const symbol = new THREE.Mesh(new THREE.TorusGeometry(0.8, 0.2, 8, 16), new THREE.MeshStandardMaterial({ color: '#ffaa00', emissive: '#aa6600', emissiveIntensity: 0.5 }));
+    symbol.position.set(0, -3, 0.2);
+    bannerGroup.add(symbol);
+
+    container.add(bannerGroup);
+}
+
+async function createStonePattern(type: number) {
     const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 1024; // Resolución doblada (4k-like procedural)
     const ctx = canvas.getContext('2d', { alpha: false }) as CanvasRenderingContext2D;
     const bCanvas = document.createElement('canvas'); bCanvas.width = 1024; bCanvas.height = 1024;
@@ -90,6 +257,8 @@ function createStonePattern(type: number) {
     bCtx.fillRect(0, 0, 1024, 1024);
 
     // 1. Generar base de Ruido Perlin falso iterativo (Dirt & Grime)
+    // Usamos chunks para no bloquear el hilo principal
+    const chunkSize = 5000;
     for (let i = 0; i < 25000; i++) {
         const px = Math.random() * 1024; const py = Math.random() * 1024;
         const s = Math.random() * 4 + 1;
@@ -99,6 +268,10 @@ function createStonePattern(type: number) {
         // Ruido para la normal
         bCtx.fillStyle = Math.random() > 0.5 ? 'rgba(100,100,100,0.6)' : 'rgba(180,180,180,0.6)';
         bCtx.fillRect(px, py, s, s);
+
+        if (i % chunkSize === 0) {
+            await new Promise(r => setTimeout(r, 0));
+        }
     }
 
     // Funciones Helper para dibujar grietas
@@ -230,6 +403,16 @@ function createStonePattern(type: number) {
     ctx.drawImage(canvas, 1, 1);
     ctx.globalAlpha = 1.0;
 
+    // === Frost crystals (ice sparkles on cold stone) ===
+    for (let f = 0; f < 600; f++) {
+        const fx = Math.random() * 1024, fy = Math.random() * 1024;
+        const brightness = 180 + Math.random() * 75;
+        const alpha = Math.random() * 0.25 + 0.05;
+        ctx.fillStyle = `rgba(${brightness}, ${brightness + 10}, 255, ${alpha})`;
+        const size = Math.random() > 0.9 ? 3 : 1;
+        ctx.fillRect(fx, fy, size, size);
+    }
+
     const dTex = new THREE.CanvasTexture(canvas); dTex.wrapS = dTex.wrapT = THREE.RepeatWrapping;
     dTex.colorSpace = THREE.SRGBColorSpace; // Importante para PBR Realista
     dTex.anisotropy = 16;
@@ -244,16 +427,27 @@ function createMountainNoiseTexture() {
     const canvas = document.createElement('canvas'); canvas.width = 1024; canvas.height = 1024;
     const ctx = canvas.getContext('2d', { alpha: false }) as CanvasRenderingContext2D;
 
-    // Base de roca oscura abismal
-    ctx.fillStyle = '#08090a';
+    // Base de roca oscura abismal con toques de nieve
+    ctx.fillStyle = '#1a1c1e';
     ctx.fillRect(0, 0, 1024, 1024);
 
     // Grano de roca profundo
     for (let i = 0; i < 40000; i++) {
         const px = Math.random() * 1024; const py = Math.random() * 1024;
         const size = Math.random() * 4 + 1;
-        ctx.fillStyle = Math.random() > 0.7 ? 'rgba(30,35,45,0.4)' : 'rgba(0,0,0,0.8)';
+        ctx.fillStyle = Math.random() > 0.7 ? 'rgba(60,70,85,0.3)' : 'rgba(0,0,0,0.6)';
         ctx.fillRect(px, py, size, size);
+    }
+
+    // Capa de nieve (Snow patches)
+    for (let i = 0; i < 300; i++) {
+        const px = Math.random() * 1024; const py = Math.random() * 1024;
+        const size = 20 + Math.random() * 60;
+        const grad = ctx.createRadialGradient(px, py, 0, px, py, size);
+        grad.addColorStop(0, 'rgba(255, 255, 255, 0.4)');
+        grad.addColorStop(1, 'rgba(255, 255, 255, 0)');
+        ctx.fillStyle = grad;
+        ctx.fillRect(px - size, py - size, size * 2, size * 2);
     }
 
     // Vetas de minerales oscuros o sedimentos
@@ -291,22 +485,86 @@ export function createVelvetTexture() {
     const tex = new THREE.CanvasTexture(canvas); tex.wrapS = tex.wrapT = THREE.RepeatWrapping; return tex;
 }
 
-export function initMaterials() {
-    const tile = createStonePattern(0); tile.diffuse.repeat.set(4, 4); tile.bump.repeat.set(4, 4);
-    const wall = createStonePattern(1); wall.diffuse.repeat.set(2, 2); wall.bump.repeat.set(2, 2);
-    const float = createStonePattern(2); float.diffuse.repeat.set(3, 3); float.bump.repeat.set(3, 3);
-    const floor = createStonePattern(3); floor.diffuse.repeat.set(3, 3); floor.bump.repeat.set(3, 3);
-    const ceil = createStonePattern(4); ceil.diffuse.repeat.set(4, 4); ceil.bump.repeat.set(4, 4);
-    const stair = createStonePattern(5); stair.diffuse.repeat.set(2, 4); stair.bump.repeat.set(2, 4);
+// === AAA SNOW SHADER INJECTION ===
+// Injects GLSL into any MeshStandardMaterial to blend snow on upward-facing surfaces.
+// Stores uniform refs so snow amount can be toggled at runtime.
+const snowUniformRefs: { value: number }[] = [];
 
-    Materials.plaza.color.set('#d1d1d1'); // Aclaramos un poco para notar la suciedad
-    Materials.wall.color.set('#c0c4cc');
-    Materials.floor.color.set('#ffeedd'); // Tono cálido de antorcha extra
+function applySnowShader(material: THREE.MeshStandardMaterial, snowAmount = 1.0) {
+    const uniformRef = { value: snowAmount };
+    snowUniformRefs.push(uniformRef);
+
+    material.onBeforeCompile = (shader) => {
+        shader.uniforms.uSnowAmount = uniformRef;
+        shader.uniforms.uFootprintMap = footprintManager.uniformRef;
+
+        // Vertex: pass world normal to fragment
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <common>',
+            `#include <common>
+             varying vec3 vWorldNormal;
+             varying vec3 vWorldPos;`
+        );
+        shader.vertexShader = shader.vertexShader.replace(
+            '#include <begin_vertex>',
+            `#include <begin_vertex>
+             vWorldNormal = normalize((modelMatrix * vec4(normal, 0.0)).xyz);
+             vWorldPos = (modelMatrix * vec4(position, 1.0)).xyz;`
+        );
+
+        // Fragment: blend with snow based on world normal Y
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <common>',
+            `#include <common>
+             varying vec3 vWorldNormal;
+             varying vec3 vWorldPos;
+             uniform float uSnowAmount;
+             uniform sampler2D uFootprintMap;`
+        );
+        shader.fragmentShader = shader.fragmentShader.replace(
+            '#include <dithering_fragment>',
+            `// === Snow accumulation based on surface normal ===
+             float snowDot = vWorldNormal.y;
+             // Smooth blend: surfaces facing up (Y > 0.6) get snow
+             float snowFactor = smoothstep(0.5, 0.85, snowDot) * uSnowAmount;
+             // Add subtle noise based on world position for organic edges
+             float noise = fract(sin(dot(vWorldPos.xz * 0.5, vec2(12.9898, 78.233))) * 43758.5453);
+             snowFactor *= smoothstep(0.1, 0.4, noise + snowDot * 0.3);
+             
+             // --- Footprints FBO Blending ---
+             ${footprintManager.getFragmentGLSL()}
+             // -------------------------------
+
+             // Snow color with subtle blue tint (cold light) - dimmed for dark fantasy
+             vec3 snowColor = vec3(0.50, 0.54, 0.58);
+             gl_FragColor.rgb = mix(gl_FragColor.rgb, snowColor, snowFactor);
+             #include <dithering_fragment>`
+        );
+    };
+}
+
+/** Set snow amount on all injected materials (0.0 = off, 1.0 = full) */
+export function setSnowAmount(amount: number) {
+    snowUniformRefs.forEach(ref => { ref.value = amount; });
+}
+
+export async function initMaterials() {
+    const tile = await createStonePattern(0); tile.diffuse.repeat.set(4, 4); tile.bump.repeat.set(4, 4);
+    const wall = await createStonePattern(1); wall.diffuse.repeat.set(2, 2); wall.bump.repeat.set(2, 2);
+    const float = await createStonePattern(2); float.diffuse.repeat.set(3, 3); float.bump.repeat.set(3, 3);
+    const floor = await createStonePattern(3); floor.diffuse.repeat.set(3, 3); floor.bump.repeat.set(3, 3);
+    const ceil = await createStonePattern(4); ceil.diffuse.repeat.set(4, 4); ceil.bump.repeat.set(4, 4);
+    const stair = await createStonePattern(5); stair.diffuse.repeat.set(2, 4); stair.bump.repeat.set(2, 4);
+
+    Materials.plaza.color.set('#b0c4de'); // Light Steel Blue (Colder)
+    Materials.wall.color.set('#95a5b5');  // Cold Grey-Blue
+    Materials.floor.color.set('#d0e0f0'); // Icy interior floor
 
     // Incremento de relieve sustancial
-    Materials.plaza.map = tile.diffuse; Materials.plaza.bumpMap = tile.bump; Materials.plaza.bumpScale = 1.6; Materials.plaza.roughness = 0.5;
-    Materials.wall.map = wall.diffuse; Materials.wall.bumpMap = wall.bump; Materials.wall.bumpScale = 2.4; Materials.wall.roughness = 0.8;
-    Materials.platform.map = float.diffuse; Materials.platform.bumpMap = float.bump; Materials.platform.bumpScale = 1.0; Materials.platform.roughness = 0.6; Materials.platform.metalness = 0.3;
+    Materials.plaza.map = tile.diffuse; Materials.plaza.bumpMap = tile.bump; Materials.plaza.bumpScale = 1.6; Materials.plaza.roughness = 0.6;
+    Materials.wall.map = wall.diffuse; Materials.wall.bumpMap = wall.bump; Materials.wall.bumpScale = 2.4; Materials.wall.roughness = 0.85;
+    Materials.wall.emissive.set('#0a0c10'); Materials.wall.emissiveIntensity = 0.2;
+    Materials.platform.map = float.diffuse; Materials.platform.bumpMap = float.bump; Materials.platform.bumpScale = 1.0; Materials.platform.roughness = 0.7; Materials.platform.metalness = 0.3;
     Materials.floor.map = floor.diffuse; Materials.floor.bumpMap = floor.bump; Materials.floor.bumpScale = 1.2; Materials.floor.roughness = 0.9;
     Materials.ceiling.map = ceil.diffuse; Materials.ceiling.bumpMap = ceil.bump; Materials.ceiling.bumpScale = 1.5;
     Materials.stairs.map = stair.diffuse; Materials.stairs.bumpMap = stair.bump; Materials.stairs.bumpScale = 1.4; Materials.stairs.roughness = 0.6;
@@ -320,33 +578,63 @@ export function initMaterials() {
 
     Materials.plaza.needsUpdate = true; Materials.wall.needsUpdate = true; Materials.platform.needsUpdate = true;
     Materials.floor.needsUpdate = true; Materials.ceiling.needsUpdate = true; Materials.stairs.needsUpdate = true;
+
+    // === Apply snow shader to EXTERIOR materials only ===
+    // Interior materials (floor, ceiling) and obsidian are excluded
+    applySnowShader(Materials.plaza);        // Bridge/rotunda floors
+    applySnowShader(Materials.wall);         // Walls, battlements, pillars
+    applySnowShader(Materials.platform);     // Floating platforms
+    applySnowShader(Materials.stairs, 0.6);  // Stairs (less snow — stepped on)
 }
 
 export function setupEnvironment(scene: THREE.Scene) {
-    scene.fog = new THREE.FogExp2('#b8cddb', 0.0015);
+    // 1. Fondo y Niebla (Noche iluminada por la luna)
+    // Usamos un azul noche profundo en lugar de negro total
+    const fogColor = new THREE.Color('#0b1320');
+    scene.background = fogColor;
 
-    scene.add(new THREE.AmbientLight('#191028', 0.05));
-    scene.add(new THREE.HemisphereLight('#334466', '#111111', 0.08));
+    // Reducimos un poco la densidad para que puedas ver el escenario a lo lejos
+    scene.fog = new THREE.FogExp2(fogColor, 0.006);
 
+    // 2. Luz Ambiental (Relleno)
+    // Esto evita que las sombras sean 100% negras, dándoles un tinte azul muy sutil
+    const ambientLight = new THREE.AmbientLight('#182236', 0.25);
+    scene.add(ambientLight);
+
+    // Eliminar el HDRI puro de Poly Haven o dejarlo solo para pequeñas reflexiones
     const rgbeLoader = new RGBELoader();
     rgbeLoader.load('https://dl.polyhaven.org/file/ph-assets/HDRIs/hdr/1k/kloofendal_48d_partly_cloudy_puresky_1k.hdr', function (texture) {
         texture.mapping = THREE.EquirectangularReflectionMapping;
-        scene.background = texture;
-        scene.environment = texture;
-        scene.environmentIntensity = 0.3; // Reducido para que no ilumine interiores
+        scene.environment = texture; // Solo para environment, NO scene.background
+        scene.environmentIntensity = 0.05; // Extremadamente bajo para que no ilumine demasiado los metales
     });
 
-    const sunLight = new THREE.DirectionalLight('#ffeedd', 3.5);
-    sunLight.position.set(200, 300, -200); sunLight.castShadow = true;
-    sunLight.shadow.mapSize.set(4096, 4096);
-    sunLight.shadow.camera.near = 0.5; sunLight.shadow.camera.far = 500;
-    sunLight.shadow.camera.left = -60; sunLight.shadow.camera.right = 60;
-    sunLight.shadow.camera.top = 60; sunLight.shadow.camera.bottom = -60;
-    sunLight.shadow.bias = -0.0005;
-    sunLight.shadow.normalBias = 0.02;
+    // 3. LA LUNA (Directional Light principal)
+    // Aumentamos la intensidad y le damos un color azul plateado brillante
+    const sunLight = new THREE.DirectionalLight('#a2c2e8', 1.2);
+
+    // La colocamos alta y en ángulo para que las sombras sean largas y dramáticas
+    sunLight.position.set(120, 180, -120);
+    sunLight.castShadow = true;
+
+    // Configuración de resolución de sombras (Muy importante para que se vean bien)
+    sunLight.shadow.mapSize.width = 2048;
+    sunLight.shadow.mapSize.height = 2048;
+    sunLight.shadow.camera.near = 0.5;
+    sunLight.shadow.camera.far = 500;
+
+    // Aumentamos el área de la cámara de sombras para que cubra todo tu mapa grande
+    sunLight.shadow.camera.left = -150;
+    sunLight.shadow.camera.right = 150;
+    sunLight.shadow.camera.top = 150;
+    sunLight.shadow.camera.bottom = -150;
+
+    // Truco: difuminar un poco los bordes de la sombra para que parezca luz de luna real
+    sunLight.shadow.radius = 1.5;
+    sunLight.shadow.bias = -0.001;
     scene.add(sunLight); scene.add(sunLight.target);
 
-    const bounceLight = new THREE.DirectionalLight('#4488ff', 0.5);
+    const bounceLight = new THREE.DirectionalLight('#223344', 0.1);
     bounceLight.position.set(0, -200, 0); scene.add(bounceLight);
 
     const mountainNoiseTex = createMountainNoiseTexture(); mountainNoiseTex.repeat.set(60, 60);
@@ -374,71 +662,120 @@ export function setupEnvironment(scene: THREE.Scene) {
         map: mountainNoiseTex,
         bumpMap: mountainNoiseTex,
         bumpScale: 5.0,
-        roughness: 0.9,
-        metalness: 0.2,
-        flatShading: true // Le da el aspecto multifacetado a los picos escarpados
+        roughness: 1.0,
+        metalness: 0.1,
+        flatShading: true
     });
     const mountains = new THREE.Mesh(terrainGeo, terrainMat);
     mountains.position.y = -350; // Bajamos el valle de las montañas
     mountains.receiveShadow = true;
     scene.add(mountains);
 
-    // Cielo profundo (estrellas/partículas calidas)
-    const particleCount = 4000; const particleGeo = new THREE.BufferGeometry(); const posArray = new Float32Array(particleCount * 3);
-    for (let i = 0; i < particleCount; i++) {
-        posArray[i * 3] = (Math.random() - 0.5) * 900;
-        posArray[i * 3 + 1] = -60 + Math.random() * 400;
-        posArray[i * 3 + 2] = (Math.random() - 0.5) * 900;
-    }
-    particleGeo.setAttribute('position', new THREE.BufferAttribute(posArray, 3));
-    const particleMat = new THREE.PointsMaterial({ size: 1.2, color: '#ffd8b0', transparent: true, opacity: 0.55, blending: THREE.AdditiveBlending, depthWrite: false });
-    const skyParticles = new THREE.Points(particleGeo, particleMat); scene.add(skyParticles);
 
-    // Cenizas azules
-    const ashGeo = new THREE.BufferGeometry(); const ashArr = new Float32Array(1500 * 3);
-    for (let i = 0; i < 1500; i++) {
-        ashArr[i * 3] = (Math.random() - 0.5) * 400;
-        ashArr[i * 3 + 1] = -10 + Math.random() * 120;
-        ashArr[i * 3 + 2] = (Math.random() - 0.5) * 400;
+    // Nieve mejorada (Textura de copo)
+    const snowCanvas = document.createElement('canvas'); snowCanvas.width = 64; snowCanvas.height = 64;
+    const snowCtx = snowCanvas.getContext('2d')!;
+    snowCtx.strokeStyle = 'white'; snowCtx.lineWidth = 4;
+    snowCtx.beginPath();
+    for (let i = 0; i < 6; i++) {
+        const angle = (i / 6) * Math.PI * 2;
+        snowCtx.moveTo(32, 32);
+        snowCtx.lineTo(32 + Math.cos(angle) * 24, 32 + Math.sin(angle) * 24);
+    }
+    snowCtx.stroke();
+    // Blur suave en el lienzo
+    snowCtx.shadowBlur = 10; snowCtx.shadowColor = 'white';
+    snowCtx.stroke();
+    const snowTex = new THREE.CanvasTexture(snowCanvas);
+
+    // Partículas de Nieve (sustituyen cenizas azules) - Más densas y visibles
+    const ashCount = 7000;
+    const ashGeo = new THREE.BufferGeometry(); const ashArr = new Float32Array(ashCount * 3);
+    for (let i = 0; i < ashCount; i++) {
+        ashArr[i * 3] = (Math.random() - 0.5) * 800;
+        ashArr[i * 3 + 1] = -50 + Math.random() * 300; // Distribución vertical amplia inicial
+        ashArr[i * 3 + 2] = (Math.random() - 0.5) * 800;
     }
     ashGeo.setAttribute('position', new THREE.BufferAttribute(ashArr, 3));
-    const ashMat = new THREE.PointsMaterial({ size: 0.8, color: '#88aaff', transparent: true, opacity: 0.4, blending: THREE.AdditiveBlending, depthWrite: false });
+    const ashMat = new THREE.PointsMaterial({
+        size: 3.5,
+        map: snowTex,
+        transparent: true,
+        opacity: 0.8,
+        blending: THREE.AdditiveBlending,
+        depthWrite: false,
+        sizeAttenuation: true
+    });
     const ashParticles = new THREE.Points(ashGeo, ashMat); scene.add(ashParticles);
 
-    // Monolitos de fondo
-    const monolithGeo = new THREE.CylinderGeometry(15, 10, 400, 6);
-    for (let m = 0; m < 15; m++) {
-        const angle = (m / 15) * Math.PI * 2; const dist = 350 + Math.random() * 150;
-        const monolith = new THREE.Mesh(monolithGeo, Materials.wall);
-        monolith.position.set(Math.cos(angle) * dist, -100 + Math.random() * 250, -130 + Math.sin(angle) * dist);
-        monolith.rotation.y = Math.random() * Math.PI; monolith.castShadow = true; monolith.receiveShadow = true; scene.add(monolith);
+    // ============ ICICLES (Translucent cones hanging from bridge walls) ============
+    const icicleMat = new THREE.MeshStandardMaterial({
+        color: '#aaddff', roughness: 0.1, metalness: 0.2,
+        transparent: true, opacity: 0.6,
+        emissive: '#112233', emissiveIntensity: 0.1
+    });
+    const icicles: THREE.Mesh[] = [];
+    const addIcicle = (x: number, y: number, z: number, length: number) => {
+        const cone = new THREE.Mesh(new THREE.ConeGeometry(0.3, length, 5), icicleMat);
+        cone.position.set(x, y - length / 2, z);
+        cone.rotation.x = Math.PI; // Point downward
+        scene.add(cone);
+        icicles.push(cone);
+    };
+
+    // Icicles on Wide Bridge walls (Z from -7 to -109, walls at ±11.4)
+    for (let z = -10; z > -106; z -= 6) {
+        for (const side of [-11.4, 11.4]) {
+            if (Math.random() > 0.6) continue; // Skip some for organic look
+            const len = 1.0 + Math.random() * 2.5;
+            addIcicle(side, 1.5, z, len);
+            // Sometimes add a second smaller one nearby
+            if (Math.random() > 0.5) addIcicle(side, 1.5, z + 1.5, len * 0.5);
+        }
     }
 
-    // Atmosféricas
-    const ptsGeo = new THREE.BufferGeometry(); const pts = new Float32Array(120 * 3);
-    for (let i = 0; i < 120; i++) { pts[i * 3] = (Math.random() - 0.5) * 4; pts[i * 3 + 1] = Math.random() * 1.2 - 0.2; pts[i * 3 + 2] = (Math.random() - 0.5) * 4; }
-    ptsGeo.setAttribute('position', new THREE.BufferAttribute(pts, 3));
-    const ptsMat = new THREE.PointsMaterial({ color: '#ffdccc', size: 0.06, transparent: true, opacity: 0.6, depthWrite: false });
-    const atmosphericParticles = new THREE.Points(ptsGeo, ptsMat); atmosphericParticles.position.y = 0.2; scene.add(atmosphericParticles);
+    // (FROST SPARKLE PARTICLES remvoved to fix frozen snow bug)
 
-    return { atmosphericParticles, sunLight };
-}
-
-export function createChain(scene: THREE.Scene, x: number, y: number, z: number) {
-    const chainGroup = new THREE.Group(); const linkGeo = new THREE.TorusGeometry(3, 1, 12, 24);
-    for (let i = 0; i < 18; i++) {
-        const link = new THREE.Mesh(linkGeo, Materials.obsidian); link.position.set(0, -i * 5.5, 0);
-        if (i % 2 === 0) link.rotation.y = Math.PI / 2; link.castShadow = true; link.receiveShadow = true; chainGroup.add(link);
+    // ============ BRIDGE FOG (subtle low-lying mist) ============
+    const bridgeMistCount = 600;
+    const bridgeMistGeo = new THREE.BufferGeometry();
+    const bridgeMistArr = new Float32Array(bridgeMistCount * 3);
+    for (let i = 0; i < bridgeMistCount; i++) {
+        bridgeMistArr[i * 3] = (Math.random() - 0.5) * 22;
+        bridgeMistArr[i * 3 + 1] = 0.5 + Math.random() * 2.0;
+        bridgeMistArr[i * 3 + 2] = -7 + (Math.random() * -102); // Wide bridge Z range
     }
-    chainGroup.position.set(x, y, z); scene.add(chainGroup);
+    bridgeMistGeo.setAttribute('position', new THREE.BufferAttribute(bridgeMistArr, 3));
+
+    // Soft circle texture for mist
+    const bmCanvas = document.createElement('canvas'); bmCanvas.width = 64; bmCanvas.height = 64;
+    const bmCtx = bmCanvas.getContext('2d')!;
+    const bmGrad = bmCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
+    bmGrad.addColorStop(0, 'rgba(200,220,255,0.4)');
+    bmGrad.addColorStop(0.5, 'rgba(180,200,235,0.15)');
+    bmGrad.addColorStop(1, 'rgba(0,0,0,0)');
+    bmCtx.fillStyle = bmGrad; bmCtx.fillRect(0, 0, 64, 64);
+    const bmTex = new THREE.CanvasTexture(bmCanvas);
+
+    const bridgeMistMat = new THREE.PointsMaterial({
+        map: bmTex, size: 12,
+        transparent: true, opacity: 0.08,
+        blending: THREE.AdditiveBlending, depthWrite: false
+    });
+    const bridgeMist = new THREE.Points(bridgeMistGeo, bridgeMistMat);
+    scene.add(bridgeMist);
+
+    return { sunLight, ashParticles, bridgeMist, icicles };
 }
+
+
 
 export function createWideBridge(scene: THREE.Scene, collidables: THREE.Object3D[], zStart: number, zEnd: number) {
     const length = Math.abs(zStart - zEnd); const zMin = Math.min(zStart, zEnd); const zCenter = zMin + length / 2;
     const bGroup = new THREE.Group();
     // Suelo ensanchado a 24 unidades para empalmar con el puente medieval (que mide 24 de ancho)
     const floor = new THREE.Mesh(new THREE.BoxGeometry(24, 2, length), Materials.plaza);
-    floor.position.set(0, -1.08, 0); floor.receiveShadow = true; bGroup.add(floor);
+    floor.position.set(0, -0.25, 0); floor.receiveShadow = true; bGroup.add(floor);
     // Muros laterales alineados con las barandas del puente medieval (±11.7)
     const wallL = new THREE.Mesh(new THREE.BoxGeometry(1.2, 4, length), Materials.wall);
     wallL.position.set(-11.4, 1, 0); wallL.castShadow = true; wallL.receiveShadow = true; bGroup.add(wallL);
@@ -468,7 +805,7 @@ export function createWideBridge(scene: THREE.Scene, collidables: THREE.Object3D
     bGroup.position.set(0, 0, zCenter); scene.add(bGroup);
     // Colisionadores globales del grupo ajustados a ancho 24 (match puente medieval)
     const floorCol = new THREE.Mesh(new THREE.BoxGeometry(24, 2, length), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
-    floorCol.position.set(0, -1.08, zCenter); collidables.push(floorCol); scene.add(floorCol);
+    floorCol.position.set(0, -0.25, zCenter); collidables.push(floorCol); scene.add(floorCol);
 
     // Colisionadores de muros a ±11.7 (mismo X que barandas del puente medieval)
     const wallLCol = new THREE.Mesh(new THREE.BoxGeometry(0.6, 8, length), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
@@ -755,12 +1092,12 @@ export function createBlackKnightFortress(scene: THREE.Scene, collidables: THREE
     }
     mistGeo.setAttribute('position', new THREE.BufferAttribute(mistPos, 3));
 
-    // Textura de partícula circular suave
+    // Textura de partícula circular suave (Niebla Gélida)
     const mistCanvas = document.createElement('canvas'); mistCanvas.width = 64; mistCanvas.height = 64;
     const mistCtx = mistCanvas.getContext('2d')!;
     const mistGrad = mistCtx.createRadialGradient(32, 32, 0, 32, 32, 32);
-    mistGrad.addColorStop(0, 'rgba(255, 30, 40, 0.6)');
-    mistGrad.addColorStop(0.4, 'rgba(150, 10, 20, 0.2)');
+    mistGrad.addColorStop(0, 'rgba(215, 240, 255, 0.5)');
+    mistGrad.addColorStop(0.4, 'rgba(180, 220, 255, 0.2)');
     mistGrad.addColorStop(1, 'rgba(0, 0, 0, 0)');
     mistCtx.fillStyle = mistGrad; mistCtx.fillRect(0, 0, 64, 64);
     const mistTex = new THREE.CanvasTexture(mistCanvas);
@@ -967,14 +1304,14 @@ export function createBlackKnightFortress(scene: THREE.Scene, collidables: THREE
 }
 
 export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Object3D[], _checkpoints: any[], _animatedCrystals: any[], fireEmitters: any[], gateObjects: any, zCenter: number) {
-    const group = new THREE.Group(); const size = 50;
+    const group = new THREE.Group(); const size = 100; // DOBLADO: de 50 a 100
 
     // 1. SUELO LIMPIO
-    const floor = new THREE.Mesh(new THREE.BoxGeometry(size, 2, size), Materials.plaza);
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(size, 2, size), Materials.floor);
     floor.position.set(0, -1, 0); floor.receiveShadow = true; group.add(floor);
 
-    // 2. MUROS BASE MASIVOS (40 metros para 3 pisos)
-    const wallH = 40; const wallT = 4;
+    // 2. MUROS BASE MASIVOS (80 metros para 3 pisos dobles)
+    const wallH = 80; const wallT = 4;
 
     // Función helper para muros externos y sus colisiones de cámara
     const createOuterWall = (w: number, d: number, px: number, py: number, pz: number) => {
@@ -986,18 +1323,22 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
     };
 
     // Ajustamos la brecha central de la muralla a 22 metros (-11 a 11) para que el puente de 18m encaje 
-    // holgadamente y el jugador no choque con las aristas invisibles al bordear la baranda.
-    createOuterWall(14, wallT, -18, wallH / 2 - 1, -size / 2); // wallN1
-    createOuterWall(14, wallT, 18, wallH / 2 - 1, -size / 2);  // wallN2
+    createOuterWall(size / 2 - 11, wallT, -size / 4 - 5.5, wallH / 2 - 1, -size / 2); // wallN1
+    createOuterWall(size / 2 - 11, wallT, size / 4 + 5.5, wallH / 2 - 1, -size / 2);  // wallN2
     createOuterWall(size, wallT, 0, wallH / 2 - 1, size / 2);  // wallS
     createOuterWall(wallT, size, size / 2, wallH / 2 - 1, 0);  // wallE
     createOuterWall(wallT, size, -size / 2, wallH / 2 - 1, 0); // wallW
 
     // 3. CONTRAFUERTES
-    for (let i = -15; i <= 15; i += 15) {
+    for (let i = -size / 2 + 10; i <= size / 2 - 10; i += 20) {
         let buttressS = new THREE.Mesh(new THREE.BoxGeometry(3, wallH - 2, 4), Materials.wall); buttressS.position.set(i, wallH / 2 - 2, size / 2 - 2); buttressS.castShadow = true; buttressS.receiveShadow = true; group.add(buttressS);
         let buttressE = new THREE.Mesh(new THREE.BoxGeometry(4, wallH - 2, 3), Materials.wall); buttressE.position.set(size / 2 - 2, wallH / 2 - 2, i); buttressE.castShadow = true; buttressE.receiveShadow = true; group.add(buttressE);
         let buttressW = new THREE.Mesh(new THREE.BoxGeometry(4, wallH - 2, 3), Materials.wall); buttressW.position.set(-size / 2 + 2, wallH / 2 - 2, i); buttressW.castShadow = true; buttressW.receiveShadow = true; group.add(buttressW);
+
+        // NUEVO: Decoración de contrafuertes (Cadenas)
+        if (Math.abs(i) > 20) {
+            if (i % 40 === 0) createChain(group, size / 2 - 5, wallH - 5, i); // Cadena en el este
+        }
     }
 
     // 4. ALMENAS DERUIDAS
@@ -1010,8 +1351,8 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
             b.castShadow = true; b.receiveShadow = true; group.add(b);
         }
     };
-    createBattlements(-22, 22, -size / 2, false); createBattlements(-22, 22, size / 2, false);
-    createBattlements(-22, 22, size / 2, true); createBattlements(-22, 22, -size / 2, true);
+    createBattlements(-size / 2 + 3, size / 2 - 3, -size / 2, false); createBattlements(-size / 2 + 3, size / 2 - 3, size / 2, false);
+    createBattlements(-size / 2 + 3, size / 2 - 3, size / 2, true); createBattlements(-size / 2 + 3, size / 2 - 3, -size / 2, true);
 
     // 5. MUROS INTERIORES DE ESQUINA (reemplazan las torres que penetraban el interior)
     // Las torres exteriores se eliminan para que nada asome dentro de los pisos
@@ -1026,7 +1367,7 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
     // 6. GRAN ENTRADA A LA FORTALEZA (Totalmente Reconstruida a Mano)
     const entranceGroup = new THREE.Group();
     // Ampliamos significativamente el arco para que la cámara y el jugador pasen sin engancharse con el puente (que mide 18 de ancho)
-    const pillarRadius = 2.0; const pillarH = 12; const pillarOffsetX = 11.0;
+    const pillarRadius = 2.0; const pillarH = 24; const pillarOffsetX = 11.0;
     const pillarBaseY = pillarH / 2;
 
     // Pilares cilíndricos gigantes de la Gran Puerta
@@ -1050,10 +1391,10 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
 
 
     // === SISTEMA DE PISOS CON ESCALERAS CRUZADAS ===
-    // Hueco izquierdo: X de -23 a -9. Hueco derecho: X de 9 a 23.
-    const holeW = 14;  // Dimensiones del hueco
-    const holeZMin = -7; const holeZMax = 7;
-    const floorThick = 1.5;
+    // Hueco izquierdo: X de -size/2 a -size/2+14. Hueco derecho: X de size/2-14 a size/2.
+    const holeW = 12;  // Ancho ideal para la escala actual
+    const holeZMin = -25; const holeZMax = 25; // ZSpan total de 50m para una subida suave (aprox 27 grados)
+    const floorThick = 1.0;
 
     // Material invisible para colisionadores
     const invisMat = new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 });
@@ -1073,8 +1414,8 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
     // Bajamos 0.15 unidades respecto al suelo de la fortaleza para evitar Z-fighting
     const floorLen = bridgeLen + 1; // 31m (0.5m extra por ambos lados, reducido para evitar solapamiento)
     const deck = new THREE.Mesh(new THREE.BoxGeometry(bridgeW, 1.5, floorLen), Materials.plaza);
-    deck.position.set(0, -0.90, bridgeZMid); deck.receiveShadow = true; deck.castShadow = true; entranceGroup.add(deck);
-    addColBox(bridgeW, 1.5, floorLen, 0, -0.90, bridgeZMid);
+    deck.position.set(0, 0, bridgeZMid); deck.receiveShadow = true; deck.castShadow = true; entranceGroup.add(deck);
+    addColBox(bridgeW, 1.5, floorLen, 0, 0, bridgeZMid);
 
     // Pilastras de soporte del puente (sin arcos)
     for (let a = 0; a < 3; a++) {
@@ -1119,8 +1460,8 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
     // Función reutilizable: construye un piso con hueco en el lado indicado
     const buildFloorWithHole = (yPos: number, holeSide: 'left' | 'right') => {
         // Calcular posición X del hueco según el lado
-        const hXMin = holeSide === 'left' ? -23 : 9;
-        const hXMax = holeSide === 'left' ? -9 : 23;
+        const hXMin = holeSide === 'left' ? -size / 2 + 2 : size / 2 - 14;
+        const hXMax = holeSide === 'left' ? -size / 2 + 14 : size / 2 - 2;
         const hX = (hXMin + hXMax) / 2;
 
         // Pieza principal (lado opuesto al hueco, cubre todo el ancho)
@@ -1152,58 +1493,92 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
         const railH = 2; const railT = 0.5;
         const railY = yPos + railH / 2 + floorThick / 2;
         const railX = holeSide === 'left' ? hXMax : hXMin;
-        const rL = new THREE.Mesh(new THREE.BoxGeometry(railT, railH, holeZMax - holeZMin), Materials.wall);
+        const railZLen = holeZMax - holeZMin;
+        const rL = new THREE.Mesh(new THREE.BoxGeometry(railT, railH, railZLen), Materials.wall);
         rL.position.set(railX, railY, 0); entranceGroup.add(rL);
-        addColBox(railT, railH, holeZMax - holeZMin, railX, railY, 0);
+        addColBox(railT, railH, railZLen, railX, railY, 0);
+
+        // === NUEVO: ARTESONADO EN EL TECHO (Underside of this floor) ===
+        const beamSize = 1.2;
+        const gridSpacing = 8;
+        for (let ix = -size / 2 + 4; ix <= size / 2 - 4; ix += gridSpacing) {
+            // Verificar si la viga choca con el hueco (Hueco Central o Huecos de Escaleras laterales)
+            // Stairwell holes are at World X approx -23..-9 (left) or 9..23 (right)
+            // Local X for buildFloorWithHole is [-size/2, size/2]
+            const isNearHole = (ix > hXMin - 4 && ix < hXMax + 4);
+            const isNearStairwell = (ix > -28 && ix < -4) || (ix > 4 && ix < 28);
+            if (isNearHole || isNearStairwell) continue;
+
+            const beam = new THREE.Mesh(new THREE.BoxGeometry(beamSize, beamSize, size - 4), Materials.obsidian);
+            beam.position.set(ix, yPos - floorThick / 2 - beamSize / 2, 0);
+            beam.castShadow = true; entranceGroup.add(beam);
+        }
+        for (let iz = -size / 2 + 4; iz <= size / 2 - 4; iz += gridSpacing) {
+            const beam = new THREE.Mesh(new THREE.BoxGeometry(size - 4, beamSize, beamSize), Materials.obsidian);
+            beam.position.set(0, yPos - floorThick / 2 - beamSize / 2, iz);
+            beam.castShadow = true; entranceGroup.add(beam);
+        }
     };
 
-    // Piso 2 (Y=12): hueco a la IZQUIERDA (escalera 1→2 llega por aquí)
-    buildFloorWithHole(12, 'left');
-    // Piso 3 (Y=24): hueco a la DERECHA (escalera 2→3 llega) + hueco IZQUIERDO (escalera 3→azotea sale)
+    // Piso 2 (Y=24): hueco a la IZQUIERDA (escalera 1→2 llega por aquí)
+    buildFloorWithHole(24, 'left');
+    // Piso 3 (Y=48): hueco a la DERECHA (escalera 2→3 llega) + hueco IZQUIERDO (escalera 3→azotea sale)
     // Construimos manualmente: solo franja central
     {
-        const y3 = 24;
-        // Franja central (de X=-9 a X=9, toda la profundidad Z)
-        const centerW = 18; // espacio entre los dos huecos
+        const y3 = 48;
+        // Franja central (cubriendo el espacio entre los dos huecos de las escaleras)
+        const centerW = size - (holeW * 2) - 8;
         const pCenter = new THREE.Mesh(new THREE.BoxGeometry(centerW, floorThick, size - 4), Materials.floor);
         pCenter.position.set(0, y3, 0); pCenter.receiveShadow = true; pCenter.castShadow = true; entranceGroup.add(pCenter);
         addColBox(centerW, floorThick, size - 4, 0, y3, 0);
 
-        // Piezas que cierran los huecos por delante y detrás (lado izquierdo)
+        // Piezas que cierran los huecos por delante y detrás (lado izquierdo y derecho)
         const backD = size / 2 - holeZMax - 2;
         const frontD = size / 2 + holeZMin - 2;
         if (backD > 0) {
             const bZ = holeZMax + backD / 2;
             const pBL = new THREE.Mesh(new THREE.BoxGeometry(holeW, floorThick, backD), Materials.floor);
-            pBL.position.set(-16, y3, bZ); pBL.receiveShadow = true; pBL.castShadow = true; entranceGroup.add(pBL);
-            addColBox(holeW, floorThick, backD, -16, y3, bZ);
+            pBL.position.set(-size / 2 + 8, y3, bZ); pBL.receiveShadow = true; pBL.castShadow = true; entranceGroup.add(pBL);
+            addColBox(holeW, floorThick, backD, -size / 2 + 8, y3, bZ);
             const pBR = new THREE.Mesh(new THREE.BoxGeometry(holeW, floorThick, backD), Materials.floor);
-            pBR.position.set(16, y3, bZ); pBR.receiveShadow = true; pBR.castShadow = true; entranceGroup.add(pBR);
-            addColBox(holeW, floorThick, backD, 16, y3, bZ);
+            pBR.position.set(size / 2 - 8, y3, bZ); pBR.receiveShadow = true; pBR.castShadow = true; entranceGroup.add(pBR);
+            addColBox(holeW, floorThick, backD, size / 2 - 8, y3, bZ);
         }
         if (frontD > 0) {
             const fZ = -size / 2 + frontD / 2 + 2;
             const pFL = new THREE.Mesh(new THREE.BoxGeometry(holeW, floorThick, frontD), Materials.floor);
-            pFL.position.set(-16, y3, fZ); pFL.receiveShadow = true; pFL.castShadow = true; entranceGroup.add(pFL);
-            addColBox(holeW, floorThick, frontD, -16, y3, fZ);
+            pFL.position.set(-size / 2 + 8, y3, fZ); pFL.receiveShadow = true; pFL.castShadow = true; entranceGroup.add(pFL);
+            addColBox(holeW, floorThick, frontD, -size / 2 + 8, y3, fZ);
             const pFR = new THREE.Mesh(new THREE.BoxGeometry(holeW, floorThick, frontD), Materials.floor);
-            pFR.position.set(16, y3, fZ); pFR.receiveShadow = true; pFR.castShadow = true; entranceGroup.add(pFR);
-            addColBox(holeW, floorThick, frontD, 16, y3, fZ);
+            pFR.position.set(size / 2 - 8, y3, fZ); pFR.receiveShadow = true; pFR.castShadow = true; entranceGroup.add(pFR);
+            addColBox(holeW, floorThick, frontD, size / 2 - 8, y3, fZ);
         }
 
         // Barandas interiores (separan huecos del salón)
         const railH = 2; const railT = 0.5;
         const railY = y3 + railH / 2 + floorThick / 2;
-        const rL = new THREE.Mesh(new THREE.BoxGeometry(railT, railH, holeZMax - holeZMin), Materials.wall);
-        rL.position.set(-9, railY, 0); entranceGroup.add(rL); addColBox(railT, railH, holeZMax - holeZMin, -9, railY, 0);
-        const rR = new THREE.Mesh(new THREE.BoxGeometry(railT, railH, holeZMax - holeZMin), Materials.wall);
-        rR.position.set(9, railY, 0); entranceGroup.add(rR); addColBox(railT, railH, holeZMax - holeZMin, 9, railY, 0);
+        const railZLen = holeZMax - holeZMin;
+        const rL = new THREE.Mesh(new THREE.BoxGeometry(railT, railH, railZLen), Materials.wall);
+        rL.position.set(-size / 2 + 14, railY, 0); entranceGroup.add(rL); addColBox(railT, railH, railZLen, -size / 2 + 14, railY, 0);
+        const rR = new THREE.Mesh(new THREE.BoxGeometry(railT, railH, railZLen), Materials.wall);
+        rR.position.set(size / 2 - 14, railY, 0); entranceGroup.add(rR); addColBox(railT, railH, railZLen, size / 2 - 14, railY, 0);
+
+        // === ARTESONADO EN EL PISO 3 (Techo del Piso 2) ===
+        const beamSize = 1.2;
+        const gridSpacing = 8;
+        for (let ix = -size / 2 + 4; ix <= size / 2 - 4; ix += gridSpacing) {
+            // Saltamos si estamos en los huecos laterales
+            if (ix < -size / 2 + 14 || ix > size / 2 - 14) continue;
+            const beam = new THREE.Mesh(new THREE.BoxGeometry(beamSize, beamSize, size - 4), Materials.obsidian);
+            beam.position.set(ix, y3 - floorThick / 2 - beamSize / 2, 0);
+            beam.castShadow = true; entranceGroup.add(beam);
+        }
     }
-    // Azotea (Y=36): hueco a la IZQUIERDA para la escalera 3→azotea
-    buildFloorWithHole(36, 'left');
+    // Azotea (Y=72): hueco a la IZQUIERDA para la escalera 3→azotea
+    buildFloorWithHole(72, 'left');
 
     // Almenas perimetrales en la azotea
-    const azoteaY = 36 + floorThick / 2;
+    const azoteaY = 72 + floorThick / 2;
     const createAzoteaBattlements = (xStart: number, xEnd: number, zPos: number, isZ: boolean) => {
         for (let i = xStart; i <= xEnd; i += 3) {
             if (!isZ && Math.abs(i) < 10 && zPos === -size / 2) continue; // dejar entrada libre
@@ -1212,10 +1587,36 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
             b.castShadow = true; entranceGroup.add(b);
         }
     };
-    createAzoteaBattlements(-22, 22, -size / 2 + 2, false);
-    createAzoteaBattlements(-22, 22, size / 2 - 2, false);
-    createAzoteaBattlements(-22, 22, size / 2 - 2, true);
-    createAzoteaBattlements(-22, 22, -size / 2 + 2, true);
+    createAzoteaBattlements(-size / 2 + 3, size / 2 - 3, -size / 2 + 2, false);
+    createAzoteaBattlements(-size / 2 + 3, size / 2 - 3, size / 2 - 2, false);
+    createAzoteaBattlements(-size / 2 + 3, size / 2 - 3, size / 2 - 2, true);
+    createAzoteaBattlements(-size / 2 + 3, size / 2 - 3, -size / 2 + 2, true);
+
+    // === NUEVO: DETALLES CINEMATOGRÁFICOS ===
+    // 1. Cadenas Colgantes Gigantes
+    createChain(entranceGroup, -10, 72, -5);
+    createChain(entranceGroup, 14, 72, 6);
+    createChain(entranceGroup, 0, 48, 15);
+
+    // 2. Estandartes Góticos Colgantes (Colgados del Techo Artesonado)
+    // Cerca de la entrada (Piso 1)
+    createBanner(entranceGroup, -pillarOffsetX - 2, 14, -size / 2 + 8, '#441111', 24);
+    createBanner(entranceGroup, pillarOffsetX + 2, 14, -size / 2 + 8, '#111144', 24);
+
+    // Cerca del Trono
+    createBanner(entranceGroup, -15, 14, size / 2 - 15, '#441111', 24);
+    createBanner(entranceGroup, 15, 14, size / 2 - 15, '#441111', 24);
+
+    // 3. Gran Trono al fondo (Piso 1)
+    createGrandThrone(entranceGroup, 0, 0, size / 2 - 10);
+
+
+
+    // 3. Contraste de Luz Fría (Simulando la luna entrando por el frente)
+    const moonBounce = new THREE.PointLight('#2266cc', 60, 50, 1.2);
+    moonBounce.position.set(0, 8, -size / 2 + 5); // Ajustado al nuevo tamaño
+    moonBounce.castShadow = false; // DESACTIVADO para evitar Shader Error / Context Lost
+    entranceGroup.add(moonBounce);
 
     // === PORTAL en la Azotea (último piso) ===
     const objLoader = new OBJLoader();
@@ -1245,27 +1646,35 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
 
         entranceGroup.add(obj);
 
-        // --- CREAMOS EL CENTRO LUMINOSO ---
-        // Radio ajustado para que encaje DENTRO del arco de piedra (aprox 5.2)
+        // --- NUEVO: PORTAL ÉPICO ANIMADO ---
+        // 1. Núcleo central
         const portalCenter = new THREE.Mesh(
-            new THREE.CylinderGeometry(5.2, 5.2, 0.1, 32),
-            new THREE.MeshStandardMaterial({
-                color: '#6611cc', // Púrpura base
-                emissive: '#00ffff', // Cian brillante
-                emissiveIntensity: 3.0,
-                transparent: true,
-                opacity: 0.85,
-            })
+            new THREE.SphereGeometry(3, 16, 16),
+            new THREE.MeshStandardMaterial({ color: '#001133', emissive: '#00aaff', emissiveIntensity: 2.0, transparent: true, opacity: 0.9 })
         );
-        // Rotamos el cilindro para que quede de pie
-        portalCenter.rotation.x = Math.PI / 2;
-        // Posición centrada en el agujero del arco (+4.5 desde su nueva base)
-        portalCenter.position.set(5, azoteaY + 7.8 + 4.5, -8);
+        portalCenter.position.set(5, azoteaY + 12.3, -8);
         entranceGroup.add(portalCenter);
+        // Hacemos que el núcleo palpite usando el array de cristales animados
+        _animatedCrystals.push({ mesh: portalCenter, baseY: azoteaY + 12.3, speedOffset: 10 });
 
-        // Luz del portal
-        const portalLight = new THREE.PointLight('#33ccff', 4.0, 35);
-        portalLight.position.set(5, azoteaY + 12.3, -5);
+        // 2. Anillos Mágicos de Energía
+        const ringMat = new THREE.MeshStandardMaterial({ color: '#4400ff', emissive: '#00ffff', emissiveIntensity: 3.0, wireframe: true, side: THREE.DoubleSide });
+        for (let r = 0; r < 3; r++) {
+            const ring = new THREE.Mesh(new THREE.TorusGeometry(4.5 + r * 0.8, 0.1, 8, 32), ringMat);
+            ring.position.set(5, azoteaY + 12.3, -8);
+            ring.rotation.x = Math.random() * Math.PI;
+            ring.rotation.y = Math.random() * Math.PI;
+            entranceGroup.add(ring);
+
+            // Truco: Al meterlos en _animatedCrystals, el useFrame principal 
+            // los rotará mágicamente en cada frame dándole el efecto de astrolabio.
+            _animatedCrystals.push({ mesh: ring, baseY: azoteaY + 12.3, speedOffset: r * 20 });
+        }
+
+        // 3. Luz del portal (Cian radiante)
+        const portalLight = new THREE.PointLight('#00ffff', 150, 60, 1.5);
+        portalLight.position.set(5, azoteaY + 12.3, -8);
+        portalLight.castShadow = false; // DESACTIVADO para rendimiento WebGL
         entranceGroup.add(portalLight);
 
         console.log('[Environment] Portal.obj cargado correctamente en azotea');
@@ -1287,35 +1696,39 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
     };
 
     // Piso 1 (Y=0): 4 antorchas en los muros
-    placeWallTorch(-20, 3, -20); placeWallTorch(20, 3, -20);
-    placeWallTorch(-20, 3, 20); placeWallTorch(20, 3, 20);
+    placeWallTorch(-size / 2 + 5, 3, -size / 2 + 5); placeWallTorch(size / 2 - 5, 3, -size / 2 + 5);
+    placeWallTorch(-size / 2 + 5, 3, size / 2 - 5); placeWallTorch(size / 2 - 5, 3, size / 2 - 5);
 
-    // Piso 2 (Y=12): 4 antorchas en los muros
-    placeWallTorch(-20, 15, -20); placeWallTorch(20, 15, -20);
-    placeWallTorch(-20, 15, 20); placeWallTorch(20, 15, 20);
+    // Piso 2 (Y=24): 4 antorchas en los muros
+    placeWallTorch(-size / 2 + 5, 27, -size / 2 + 5); placeWallTorch(size / 2 - 5, 27, -size / 2 + 5);
+    placeWallTorch(-size / 2 + 5, 27, size / 2 - 5); placeWallTorch(size / 2 - 5, 27, size / 2 - 5);
 
-    // Piso 3 (Y=24): 4 antorchas en los muros
-    placeWallTorch(-20, 27, -20); placeWallTorch(20, 27, -20);
-    placeWallTorch(-20, 27, 20); placeWallTorch(20, 27, 20);
+    // Piso 3 (Y=48): 4 antorchas en los muros
+    placeWallTorch(-size / 2 + 5, 51, -size / 2 + 5); placeWallTorch(size / 2 - 5, 51, -size / 2 + 5);
+    placeWallTorch(-size / 2 + 5, 51, size / 2 - 5); placeWallTorch(size / 2 - 5, 51, size / 2 - 5);
 
     // === ESCALERAS MACIZAS CRUZADAS (sólidas por debajo) ===
     const stairsGroup = new THREE.Group();
-    const stepsPerFloor = 20;
+    const stepsPerFloor = 48; // Aumentamos pasos para reducir altura por escalón (0.5m)
 
     // Función: crea un tramo de escalera maciza + plataforma de llegada
     const buildSolidStairBlock = (xPos: number, yStart: number, yEnd: number, zDir: number) => {
         const rise = yEnd - yStart;
         const stepH = rise / stepsPerFloor;
-        const totalZSpan = holeZMax - holeZMin - 2; // Espacio Z disponible (dejar 1m para plataforma)
+        const totalZSpan = holeZMax - holeZMin - 4; // 46m de inclinación (dejando 2m para descansos)
         const stepD = totalZSpan / stepsPerFloor;
+
         for (let i = 0; i < stepsPerFloor; i++) {
             const topY = yStart + (i + 1) * stepH;
-            const blockH = topY - yStart + stepH;
+            // Para evitar que el bloque macizo se meta bajo el suelo inferior (yStart), 
+            // limitamos la base del bloque.
+            const blockH = (i + 1) * stepH;
             const sZ = (zDir > 0)
                 ? holeZMin + 1 + i * stepD
                 : holeZMax - 1 - i * stepD;
 
             // Bloque macizo (relleno desde yStart hasta el peldaño)
+            // PERFORMANCE/AESTHETIC FIX: Usamos holeW para que cubra todo el ancho del hueco
             const block = new THREE.Mesh(new THREE.BoxGeometry(holeW, blockH, stepD + 0.1), Materials.stairs);
             block.position.set(xPos, yStart + blockH / 2, sZ);
             block.castShadow = true; block.receiveShadow = true; stairsGroup.add(block);
@@ -1326,29 +1739,29 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
             collidables.push(col); stairsGroup.add(col);
         }
 
-        // Plataforma de llegada al nivel del piso superior (misma textura que escalera)
-        const platZ = (zDir > 0) ? holeZMax - 0.5 : holeZMin + 0.5;
-        const platH = yEnd - yStart;
-        const plat = new THREE.Mesh(new THREE.BoxGeometry(holeW, platH, 2), Materials.stairs);
-        plat.position.set(xPos, yStart + platH / 2, platZ);
+        // Plataforma de llegada al nivel del piso superior
+        const platZ = (zDir > 0) ? holeZMax - 1 : holeZMin + 1;
+        // Offset Y de 0.05 para evitar Z-fighting (vibración de texturas) con el suelo
+        const plat = new THREE.Mesh(new THREE.BoxGeometry(holeW, floorThick, 2), Materials.stairs);
+        plat.position.set(xPos, yEnd + 0.05, platZ);
         plat.castShadow = true; plat.receiveShadow = true; stairsGroup.add(plat);
-        // Colisionador ligeramente sobre el piso (evita Z-fighting con la losa)
+
         const platCol = new THREE.Mesh(new THREE.BoxGeometry(holeW, floorThick, 2), invisMat);
-        platCol.position.set(xPos, yEnd - floorThick / 2, platZ);
+        platCol.position.copy(plat.position);
         collidables.push(platCol); stairsGroup.add(platCol);
     };
 
-    // Escalera Piso 1 -> 2: lado IZQUIERDO (X=-16), sube de Z- a Z+
-    buildSolidStairBlock(-16, 0, 12, 1);
-    // Escalera Piso 2 -> 3: lado DERECHO (X=+16), sube de Z+ a Z-
-    buildSolidStairBlock(16, 12, 24, -1);
-    // Escalera Piso 3 -> Azotea: lado IZQUIERDO (X=-16), sube de Z- a Z+
-    buildSolidStairBlock(-16, 24, 36, 1);
+    // Escalera Piso 1 -> 2: lado IZQUIERDO, sube de Z- a Z+
+    buildSolidStairBlock(-size / 2 + 9, 0, 24, 1);
+    // Escalera Piso 2 -> 3: lado DERECHO, sube de Z+ a Z-
+    buildSolidStairBlock(size / 2 - 9, 24, 48, -1);
+    // Escalera Piso 3 -> Azotea: lado IZQUIERDO, sube de Z- a Z+
+    buildSolidStairBlock(-size / 2 + 9, 48, 72, 1);
 
     entranceGroup.add(stairsGroup);
 
 
-    entranceGroup.add(stairsGroup);
+
 
     // Colisionadores simplificados para los pilares
     // Son más pequeños que el objeto visual para que la cámara no rebote al pasar cerca
@@ -1359,31 +1772,47 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
     group.add(entranceGroup);
 
     // 7. BRASEROS DE FUEGO (Particulas animadas en vez de octaedros)
+    // 7. BRASEROS DE FUEGO (Diseño Gótico Mejorado)
     const placeBrazier = (bx: number, bz: number) => {
-        const base = new THREE.Mesh(new THREE.CylinderGeometry(1, 1.5, 3, 6), Materials.wall);
-        base.position.set(bx, 1.5, bz); base.castShadow = true; base.receiveShadow = true; group.add(base);
-        createRealisticFire(bx, 3.2, bz, 1.2, fireEmitters, group, 'brazier');
+        const bGroup = new THREE.Group();
+
+        // Base escalonada "Gótica"
+        const base1 = new THREE.Mesh(new THREE.CylinderGeometry(1.5, 1.8, 0.5, 8), Materials.obsidian);
+        base1.position.y = 0.25;
+        const base2 = new THREE.Mesh(new THREE.CylinderGeometry(1.2, 1.5, 2.0, 8), Materials.obsidian);
+        base2.position.y = 1.5;
+        const base3 = new THREE.Mesh(new THREE.CylinderGeometry(1.6, 1.2, 0.6, 8), Materials.obsidian);
+        base3.position.y = 2.8;
+
+        bGroup.add(base1); bGroup.add(base2); bGroup.add(base3);
+        bGroup.position.set(bx, 0, bz);
+        bGroup.traverse(m => { if (m instanceof THREE.Mesh) { m.castShadow = true; m.receiveShadow = true; } });
+        group.add(bGroup);
+
+        createRealisticFire(bx, 3.4, bz, 1.2, fireEmitters, group, 'brazier');
     };
     placeBrazier(-10, -12); placeBrazier(10, -12);
     placeBrazier(-10, 12); placeBrazier(10, 12);
 
-    // 8. ALTAR PRINCIPAL LIGERAMENTE REDUCIDO (ELIMINADOS LOS CRISTALES FLOTANTES SUPERIORES)
-    const altarStep1 = new THREE.Mesh(new THREE.CylinderGeometry(12, 12, 0.5, 8), Materials.plaza); altarStep1.position.set(0, 0.25, 0); altarStep1.receiveShadow = true; group.add(altarStep1);
-    const altarStep2 = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 1, 8), Materials.obsidian); altarStep2.position.set(0, 1, 0); altarStep2.receiveShadow = true; group.add(altarStep2);
-    // Colisionadores para los peldaños del altar (Soluciona hudimiento en obsidiana central)
+    // 8. ÁREA DE SPAWN (Limpia y Solemnne)
+    // Dejamos solo el primer escalón de piedra y el anillo rúnico
+    const altarStep1 = new THREE.Mesh(new THREE.CylinderGeometry(12, 12, 0.5, 8), Materials.plaza);
+    altarStep1.position.set(0, 0.25, 0); altarStep1.receiveShadow = true; group.add(altarStep1);
+
     const a1Col = new THREE.Mesh(new THREE.CylinderGeometry(12, 12, 0.5, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
     a1Col.position.copy(altarStep1.position); collidables.push(a1Col); group.add(a1Col);
-    const a2Col = new THREE.Mesh(new THREE.CylinderGeometry(9, 9, 1, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
-    a2Col.position.copy(altarStep2.position); collidables.push(a2Col); group.add(a2Col);
 
-    // Conservamos el anillo en el suelo
-    const spawnRing = new THREE.Mesh(new THREE.RingGeometry(4.5, 5.5, 8), Materials.runeRing); spawnRing.rotation.x = -Math.PI / 2; spawnRing.position.set(0, 1.51, 0); group.add(spawnRing);
+    // NUEVO: Anillo rúnico brillante en el centro
+    const ring = new THREE.Mesh(new THREE.RingGeometry(8, 10, 32), Materials.runeRing);
+    ring.position.set(0, 0.55, 0);
+    ring.rotation.x = -Math.PI / 2;
+    group.add(ring);
 
-    // (Se eliminó el bucle de los 4 pedestales de pared invisible con cristales flotando, ya que ensuciaba la visual)
+
 
     // --- ENSAMBLAJE DE PUERTA EXTERNA PROVISTA POR MODULE door.ts ---
     // Guardamos las coordenadas base para encajar la puerta importada
-    gateObjects.gatePos = new THREE.Vector3(0, 0, zCenter - size / 2 + 0.5); // Y=0: el piso de la fortaleza termina aquí
+    gateObjects.gatePos = new THREE.Vector3(0, 0, zCenter - size / 2 + 0.5);
     gateObjects.hingeZBase = -size / 2 + 0.6;
     gateObjects.entranceZ = zCenter - size / 2;
 
@@ -1391,21 +1820,17 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
     const collider = new THREE.Mesh(new THREE.BoxGeometry(size, 2, size), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
     collider.position.set(0, -1, zCenter); scene.add(collider); collidables.push(collider);
 
-    // === SPOTLIGHTS INTERIORES PARA SOMBRAS (controlados por nivel de calidad) ===
+    // Spotlights ambientales (Mantenemos la iluminación pero quitamos el fuego visual del medio)
     const interiorSpots: THREE.SpotLight[] = [];
     [
-        { y: 10, tY: 0 },   // Piso 1
-        { y: 22, tY: 13 },  // Piso 2
-        { y: 34, tY: 25 },  // Piso 3
+        { y: 15, tY: 0 },   // Piso 1
+        { y: 39, tY: 24 },  // Piso 2
+        { y: 63, tY: 48 },  // Piso 3
     ].forEach(fl => {
         const spot = new THREE.SpotLight('#ff8844', 4.0, 30, Math.PI / 2.5, 0.6, 1.8);
         spot.position.set(0, fl.y, 0);
         spot.target.position.set(0, fl.tY, 0);
-        spot.castShadow = false; // Activado por graphicsSettings en Alto/Ultra
-        spot.shadow.mapSize.set(1024, 1024);
-        spot.shadow.bias = -0.002;
-        spot.shadow.camera.near = 1;
-        spot.shadow.camera.far = 25;
+        spot.castShadow = false;
         group.add(spot); group.add(spot.target);
         interiorSpots.push(spot);
     });
@@ -1415,41 +1840,41 @@ export function createStartingFortress(scene: THREE.Scene, collidables: THREE.Ob
 
 export function createPenumbraRuins(scene: THREE.Scene, collidables: THREE.Object3D[], checkpoints: any[], animatedCrystals: any[], movingPlatforms: any[], fireEmitters: any[], zStart: number) {
     const rGroup = new THREE.Group();
-    // Camino roto hacia la izquierda
+    // Camino roto hacia la izquierda (Desplazado -50 unidades por aumento de tamaño de fortaleza)
     const pillar1 = new THREE.Mesh(new THREE.CylinderGeometry(4, 4, 30, 8), Materials.wall);
-    pillar1.position.set(-30, -5, zStart - 10); pillar1.receiveShadow = true; rGroup.add(pillar1);
+    pillar1.position.set(-80, -5, zStart - 10); pillar1.receiveShadow = true; rGroup.add(pillar1);
     const plat1 = new THREE.Mesh(new THREE.BoxGeometry(10, 2, 10), Materials.plaza);
-    plat1.position.set(-30, 10, zStart - 10); plat1.receiveShadow = true; rGroup.add(plat1);
+    plat1.position.set(-80, 10, zStart - 10); plat1.receiveShadow = true; rGroup.add(plat1);
     const col1 = new THREE.Mesh(new THREE.BoxGeometry(10, 2, 10), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
     col1.position.copy(plat1.position); collidables.push(col1); rGroup.add(col1);
 
     scene.add(rGroup);
 
-    // Plataformas de parkour extendidas
-    createPlatform(scene, collidables, movingPlatforms, checkpoints, animatedCrystals, -45, 12, zStart - 10, 8);
-    createPlatform(scene, collidables, movingPlatforms, checkpoints, animatedCrystals, -65, 18, zStart - 20, 8, 1); // Movil X
-    createPlatform(scene, collidables, movingPlatforms, checkpoints, animatedCrystals, -85, 24, zStart - 10, 6, 0); // Movil Y
-    createPlatform(scene, collidables, movingPlatforms, checkpoints, animatedCrystals, -110, 30, zStart - 15, 8, 2); // Movil Circular
+    // Plataformas de parkour extendidas (Desplazadas por aumento de tamaño de fortaleza)
+    createPlatform(scene, collidables, movingPlatforms, checkpoints, animatedCrystals, -95, 12, zStart - 10, 8);
+    createPlatform(scene, collidables, movingPlatforms, checkpoints, animatedCrystals, -115, 18, zStart - 20, 8, 1); // Movil X
+    createPlatform(scene, collidables, movingPlatforms, checkpoints, animatedCrystals, -135, 24, zStart - 10, 6, 0); // Movil Y
+    createPlatform(scene, collidables, movingPlatforms, checkpoints, animatedCrystals, -160, 30, zStart - 15, 8, 2); // Movil Circular
 
-    // Templo final de Penumbra
+    // Templo final de Penumbra (Desplazado por aumento de tamaño de fortaleza)
     const endGroup = new THREE.Group();
     const baseEnd = new THREE.Mesh(new THREE.CylinderGeometry(15, 20, 10, 8), Materials.obsidian);
-    baseEnd.position.set(-145, 25, zStart - 15); baseEnd.receiveShadow = true; endGroup.add(baseEnd);
+    baseEnd.position.set(-195, 25, zStart - 15); baseEnd.receiveShadow = true; endGroup.add(baseEnd);
 
     // Antorchas del templo de penumbra
     const tL = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 6, 6), Materials.wall);
-    tL.position.set(-145, 33, zStart - 5); endGroup.add(tL);
-    createRealisticFire(-145, 36, zStart - 5, 1.5, fireEmitters, endGroup, 'brazier');
+    tL.position.set(-195, 33, zStart - 5); endGroup.add(tL);
+    createRealisticFire(-195, 36, zStart - 5, 1.5, fireEmitters, endGroup, 'brazier');
 
     const tR = new THREE.Mesh(new THREE.CylinderGeometry(1, 1, 6, 6), Materials.wall);
-    tR.position.set(-145, 33, zStart - 25); endGroup.add(tR);
-    createRealisticFire(-145, 36, zStart - 25, 1.5, fireEmitters, endGroup, 'brazier');
+    tR.position.set(-195, 33, zStart - 25); endGroup.add(tR);
+    createRealisticFire(-195, 36, zStart - 25, 1.5, fireEmitters, endGroup, 'brazier');
 
     const colEnd = new THREE.Mesh(new THREE.CylinderGeometry(15, 15, 10, 8), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
-    colEnd.position.set(-145, 25, zStart - 15); collidables.push(colEnd); endGroup.add(colEnd);
+    colEnd.position.set(-195, 25, zStart - 15); collidables.push(colEnd); endGroup.add(colEnd);
 
     // Escaleras frontales para subir al templo del Golem
-    const stairX = -131; // Enfrente del cilindro (-145 + 14)
+    const stairX = -181; // Enfrente del cilindro (-195 + 14)
     const stairZ = zStart - 15;
     const stairGroup = new THREE.Group();
 
@@ -1479,4 +1904,102 @@ export function createPenumbraRuins(scene: THREE.Scene, collidables: THREE.Objec
     scene.add(endGroup);
 
     checkpoints.push({ pos: new THREE.Vector3(-145, 32, zStart - 15), radius: 15 });
+}
+
+export function createObsidianCourtyard(
+    scene: THREE.Scene,
+    collidables: THREE.Object3D[],
+    checkpoints: any[],
+    orbs: any[],
+    zCenter: number
+) {
+    const size = 80; // Tamaño de la plaza (80x80)
+
+    // 1. El suelo principal
+    const floor = new THREE.Mesh(new THREE.BoxGeometry(size, 2, size), Materials.plaza);
+    floor.position.set(0, -1, zCenter);
+    floor.receiveShadow = true;
+    scene.add(floor);
+
+    const floorCol = new THREE.Mesh(new THREE.BoxGeometry(size, 2, size), new THREE.MeshBasicMaterial({ visible: false }));
+    floorCol.position.copy(floor.position);
+    collidables.push(floorCol);
+    scene.add(floorCol);
+
+    // 2. Sistema para generar los muros del laberinto
+    const wallGroup = new THREE.Group();
+    const invisMat = new THREE.MeshBasicMaterial({ visible: false });
+
+    // Función interna para crear muros con colisión fácil
+    const addWall = (x: number, z: number, w: number, h: number, d: number) => {
+        const wall = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), Materials.wall);
+        wall.position.set(x, h / 2, zCenter + z);
+        wall.castShadow = true;
+        wall.receiveShadow = true;
+        wallGroup.add(wall);
+
+        const col = new THREE.Mesh(new THREE.BoxGeometry(w, h, d), invisMat);
+        col.position.copy(wall.position);
+        collidables.push(col);
+        wallGroup.add(col);
+    };
+
+    // 3. Diseño del laberinto
+    // Muros centrales
+    addWall(0, 0, 40, 12, 6);
+
+    // Muros laterales que forman pasillos
+    addWall(-20, 15, 6, 14, 40);
+    addWall(20, -15, 6, 14, 40);
+
+    // Esquinas y recovecos para esconder cosas
+    addWall(-30, -25, 20, 10, 8);
+    addWall(30, 25, 20, 10, 8);
+
+    // 4. Punto de control (Checkpoint) seguro en medio de la zona
+    checkpoints.push({
+        pos: new THREE.Vector3(0, 2, zCenter + 35),
+        radius: 20
+    });
+
+    // 5. Un pequeño secreto / recompensa en una esquina del laberinto
+    if (orbs) {
+        // Ponemos un orbe escondido detrás del muro de (-30, -25)
+        createOrb(scene, orbs, -30, 4, zCenter - 35, 'lore');
+    }
+
+    scene.add(wallGroup);
+}
+
+export function createAbyssPath(scene: THREE.Scene, fireEmitters: any[]) {
+    // === CAMINOS DEL ABISMO (Iluminación en el fondo para dar escala) ===
+    const abyssGroup = new THREE.Group();
+    const abyssY = -230; // Muy profundo en el fondo
+
+    // Función para crear un segmento de camino en ruinas con su hoguera gigante
+    const placeAbyssBonfire = (x: number, z: number) => {
+        // Pedestal masivo
+        const pedestal = new THREE.Mesh(new THREE.CylinderGeometry(8, 12, 10, 8), Materials.obsidian);
+        pedestal.position.set(x, abyssY, z);
+        abyssGroup.add(pedestal);
+
+        // Fuego colosal
+        createRealisticFire(x, abyssY + 6, z, 10.0, fireEmitters, abyssGroup, 'brazier');
+
+        // Luz intensa que ilumina las paredes del abismo
+        // Le damos un tono naranja agresivo para contrastar con el frío de arriba
+        const abyssLight = new THREE.PointLight('#ff3300', 15.0, 300);
+        abyssLight.position.set(x, abyssY + 15, z);
+        abyssGroup.add(abyssLight);
+    };
+
+    // Colocamos hogueras a lo largo del valle, pero descentradas para que no parezcan regulares
+    placeAbyssBonfire(40, 20);
+    placeAbyssBonfire(-60, -80);
+    placeAbyssBonfire(30, -160);
+    placeAbyssBonfire(-80, -260);
+    placeAbyssBonfire(50, -380);
+    placeAbyssBonfire(-20, -500);
+
+    scene.add(abyssGroup);
 }

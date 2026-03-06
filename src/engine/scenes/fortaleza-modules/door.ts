@@ -127,70 +127,64 @@ export function createDoor(scene: THREE.Scene, collidables: THREE.Object3D[]) {
   const handleMat = new THREE.MeshStandardMaterial({ color: '#8a6a44', metalness: 0.9, roughness: 0.3 });
 
   const doorGroup = new THREE.Group();
-  const hingeOffsetX = 9; const panelW = 9; const panelH = 11.5; const panelDepth = 1.0;
+  const hingeOffsetX = -9; const panelW = 18; const panelH = 23.5; const panelDepth = 1.0;
 
-  const leftHinge = new THREE.Group(); leftHinge.position.set(-hingeOffsetX, 0, 0); // Z será configurado en base a environment
-  const leftPanel = new THREE.Mesh(new THREE.BoxGeometry(panelW, panelH, panelDepth), doorMat2);
-  leftPanel.position.set(panelW / 2, panelH / 2 - 0.05, 0); leftPanel.castShadow = true; leftHinge.add(leftPanel);
-  leftHinge.userData = { panel: leftPanel, basePanelX: leftPanel.position.x };
+  const hinge = new THREE.Group(); hinge.position.set(hingeOffsetX, 0, 0);
+  const panel = new THREE.Mesh(new THREE.BoxGeometry(panelW, panelH, panelDepth), doorMat2);
+  panel.position.set(panelW / 2, panelH / 2 - 0.05, 0); panel.castShadow = true; hinge.add(panel);
+  hinge.userData = { panel, basePanelX: panel.position.x };
 
-  const bandL = new THREE.Mesh(new THREE.BoxGeometry(panelW + 0.4, 0.6, 0.5), metalBandMat); bandL.position.set(panelW / 2, 2.2, panelDepth / 2 + 0.02); leftHinge.add(bandL);
-  const bandL2 = bandL.clone(); bandL2.position.y = panelH - 2.2; leftHinge.add(bandL2);
-  const bandL3 = bandL.clone(); bandL3.position.y = panelH / 2; leftHinge.add(bandL3); // Banda central extra
-  for (let y = 2.8; y < panelH; y += 2.2) { const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.22, 8), metalBandMat); stud.rotation.x = Math.PI / 2; stud.position.set(panelW - 0.6, y, panelDepth / 2 + 0.1); leftHinge.add(stud); }
-  const handleGeom = new THREE.TorusGeometry(0.28, 0.06, 8, 16);
-  const handleL = new THREE.Mesh(handleGeom, handleMat);
-  handleL.rotation.x = Math.PI / 2; handleL.position.set(panelW - 2.4, panelH / 2, panelDepth / 2 + 0.08); leftHinge.add(handleL);
-  doorGroup.add(leftHinge);
+  // Bandas metálicas extendidas para 18m
+  for (let yPos of [2.2, panelH - 2.2, panelH / 2, panelH * 0.25, panelH * 0.75]) {
+    const band = new THREE.Mesh(new THREE.BoxGeometry(panelW + 0.4, 0.6, 0.5), metalBandMat);
+    band.position.set(panelW / 2, yPos, panelDepth / 2 + 0.02);
+    hinge.add(band);
+  }
 
-  const rightHinge = new THREE.Group(); rightHinge.position.set(hingeOffsetX, 0, 0);
-  const rightPanel = new THREE.Mesh(new THREE.BoxGeometry(panelW, panelH, panelDepth), doorMat2);
-  rightPanel.position.set(-panelW / 2, panelH / 2 - 0.05, 0); rightPanel.castShadow = true; rightHinge.add(rightPanel);
-  rightHinge.userData = { panel: rightPanel, basePanelX: rightPanel.position.x };
+  // Tachuelas decorativas
+  for (let y = 2.8; y < panelH; y += 3.5) {
+    const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.22, 8), metalBandMat);
+    stud.rotation.x = Math.PI / 2;
+    stud.position.set(panelW - 0.6, y, panelDepth / 2 + 0.1);
+    hinge.add(stud);
+  }
 
-  const bandR = bandL.clone(); bandR.position.set(-panelW / 2, 2.2, panelDepth / 2 + 0.02); rightHinge.add(bandR);
-  const bandR2 = bandL2.clone(); bandR2.position.set(-panelW / 2, panelH - 2.2, panelDepth / 2 + 0.02); rightHinge.add(bandR2);
-  const bandR3 = bandL.clone(); bandR3.position.set(-panelW / 2, panelH / 2, panelDepth / 2 + 0.02); rightHinge.add(bandR3);
-  for (let y = 2.8; y < panelH; y += 2.2) { const stud = new THREE.Mesh(new THREE.CylinderGeometry(0.18, 0.18, 0.22, 8), metalBandMat); stud.rotation.x = Math.PI / 2; stud.position.set(-panelW + 0.6, y, panelDepth / 2 + 0.1); rightHinge.add(stud); }
-  const handleGeomR = new THREE.TorusGeometry(0.28, 0.06, 8, 16);
-  const handleR = new THREE.Mesh(handleGeomR, handleMat);
-  handleR.rotation.x = Math.PI / 2; handleR.position.set(-panelW + 2.4, panelH / 2, panelDepth / 2 + 0.08); rightHinge.add(handleR);
-  doorGroup.add(rightHinge);
+  // Un solo tirador masivo
+  const handleGeom = new THREE.TorusGeometry(0.6, 0.12, 8, 16);
+  const handle = new THREE.Mesh(handleGeom, handleMat);
+  handle.rotation.x = Math.PI / 2;
+  handle.position.set(panelW - 2.4, panelH / 2, panelDepth / 2 + 0.1);
+  hinge.add(handle);
 
-  const doorColL = new THREE.Mesh(new THREE.BoxGeometry(panelW + 0.6, panelH + 0.6, 1.6), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
-  doorColL.position.copy(leftPanel.position); leftHinge.add(doorColL); collidables.push(doorColL);
-  const doorColR = new THREE.Mesh(new THREE.BoxGeometry(panelW + 0.6, panelH + 0.6, 1.6), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
-  doorColR.position.copy(rightPanel.position); rightHinge.add(doorColR); collidables.push(doorColR);
+  doorGroup.add(hinge);
 
-  // door frame / lintel to hide clipping
+  // Un solo colisionador de puerta
+  const doorCol = new THREE.Mesh(new THREE.BoxGeometry(panelW + 0.6, panelH + 0.6, 1.6), new THREE.MeshBasicMaterial({ transparent: true, opacity: 0 }));
+  doorCol.position.copy(panel.position); hinge.add(doorCol); collidables.push(doorCol);
+
+  // Marco de la puerta
   const frameGroup = new THREE.Group();
   const jambWidth = 2.5;
   const jambL = new THREE.Mesh(new THREE.BoxGeometry(jambWidth, panelH + 1, 2.0), frameMat);
-  jambL.position.set(-hingeOffsetX - 3.8, (panelH + 1) / 2, 0); jambL.castShadow = true; frameGroup.add(jambL);
-  const jambR = jambL.clone(); jambR.position.x = hingeOffsetX + 3.8; frameGroup.add(jambR);
+  jambL.position.set(hingeOffsetX - 1.5, (panelH + 1) / 2, 0); jambL.castShadow = true; frameGroup.add(jambL);
+  const jambR = jambL.clone(); jambR.position.x = -hingeOffsetX + 1.5; frameGroup.add(jambR);
 
-  const innerLintel = new THREE.Mesh(new THREE.BoxGeometry(16, 1.5, 2.0), frameMat);
+  const innerLintel = new THREE.Mesh(new THREE.BoxGeometry(22, 1.5, 2.0), frameMat);
   innerLintel.position.set(0, panelH + 0.5, 0); innerLintel.castShadow = true; frameGroup.add(innerLintel);
-  const threshold = new THREE.Mesh(new THREE.BoxGeometry(16, 0.4, 2.0), frameMat);
-  threshold.position.set(0, 0.05, 0); frameGroup.add(threshold); // Y=0.05 para no pelear con el piso
+  const threshold = new THREE.Mesh(new THREE.BoxGeometry(22, 0.4, 2.0), frameMat);
+  threshold.position.set(0, 0.05, 0); frameGroup.add(threshold);
 
   const paintedSealMat = new THREE.MeshStandardMaterial({ map: woodTex.color, color: '#5a2f22', roughness: 0.88, metalness: 0.02 });
-  const topSeal = new THREE.Mesh(new THREE.BoxGeometry((hingeOffsetX + panelW / 2 + 0.9) * 2 - 0.6, 0.22, 0.95), paintedSealMat);
-  topSeal.position.set(0, panelH - 0.04, 0); topSeal.visible = true; frameGroup.add(topSeal);
-
-  const edgeSealGeom = new THREE.BoxGeometry(0.36, panelH - 0.4, 0.95);
-  const leftEdgeSeal = new THREE.Mesh(edgeSealGeom, paintedSealMat); leftEdgeSeal.position.set(-0.18, panelH / 2 - 0.05, 0); leftEdgeSeal.visible = true; leftHinge.add(leftEdgeSeal);
-  const rightEdgeSeal = leftEdgeSeal.clone(); rightEdgeSeal.position.x = 0.18; rightHinge.add(rightEdgeSeal);
+  const topSeal = new THREE.Mesh(new THREE.BoxGeometry(21.4, 0.22, 0.95), paintedSealMat);
+  topSeal.position.set(0, panelH - 0.04, 0); frameGroup.add(topSeal);
 
   doorGroup.add(frameGroup);
-  scene.add(doorGroup);
+  // Eliminado: scene.add(doorGroup) — Ahora se añade externamente para evitar duplicados en hot-reload
 
   return {
     group: doorGroup,
-    leftHinge,
-    rightHinge,
-    doorColL,
-    doorColR,
+    hinge,
+    doorCol,
     panelW,
     animateDoor: (delta: number, doorState: number, doorOpenAmount: number) => {
       let openAmount = doorOpenAmount;
@@ -199,15 +193,16 @@ export function createDoor(scene: THREE.Scene, collidables: THREE.Object3D[]) {
       openAmount = THREE.MathUtils.clamp(openAmount, 0, 1);
       const ease = Math.sin(openAmount * Math.PI / 2);
 
-      leftHinge.rotation.y = -ease * Math.PI * 0.6;
-      rightHinge.rotation.y = ease * Math.PI * 0.6;
+      hinge.rotation.y = -ease * Math.PI * 0.6;
 
-      if (doorState !== 0) leftHinge.userData.panel.position.x = leftHinge.userData.basePanelX - (ease * 0.3);
-      if (doorState !== 0) rightHinge.userData.panel.position.x = rightHinge.userData.basePanelX + (ease * 0.3);
+      if (doorState !== 0) hinge.userData.panel.position.x = hinge.userData.basePanelX - (ease * 0.2);
 
       // Bloquear raycast si está abierta
-      doorColL.layers.set(ease > 0.8 ? 1 : 0);
-      doorColR.layers.set(ease > 0.8 ? 1 : 0);
+      if (ease > 0.8) {
+        doorCol.position.y = -100;
+      } else {
+        doorCol.position.y = panelH / 2 - 0.05;
+      }
 
       return openAmount;
     }

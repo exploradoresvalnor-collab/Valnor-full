@@ -1,5 +1,6 @@
 import * as THREE from 'three';
 import { UnrealBloomPass } from 'three/examples/jsm/postprocessing/UnrealBloomPass.js';
+import { setSnowAmount } from './environment';
 
 export type QualityLevel = 'low' | 'medium' | 'high' | 'ultra';
 
@@ -12,6 +13,7 @@ interface QualityPreset {
     interiorShadowMapSize: number;
     bloomEnabled: boolean;
     bloomStrength: number;
+    snowEnabled: boolean;
 }
 
 const PRESETS: Record<QualityLevel, QualityPreset> = {
@@ -24,6 +26,7 @@ const PRESETS: Record<QualityLevel, QualityPreset> = {
         interiorShadowMapSize: 512,
         bloomEnabled: false,
         bloomStrength: 0,
+        snowEnabled: false,
     },
     medium: {
         label: 'Medio',
@@ -34,6 +37,7 @@ const PRESETS: Record<QualityLevel, QualityPreset> = {
         interiorShadowMapSize: 512,
         bloomEnabled: true,
         bloomStrength: 0.3,
+        snowEnabled: true,
     },
     high: {
         label: 'Alto',
@@ -44,6 +48,7 @@ const PRESETS: Record<QualityLevel, QualityPreset> = {
         interiorShadowMapSize: 1024,
         bloomEnabled: true,
         bloomStrength: 0.4,
+        snowEnabled: true,
     },
     ultra: {
         label: 'Ultra',
@@ -54,6 +59,7 @@ const PRESETS: Record<QualityLevel, QualityPreset> = {
         interiorShadowMapSize: 2048,
         bloomEnabled: true,
         bloomStrength: 0.5,
+        snowEnabled: true,
     },
 };
 
@@ -62,9 +68,11 @@ export function createGraphicsSettings(
     renderer: THREE.WebGLRenderer,
     sunLight: THREE.DirectionalLight,
     interiorSpots: THREE.SpotLight[],
-    bloomPass: UnrealBloomPass
+    bloomPass: UnrealBloomPass,
+    environmentRefs: { ashParticles?: THREE.Points }
 ) {
     let currentLevel: QualityLevel = 'medium';
+    let snowManualOverride: boolean | null = null;
 
     // === UI: Botón de engranaje ===
     const gearBtn = document.createElement('div');
@@ -122,6 +130,23 @@ export function createGraphicsSettings(
         panel.appendChild(btn);
     });
 
+    const snowBtn = document.createElement('div');
+    snowBtn.style.cssText = `
+        padding: 8px 12px; margin: 12px 0 4px 0; border-radius: 6px; cursor: pointer;
+        text-align: center; font-size: 13px; font-weight: 600;
+        transition: all 0.2s; color: #fff;
+        border: 1px solid rgba(0,255,150,0.3);
+        background: rgba(0,255,150,0.1);
+    `;
+    snowBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const isCurrentlyOn = snowManualOverride !== null ? snowManualOverride : PRESETS[currentLevel].snowEnabled;
+        snowManualOverride = !isCurrentlyOn;
+        applySnow(snowManualOverride);
+        updateButtons();
+    });
+    panel.appendChild(snowBtn);
+
     const fpsInfo = document.createElement('div');
     fpsInfo.style.cssText = 'color: #888; font-size: 10px; text-align: center; margin-top: 8px;';
     panel.appendChild(fpsInfo);
@@ -133,7 +158,13 @@ export function createGraphicsSettings(
         e.stopPropagation();
         panelOpen = !panelOpen;
         panel.style.display = panelOpen ? 'block' : 'none';
+        updateButtons();
     });
+
+    function applySnow(enabled: boolean) {
+        if (environmentRefs.ashParticles) environmentRefs.ashParticles.visible = enabled;
+        setSnowAmount(enabled ? 1.0 : 0.0);
+    }
 
     function updateButtons() {
         buttons.forEach(btn => {
@@ -142,7 +173,13 @@ export function createGraphicsSettings(
             btn.style.color = isActive ? '#00e5ff' : '#ccc';
             btn.style.borderColor = isActive ? 'rgba(0,200,255,0.5)' : 'rgba(255,255,255,0.1)';
         });
-        fpsInfo.textContent = `Actual: ${PRESETS[currentLevel].label}`;
+
+        const isSnowOn = snowManualOverride !== null ? snowManualOverride : PRESETS[currentLevel].snowEnabled;
+        snowBtn.textContent = `Nieve: ${isSnowOn ? 'ON' : 'OFF'}`;
+        snowBtn.style.background = isSnowOn ? 'rgba(0,255,150,0.2)' : 'rgba(255,50,50,0.1)';
+        snowBtn.style.borderColor = isSnowOn ? 'rgba(0,255,150,0.4)' : 'rgba(255,50,50,0.3)';
+
+        fpsInfo.textContent = `Calidad: ${PRESETS[currentLevel].label}`;
     }
 
     function applyQuality(level: QualityLevel) {
@@ -155,7 +192,7 @@ export function createGraphicsSettings(
         // Sun shadows
         sunLight.castShadow = preset.sunShadowEnabled;
 
-        // Interior SpotLight shadows (seguros, solo 1 shadow map cada uno)
+        // Interior SpotLight shadows
         interiorSpots.forEach(spot => {
             spot.castShadow = preset.interiorShadows;
             if (preset.interiorShadows) {
@@ -168,6 +205,11 @@ export function createGraphicsSettings(
         // Bloom
         bloomPass.enabled = preset.bloomEnabled;
         bloomPass.strength = preset.bloomStrength;
+
+        // Snow (only if no manual override)
+        if (snowManualOverride === null) {
+            applySnow(preset.snowEnabled);
+        }
 
         renderer.shadowMap.needsUpdate = true;
         updateButtons();
